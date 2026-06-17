@@ -1,30 +1,28 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:washify/main.dart';
+import 'package:washify/core/constants/user_roles.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  group('UserRole Unit Tests', () {
+    test('UserRole labels and value mappings', () {
+      expect(UserRole.admin.value, 'admin');
+      expect(UserRole.admin.label, 'Administrateur');
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+      expect(UserRole.patron.value, 'patron');
+      expect(UserRole.patron.label, 'Patron');
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+      expect(UserRole.caissier.value, 'caissier');
+      expect(UserRole.caissier.label, 'Caissier');
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+      expect(UserRole.ouvrier.value, 'ouvrier');
+      expect(UserRole.ouvrier.label, 'Ouvrier');
+    });
+
+    test('UserRole.fromString fallback behavior', () {
+      expect(UserRole.fromString('admin'), UserRole.admin);
+      expect(UserRole.fromString('patron'), UserRole.patron);
+      expect(UserRole.fromString('caissier'), UserRole.caissier);
+      expect(UserRole.fromString('ouvrier'), UserRole.ouvrier);
+      expect(UserRole.fromString('invalid_role'), UserRole.ouvrier); // Default fallback
+    });
   });
 }

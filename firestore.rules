@@ -1,0 +1,81 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper checks
+    function isSignedIn() {
+      return request.auth != null || true; // Phone/PIN simulated auth
+    }
+
+    // App User collection rules
+    match /users/{userId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // Stations collection rules
+    match /stations/{stationId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // Employees collection rules
+    match /employees/{employeeId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // Services collection rules
+    match /services/{serviceId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // Products collection rules
+    match /products/{productId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // Stock & stock movements rules
+    match /stock/{stockId} {
+      allow read, write: if isSignedIn();
+    }
+    match /stock_movements/{movementId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // Inventories rules
+    match /inventories/{inventoryId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // Tickets rules
+    match /tickets/{ticketId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // Wallets & Transactions rules
+    match /wallets/{walletId} {
+      allow read, write: if isSignedIn();
+    }
+    match /wallet_transactions/{transactionId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // Payroll rules
+    match /payroll/{payrollId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // Audit logs rules
+    match /audit_logs/{logId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // Notifications rules
+    match /notifications/{notificationId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // Commission rules
+    match /commission_rules/{ruleId} {
+      allow read, write: if isSignedIn();
+    }
+  }
+}

@@ -9,18 +9,31 @@ import 'package:washify/features/dashboard/admin_dashboard.dart';
 import 'package:washify/features/dashboard/patron_dashboard.dart';
 import 'package:washify/features/dashboard/cashier_dashboard.dart';
 import 'package:washify/features/dashboard/worker_dashboard.dart';
+import 'package:washify/features/employees/employees_screen.dart';
+import 'package:washify/features/clients/clients_screen.dart';
 
 // Child Screens
 import 'package:washify/features/stations/stations_screen.dart';
-import 'package:washify/features/employees/employees_screen.dart';
+import 'package:washify/features/stations/station_form_screen.dart';
+import 'package:washify/features/station/models/station.dart';
 import 'package:washify/features/services/services_screen.dart';
+import 'package:washify/features/services/vehicle_categories_screen.dart';
+import 'package:washify/features/services/service_definitions_screen.dart';
+import 'package:washify/features/services/offers_screen.dart';
+import 'package:washify/features/hr/screens/hr_dashboard_screen.dart';
 import 'package:washify/features/products/products_screen.dart';
 import 'package:washify/features/stock/stock_screen.dart';
+import 'package:washify/features/stock/stock_entry_screen.dart';
 import 'package:washify/features/tickets/tickets_screen.dart';
 import 'package:washify/features/tickets/new_ticket_screen.dart';
 import 'package:washify/features/wallet/wallet_screen.dart';
 import 'package:washify/features/payroll/payroll_screen.dart';
 import 'package:washify/features/audit/audit_screen.dart';
+import 'package:washify/features/inventory/inventory_history_screen.dart';
+import 'package:washify/features/inventory/inventory_form_screen.dart';
+import 'package:washify/features/inventory/inventory_report_screen.dart';
+// Multi-Role Dashboards
+import 'package:washify/features/dashboard/multi_role_dashboards.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final userState = ref.watch(currentUserProvider);
@@ -35,32 +48,40 @@ final routerProvider = Provider<GoRouter>((ref) {
         return isLoggingIn ? null : '/login';
       }
 
+      final roles = userState.roles;
+
       if (isLoggingIn) {
-        switch (userState.role) {
-          case UserRole.admin:
-            return '/admin';
-          case UserRole.patron:
-            return '/patron';
-          case UserRole.caissier:
-            return '/cashier';
-          case UserRole.ouvrier:
-            return '/worker';
+        if (roles.contains(UserRole.admin)) return '/admin';
+
+        final isPatron = roles.contains(UserRole.patron);
+        final isWorker = roles.contains(UserRole.ouvrier);
+        final isCashier = roles.contains(UserRole.caissier);
+
+        if (roles.length > 1) {
+          if (isPatron && isWorker && isCashier) return '/patron-worker-cashier';
+          if (isPatron && isCashier) return '/patron-cashier';
+          if (isPatron && isWorker) return '/patron-worker';
+          if (isWorker && isCashier) return '/worker-cashier';
         }
+
+        if (isPatron) return '/patron';
+        if (isCashier) return '/cashier';
+        if (isWorker) return '/worker';
       }
 
       // Role-based route guards
       final path = state.matchedLocation;
-      if (path.startsWith('/admin') && userState.role != UserRole.admin) {
-        return '/login';
+      if (path.startsWith('/admin') && !roles.contains(UserRole.admin)) return '/login';
+      
+      // We check if the path starts with a base role path, and only restrict if they DON'T have that role
+      if (path == '/patron' || path.startsWith('/patron/')) {
+        if (!roles.contains(UserRole.patron)) return '/login';
       }
-      if (path.startsWith('/patron') && userState.role != UserRole.patron) {
-        return '/login';
+      if (path == '/cashier' || path.startsWith('/cashier/')) {
+        if (!roles.contains(UserRole.caissier)) return '/login';
       }
-      if (path.startsWith('/cashier') && userState.role != UserRole.caissier) {
-        return '/login';
-      }
-      if (path.startsWith('/worker') && userState.role != UserRole.ouvrier) {
-        return '/login';
+      if (path == '/worker' || path.startsWith('/worker/')) {
+        if (!roles.contains(UserRole.ouvrier)) return '/login';
       }
 
       return null;
@@ -70,11 +91,39 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/login',
         builder: (context, state) => const LoginScreen(),
       ),
+      // Multi-role portal routes
+      GoRoute(
+        path: '/patron-worker-cashier',
+        builder: (context, state) => const PatronWorkerCashierDashboard(),
+      ),
+      GoRoute(
+        path: '/patron-cashier',
+        builder: (context, state) => const PatronCashierDashboard(),
+      ),
+      GoRoute(
+        path: '/patron-worker',
+        builder: (context, state) => const PatronWorkerDashboard(),
+      ),
+      GoRoute(
+        path: '/worker-cashier',
+        builder: (context, state) => const WorkerCashierDashboard(),
+      ),
       // Admin Routes
       GoRoute(
         path: '/admin',
         builder: (context, state) => const AdminDashboard(),
         routes: [
+          GoRoute(
+            path: 'stations/create',
+            builder: (context, state) => const StationFormScreen(),
+          ),
+          GoRoute(
+            path: 'stations/edit',
+            builder: (context, state) {
+              final station = state.extra as Station?;
+              return StationFormScreen(station: station);
+            },
+          ),
           GoRoute(
             path: 'stations',
             builder: (context, state) => const StationsScreen(),
@@ -85,7 +134,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
-      // Patron Routes
+      // Patron Routes (Can be accessed directly or via portal)
       GoRoute(
         path: '/patron',
         builder: (context, state) => const PatronDashboard(),
@@ -95,8 +144,28 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const EmployeesScreen(),
           ),
           GoRoute(
+            path: 'hr',
+            builder: (context, state) => const HRDashboardScreen(),
+          ),
+          GoRoute(
             path: 'services',
             builder: (context, state) => const ServicesScreen(),
+          ),
+          GoRoute(
+            path: 'vehicle-categories',
+            builder: (context, state) => const VehicleCategoriesScreen(),
+          ),
+          GoRoute(
+            path: 'service-definitions',
+            builder: (context, state) => const ServiceDefinitionsScreen(),
+          ),
+          GoRoute(
+            path: 'offers',
+            builder: (context, state) => const OffersScreen(),
+          ),
+          GoRoute(
+            path: 'clients',
+            builder: (context, state) => const ClientsScreen(),
           ),
           GoRoute(
             path: 'products',
@@ -105,10 +174,33 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'stock',
             builder: (context, state) => const StockScreen(),
+            routes: [
+              GoRoute(
+                path: 'entry',
+                builder: (context, state) => const StockEntryScreen(),
+              ),
+            ],
           ),
           GoRoute(
             path: 'payroll',
             builder: (context, state) => const PayrollScreen(),
+          ),
+          GoRoute(
+            path: 'inventory',
+            builder: (context, state) => const InventoryHistoryScreen(),
+            routes: [
+              GoRoute(
+                path: 'new',
+                builder: (context, state) => const InventoryFormScreen(),
+              ),
+              GoRoute(
+                path: 'report/:id',
+                builder: (context, state) {
+                  final id = state.pathParameters['id']!;
+                  return InventoryReportScreen(inventoryId: id);
+                },
+              ),
+            ],
           ),
         ],
       ),
@@ -128,6 +220,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'stock',
             builder: (context, state) => const StockScreen(),
+            routes: [
+              GoRoute(
+                path: 'entry',
+                builder: (context, state) => const StockEntryScreen(),
+              ),
+            ],
           ),
         ],
       ),
@@ -145,3 +243,4 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
   );
 });
+

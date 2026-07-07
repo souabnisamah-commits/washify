@@ -19,6 +19,12 @@ _$StationImpl _$$StationImplFromJson(Map<String, dynamic> json) =>
       longitude: (json['longitude'] as num).toDouble(),
       logoUrl: json['logoUrl'] as String,
       licence: $enumDecode(_$LicenceStatusEnumMap, json['licence']),
+      subscriptionDate: json['subscriptionDate'] == null
+          ? null
+          : DateTime.parse(json['subscriptionDate'] as String),
+      expiryDate: json['expiryDate'] == null
+          ? null
+          : DateTime.parse(json['expiryDate'] as String),
       address: json['address'] as String? ?? '',
       city: json['city'] as String? ?? '',
       isActive: json['isActive'] as bool? ?? true,
@@ -39,6 +45,8 @@ Map<String, dynamic> _$$StationImplToJson(_$StationImpl instance) =>
       'longitude': instance.longitude,
       'logoUrl': instance.logoUrl,
       'licence': _$LicenceStatusEnumMap[instance.licence]!,
+      'subscriptionDate': instance.subscriptionDate?.toIso8601String(),
+      'expiryDate': instance.expiryDate?.toIso8601String(),
       'address': instance.address,
       'city': instance.city,
       'isActive': instance.isActive,

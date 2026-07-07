@@ -12,8 +12,8 @@ _$StockLevelImpl _$$StockLevelImplFromJson(Map<String, dynamic> json) =>
       tenantId: json['tenantId'] as String,
       productId: json['productId'] as String,
       productName: json['productName'] as String,
-      currentQuantity: (json['currentQuantity'] as num).toInt(),
-      minStock: (json['minStock'] as num).toInt(),
+      currentQuantity: (json['currentQuantity'] as num).toDouble(),
+      minStock: (json['minStock'] as num).toDouble(),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
     );
 
@@ -35,9 +35,9 @@ _$StockMovementImpl _$$StockMovementImplFromJson(Map<String, dynamic> json) =>
       productId: json['productId'] as String,
       productName: json['productName'] as String,
       type: json['type'] as String,
-      quantity: (json['quantity'] as num).toInt(),
-      previousQuantity: (json['previousQuantity'] as num).toInt(),
-      newQuantity: (json['newQuantity'] as num).toInt(),
+      quantity: (json['quantity'] as num).toDouble(),
+      previousQuantity: (json['previousQuantity'] as num).toDouble(),
+      newQuantity: (json['newQuantity'] as num).toDouble(),
       reason: json['reason'] as String,
       performedBy: json['performedBy'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),

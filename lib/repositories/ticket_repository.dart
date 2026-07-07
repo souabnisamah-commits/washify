@@ -1,6 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:washify/core/constants/app_constants.dart';
 import 'package:washify/features/tickets/models/ticket.dart';
+import 'package:washify/repositories/stock_repository.dart';
+import 'package:washify/repositories/client_repository.dart';
+
+final ticketRepositoryProvider = Provider<TicketRepository>((ref) {
+  return TicketRepository();
+});
 
 class TicketRepository {
   final FirebaseFirestore _firestore;
@@ -65,8 +72,14 @@ class TicketRepository {
     final map = ticket.toJson();
     map.remove('id');
     map['stationId'] = ticket.tenantId;
+    if (ticket.assignedWorkerId != null) {
+      map['workerId'] = ticket.assignedWorkerId;
+      map['workerName'] = ticket.assignedWorkerName;
+    }
     map['totalAmount'] = ticket.montant;
     map['servicePrice'] = ticket.snapshotPrice['price'] ?? 0.0;
+    map['servicesSelected'] = ticket.servicesSelected.map((s) => s.toJson()).toList();
+    map['productsUsed'] = ticket.productsUsed.map((p) => p.toJson()).toList();
     map['createdAt'] = Timestamp.fromDate(ticket.createdAt);
     map['updatedAt'] = Timestamp.fromDate(ticket.updatedAt);
     return map;
@@ -141,6 +154,10 @@ class TicketRepository {
 
   Future<String> createTicket(Ticket ticket) async {
     final docRef = await _ticketsRef.add(_ticketToDoc(ticket));
+    if (ticket.status == TicketStatus.paye) {
+      final stockRepo = StockRepository(firestore: _firestore);
+      await stockRepo.deductStockForTicket(ticket.copyWith(id: docRef.id));
+    }
     return docRef.id;
   }
 
@@ -161,6 +178,22 @@ class TicketRepository {
       'status': mappedStatus,
       'updatedAt': Timestamp.now(),
     });
+
+    if (mappedStatus == 'paye') {
+      final ticket = await getTicketById(ticketId);
+      if (ticket != null) {
+        final stockRepo = StockRepository(firestore: _firestore);
+        await stockRepo.deductStockForTicket(ticket);
+
+        if (ticket.paymentMethod == 'compte_client' && ticket.clientId != null) {
+          final clientRepo = ClientRepository(firestore: _firestore);
+          await clientRepo.updateClientBalance(ticket.clientId!, ticket.totalAmount);
+          if (ticket.vehiclePlate != null && ticket.vehiclePlate!.isNotEmpty) {
+            await clientRepo.addVehicleToClient(ticket.clientId!, ticket.vehiclePlate!);
+          }
+        }
+      }
+    }
   }
 
   Future<void> assignWorker(
@@ -187,6 +220,38 @@ class TicketRepository {
         .snapshots()
         .map((snapshot) =>
             snapshot.docs.map((doc) => _ticketFromDoc(doc)).toList());
+  }
+
+  Stream<List<Ticket>> watchStationTickets(String stationId) {
+    return _ticketsRef
+        .where('tenantId', isEqualTo: stationId)
+        .orderBy('createdAt', descending: true)
+        .limit(100) // limit for UI performance
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => _ticketFromDoc(doc)).toList());
+  }
+
+  // WATCH UNPAID TICKETS FOR A CLIENT
+  Stream<List<Ticket>> watchClientTickets(String stationId, String clientId) {
+    return _ticketsRef
+        .where('tenantId', isEqualTo: stationId)
+        .where('clientId', isEqualTo: clientId)
+        // .where('status', isEqualTo: TicketStatus.enAttente.toString()) // if we only want unpaid. Wait, maybe we want all client tickets?
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => _ticketFromDoc(doc)).toList());
+  }
+
+  Stream<List<Ticket>> watchWorkerTickets(String workerId) {
+    final now = DateTime.now();
+    final startOfDay = DateTime(now.year, now.month, now.day);
+    return _ticketsRef
+        .where('workerId', isEqualTo: workerId)
+        .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+        .orderBy('createdAt', descending: true)
+        .limit(50)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => _ticketFromDoc(doc)).toList());
   }
 
   Future<Map<String, double>> getRevenueStats(
@@ -216,5 +281,19 @@ class TicketRepository {
       'totalTickets': totalTickets.toDouble(),
       'averageTicket': totalTickets > 0 ? totalRevenue / totalTickets : 0,
     };
+  }
+
+  Future<List<Ticket>> getTicketsByDateRange(
+      String stationId, DateTime startDate, DateTime endDate) async {
+    final querySnapshot = await _ticketsRef
+        .where('stationId', isEqualTo: stationId)
+        .where('status', isEqualTo: 'paye')
+        .where('updatedAt', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
+        .where('updatedAt', isLessThan: Timestamp.fromDate(endDate))
+        .get();
+
+    final tickets = querySnapshot.docs.map((doc) => _ticketFromDoc(doc)).toList();
+    tickets.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    return tickets;
   }
 }

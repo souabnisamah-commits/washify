@@ -8,9 +8,9 @@ class InventoryItem with _$InventoryItem {
   const factory InventoryItem({
     required String productId,
     required String productName,
-    required int expectedQuantity, // Stock théorique (Unités de consommation)
-    required int actualQuantity,   // Stock réel mesuré (Unités de consommation)
-    required int difference,       // Écart théorique vs réel
+    required double expectedQuantity, // Stock théorique (décimal ou ml)
+    required double actualQuantity,   // Stock réel mesuré (décimal ou ml)
+    required double difference,       // Écart théorique vs réel
   }) = _InventoryItem;
 
   factory InventoryItem.fromJson(Map<String, dynamic> json) => _$InventoryItemFromJson(json);

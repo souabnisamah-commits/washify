@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:washify/core/widgets/language_toggle_button.dart';
+import 'package:washify/core/localization/app_localizations.dart';
+
+import 'package:washify/features/auth/widgets/change_pin_dialog.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:washify/core/theme/app_theme.dart';
@@ -6,6 +11,7 @@ import 'package:washify/core/theme/app_theme.dart';
 import 'package:washify/providers/auth_provider.dart';
 import 'package:washify/providers/ticket_provider.dart';
 import 'package:washify/providers/employee_provider.dart';
+import 'package:washify/core/constants/user_roles.dart';
 import 'package:washify/features/tickets/models/ticket.dart';
 
 class CashierDashboard extends ConsumerStatefulWidget {
@@ -18,7 +24,6 @@ class CashierDashboard extends ConsumerStatefulWidget {
 class _CashierDashboardState extends ConsumerState<CashierDashboard> {
   void _logout() {
     ref.read(currentUserProvider.notifier).logout();
-    context.go('/login');
   }
 
   Future<void> _updateStatus(String ticketId, String status) async {
@@ -30,7 +35,7 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
     }
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Statut du ticket mis à jour : $status')),
+        SnackBar(content: Text('Statut du ticket mis à jour : $status'.tr)),
       );
     }
   }
@@ -40,13 +45,13 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
     if (user == null || user.stationId == null) return;
 
     final employees = await ref.read(employeeRepositoryProvider).getEmployeesByStation(user.stationId!);
-    final workers = employees.where((e) => e.role.value == 'worker').toList();
+    final workers = employees.where((e) => e.roles.contains(UserRole.ouvrier)).toList();
 
     if (!mounted) return;
 
     if (workers.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Aucun laveur actif disponible')),
+        SnackBar(content: Text('Aucun laveur actif disponible'.tr)),
       );
       return;
     }
@@ -55,7 +60,7 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Assigner un laveur'),
+          title: Text('Assigner un laveur'.tr),
           content: SizedBox(
             width: double.maxFinite,
             child: ListView.builder(
@@ -76,7 +81,7 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
                     if (context.mounted) {
                       Navigator.of(context).pop();
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Laveur ${worker.name} assigné')),
+                        SnackBar(content: Text('Laveur ${worker.name} assigné'.tr)),
                       );
                     }
                   },
@@ -93,54 +98,70 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
   Widget build(BuildContext context) {
     final user = ref.watch(currentUserProvider);
     if (user == null || user.stationId == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     final ticketsStream = ref.watch(todayTicketsStreamProvider(user.stationId!));
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Caisse - Washify'),
+        title: Text('Caisse - Washify'.tr),
         actions: [
+                    const LanguageToggleButton(),
           IconButton(
-            icon: const Icon(Icons.logout),
+            icon: Icon(Icons.password),
+            tooltip: 'Changer le code PIN'.tr,
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (_) => ChangePinDialog(),
+              );
+            },
+          ),
+          IconButton(
+            icon: Icon(Icons.logout),
             onPressed: _logout,
           ),
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Quick Action Buttons
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () => context.go('/cashier/tickets/new'),
-                    icon: const Icon(Icons.add),
-                    label: const Text('Nouveau Ticket'),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: AppTheme.primaryBlue,
-                    ),
-                  ),
+            InkWell(
+              onTap: () => context.push('/cashier/tickets/new'),
+              borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+              child: Container(
+                padding: EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+                decoration: BoxDecoration(
+                  gradient: AppTheme.primaryGradient,
+                  borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.primaryBlue.withValues(alpha: 0.3),
+                      blurRadius: 15,
+                      offset: Offset(0, 8),
+                    )
+                  ],
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => context.go('/cashier/stock'),
-                    icon: const Icon(Icons.inventory),
-                    label: const Text('Stock / Détergents'),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Column(
+                  children: [
+                    Icon(Icons.add_circle_outline, color: Colors.white, size: 64),
+                    SizedBox(height: 16),
+                    Text(
+                      'Nouveau Ticket'.tr,
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 32),
 
             // Today's tickets list header
             Row(
@@ -152,11 +173,11 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
                 ),
                 TextButton(
                   onPressed: () => context.go('/cashier/tickets'),
-                  child: const Text('Voir tout'),
+                  child: Text('Voir tout'.tr),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
 
             // Today's tickets stream list
             Expanded(
@@ -168,8 +189,8 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(Icons.receipt_long, size: 48, color: AppTheme.textHint.withValues(alpha: 0.5)),
-                          const SizedBox(height: 12),
-                          const Text('Aucun ticket aujourd\'hui', style: TextStyle(color: AppTheme.textHint)),
+                          SizedBox(height: 12),
+                          Text('Aucun ticket aujourd\'hui', style: TextStyle(color: AppTheme.textHint)),
                         ],
                       ),
                     );
@@ -183,8 +204,8 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
                     },
                   );
                 },
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, s) => Text('Erreur tickets: $e'),
+                loading: () => Center(child: CircularProgressIndicator()),
+                error: (e, s) => Text('Erreur tickets: $e'.tr),
               ),
             ),
           ],
@@ -213,9 +234,9 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
     }
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -238,7 +259,7 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
                 ),
               ],
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: 4),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -247,7 +268,7 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: statusColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(4),
@@ -259,7 +280,7 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -268,7 +289,7 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 Text(
-                  'Paiement: ${ticket.paymentMethod.toUpperCase()}',
+                  'Paiement: ${ticket.paymentMethod?.toUpperCase() ?? 'INCONNU'}',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
@@ -281,19 +302,19 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
                 if (ticket.workerId == null)
                   TextButton.icon(
                     onPressed: () => _assignWorker(ticket.id),
-                    icon: const Icon(Icons.person_add, size: 18),
-                    label: const Text('Assigner'),
+                    icon: Icon(Icons.person_add, size: 18),
+                    label: Text('Assigner'.tr),
                   ),
                 if (ticket.status == TicketStatus.enAttente) ...[
                   TextButton.icon(
                     onPressed: () => _updateStatus(ticket.id, 'paye'),
-                    icon: const Icon(Icons.check_circle, size: 18, color: AppTheme.successGreen),
-                    label: const Text('Encaisser', style: TextStyle(color: AppTheme.successGreen)),
+                    icon: Icon(Icons.check_circle, size: 18, color: AppTheme.successGreen),
+                    label: Text('Encaisser', style: TextStyle(color: AppTheme.successGreen)),
                   ),
                   TextButton.icon(
                     onPressed: () => _updateStatus(ticket.id, 'rembourse'),
-                    icon: const Icon(Icons.cancel, size: 18, color: AppTheme.errorRed),
-                    label: const Text('Annuler', style: TextStyle(color: AppTheme.errorRed)),
+                    icon: Icon(Icons.cancel, size: 18, color: AppTheme.errorRed),
+                    label: Text('Annuler', style: TextStyle(color: AppTheme.errorRed)),
                   ),
                 ],
               ],

@@ -63,6 +63,7 @@ Map<String, dynamic> _$$WalletTransactionImplToJson(
 
 const _$WalletTransactionTypeEnumMap = {
   WalletTransactionType.gainTicket: 'gainTicket',
+  WalletTransactionType.salaireJour: 'salaireJour',
   WalletTransactionType.bonus: 'bonus',
   WalletTransactionType.retrait: 'retrait',
   WalletTransactionType.ajustement: 'ajustement',

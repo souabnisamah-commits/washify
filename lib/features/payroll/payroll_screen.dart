@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:washify/core/localization/app_localizations.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:washify/core/theme/app_theme.dart';
 import 'package:washify/core/constants/app_constants.dart';
@@ -29,7 +31,7 @@ class _PayrollScreenState extends ConsumerState<PayrollScreen> {
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Fiche de paie approuvée')),
+        SnackBar(content: Text('Fiche de paie approuvée'.tr)),
       );
     }
   }
@@ -45,7 +47,7 @@ class _PayrollScreenState extends ConsumerState<PayrollScreen> {
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Fiche de paie payée')),
+        SnackBar(content: Text('Fiche de paie payée'.tr)),
       );
     }
   }
@@ -55,7 +57,7 @@ class _PayrollScreenState extends ConsumerState<PayrollScreen> {
     final selectedStation = ref.watch(selectedStationProvider);
 
     if (selectedStation == null) {
-      return const Scaffold(
+      return Scaffold(
         body: Center(child: Text('Sélectionnez d\'abord une station.')),
       );
     }
@@ -64,18 +66,18 @@ class _PayrollScreenState extends ConsumerState<PayrollScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Fiches de Paie - ${selectedStation.name}'),
+        title: Text('Fiches de Paie - ${selectedStation.name}'.tr),
       ),
       body: payrollStream.when(
         data: (payrolls) {
           if (payrolls.isEmpty) {
-            return const Center(
+            return Center(
               child: Text('Aucun bulletin généré.', style: TextStyle(color: AppTheme.textHint)),
             );
           }
 
           return ListView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16),
             itemCount: payrolls.length,
             itemBuilder: (context, index) {
               final pay = payrolls[index];
@@ -91,9 +93,9 @@ class _PayrollScreenState extends ConsumerState<PayrollScreen> {
               }
 
               return Card(
-                margin: const EdgeInsets.only(bottom: 12),
+                margin: EdgeInsets.only(bottom: 12),
                 child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: EdgeInsets.all(16.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -102,10 +104,10 @@ class _PayrollScreenState extends ConsumerState<PayrollScreen> {
                         children: [
                           Text(
                             pay.employeeName,
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
                               color: statusColor.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(4),
@@ -117,28 +119,28 @@ class _PayrollScreenState extends ConsumerState<PayrollScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
-                      Text('Période: ${pay.period}'),
-                      Text('Base: ${pay.baseSalary} DT | Comm: ${pay.commissionTotal} DT'),
+                      SizedBox(height: 8),
+                      Text('Période: ${pay.period}'.tr),
+                      Text('Base: ${pay.baseSalary} DT | Comm: ${pay.commissionTotal} DT'.tr),
                       const Divider(height: 20),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
                             'Net à Payer: ${pay.netAmount} DT',
-                            style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.accentCyan, fontSize: 16),
+                            style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.accentCyan, fontSize: 16),
                           ),
                           Row(
                             children: [
                               if (pay.status == AppConstants.payrollPending)
                                 TextButton(
                                   onPressed: () => _approve(pay),
-                                  child: const Text('Approuver'),
+                                  child: Text('Approuver'.tr),
                                 ),
                               if (pay.status == AppConstants.payrollApproved)
                                 TextButton(
                                   onPressed: () => _markPaid(pay),
-                                  child: const Text('Payer'),
+                                  child: Text('Payer'.tr),
                                 ),
                             ],
                           ),
@@ -151,8 +153,8 @@ class _PayrollScreenState extends ConsumerState<PayrollScreen> {
             },
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, s) => Center(child: Text('Erreur: $e')),
+        loading: () => Center(child: CircularProgressIndicator()),
+        error: (e, s) => Center(child: Text('Erreur: $e'.tr)),
       ),
     );
   }

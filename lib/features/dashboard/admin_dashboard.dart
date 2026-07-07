@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:washify/core/widgets/language_toggle_button.dart';
+import 'package:washify/core/localization/app_localizations.dart';
+
+import 'package:washify/features/auth/widgets/change_pin_dialog.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:washify/core/theme/app_theme.dart';
@@ -8,6 +13,8 @@ import 'package:washify/providers/station_provider.dart';
 import 'package:washify/features/auth/models/app_user.dart';
 import 'package:washify/core/utils/hash_util.dart';
 import 'package:uuid/uuid.dart';
+import 'package:washify/features/employees/models/employee.dart';
+import 'package:washify/providers/employee_provider.dart';
 
 class AdminDashboard extends ConsumerStatefulWidget {
   const AdminDashboard({super.key});
@@ -21,7 +28,7 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
   final _phoneController = TextEditingController();
   final _pinController = TextEditingController();
   final _nameController = TextEditingController();
-  UserRole _selectedRole = UserRole.patron;
+  final List<UserRole> _selectedRoles = [UserRole.patron];
   String? _selectedStationId;
   bool _isCreatingUser = false;
 
@@ -35,7 +42,6 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
 
   void _logout() {
     ref.read(currentUserProvider.notifier).logout();
-    context.go('/login');
   }
 
   Future<void> _createUser() async {
@@ -54,7 +60,7 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
       if (existingUser != null) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Un utilisateur avec ce numéro existe déjà')),
+          SnackBar(content: Text('Un utilisateur avec ce numéro existe déjà'.tr)),
         );
         setState(() {
           _isCreatingUser = false;
@@ -65,11 +71,11 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
       final now = DateTime.now();
       final newUser = AppUser(
         id: const Uuid().v4(),
-        tenantId: _selectedRole != UserRole.admin ? (_selectedStationId ?? '') : '',
+        tenantId: !_selectedRoles.contains(UserRole.admin) ? (_selectedStationId ?? '') : '',
         phone: phone,
         pinHash: hashPin(_pinController.text.trim()),
         name: _nameController.text.trim(),
-        roles: [_selectedRole],
+        roles: _selectedRoles.toList(),
         isActive: true,
         createdAt: now,
         updatedAt: now,
@@ -77,9 +83,36 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
 
       await authRepo.createUser(newUser);
 
+      // Créer également le profil Employé si ce n'est pas un admin SaaS
+      if (!_selectedRoles.contains(UserRole.admin)) {
+        final employeeRepo = ref.read(employeeRepositoryProvider);
+        final parts = newUser.name.trim().split(' ');
+        final prenom = parts.isNotEmpty ? parts.first : '';
+        final nom = parts.length > 1 ? parts.sublist(1).join(' ') : '';
+        
+        final newEmployee = Employee(
+          id: '',
+          userId: newUser.id,
+          tenantId: _selectedStationId ?? '',
+          nom: nom,
+          prenom: prenom,
+          phone: newUser.phone,
+          contrat: ContractType.mensuel,
+          valeurJournaliere: 0.0,
+          salaireMensuel: 0.0,
+          commissionRate: 0.0,
+          roles: newUser.roles,
+          isActive: true,
+          dateEmbauche: now,
+          createdAt: now,
+          updatedAt: now,
+        );
+        await employeeRepo.createEmployee(newEmployee);
+      }
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Utilisateur créé avec succès')),
+        SnackBar(content: Text('Utilisateur et profil employé créés avec succès'.tr)),
       );
 
       // Reset fields
@@ -94,7 +127,7 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur lors de la création: $e')),
+        SnackBar(content: Text('Erreur lors de la création: $e'.tr)),
       );
       setState(() {
         _isCreatingUser = false;
@@ -103,6 +136,7 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
   }
 
   void _showAddUserDialog() {
+    _selectedStationId = null;
     showDialog(
       context: context,
       builder: (context) {
@@ -111,7 +145,7 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
             final stationsAsync = ref.watch(stationsStreamProvider);
 
             return AlertDialog(
-              title: const Text('Créer un utilisateur'),
+              title: Text('Créer un utilisateur'.tr),
               content: SingleChildScrollView(
                 child: Form(
                   key: _formKey,
@@ -120,50 +154,59 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
                     children: [
                       TextFormField(
                         controller: _nameController,
-                        decoration: const InputDecoration(labelText: 'Nom complet'),
+                        decoration: InputDecoration(labelText: 'Nom complet'.tr),
                         validator: (v) => v == null || v.isEmpty ? 'Champ requis' : null,
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       TextFormField(
                         controller: _phoneController,
                         keyboardType: TextInputType.phone,
-                        decoration: const InputDecoration(labelText: 'Téléphone'),
+                        decoration: InputDecoration(labelText: 'Téléphone'.tr),
                         validator: (v) => v == null || v.isEmpty ? 'Champ requis' : null,
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       TextFormField(
                         controller: _pinController,
                         obscureText: true,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(labelText: 'Code PIN (4 chiffres)'),
+                        decoration: InputDecoration(labelText: 'Code PIN (4 chiffres)'.tr),
                         validator: (v) =>
                             v == null || v.length < 4 ? 'PIN invalide' : null,
                       ),
-                      const SizedBox(height: 12),
-                      DropdownButtonFormField<UserRole>(
-                        initialValue: _selectedRole,
-                        decoration: const InputDecoration(labelText: 'Rôle'),
-                        items: UserRole.values
+                      SizedBox(height: 12),
+                      Text('Rôles :', style: TextStyle(fontWeight: FontWeight.bold)),
+                      SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        children: UserRole.values
                             .where((r) => r != UserRole.admin)
-                            .map((role) => DropdownMenuItem(
-                                  value: role,
-                                  child: Text(role.label),
-                                ))
-                            .toList(),
-                        onChanged: (val) {
-                          if (val != null) {
-                            setDialogState(() {
-                              _selectedRole = val;
-                            });
-                          }
-                        },
+                            .map((role) {
+                          final isSelected = _selectedRoles.contains(role);
+                          return FilterChip(
+                            label: Text(role.label),
+                            selected: isSelected,
+                            onSelected: (selected) {
+                              setDialogState(() {
+                                if (selected) {
+                                  _selectedRoles.add(role);
+                                } else if (_selectedRoles.length > 1) {
+                                  _selectedRoles.remove(role);
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Un utilisateur doit avoir au moins un rôle'.tr)),
+                                  );
+                                }
+                              });
+                            },
+                          );
+                        }).toList(),
                       ),
-                      const SizedBox(height: 12),
-                      if (_selectedRole != UserRole.admin)
+                      SizedBox(height: 12),
+                      if (!_selectedRoles.contains(UserRole.admin))
                         stationsAsync.when(
                           data: (stations) => DropdownButtonFormField<String>(
                             initialValue: _selectedStationId,
-                            decoration: const InputDecoration(labelText: 'Station assignée'),
+                            decoration: InputDecoration(labelText: 'Station assignée'.tr),
                             items: stations
                                 .map((st) => DropdownMenuItem(
                                       value: st.id,
@@ -176,12 +219,12 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
                               });
                             },
                             validator: (v) =>
-                                v == null && _selectedRole != UserRole.admin
+                                v == null && !_selectedRoles.contains(UserRole.admin)
                                     ? 'Station requise'
                                     : null,
                           ),
-                          loading: () => const CircularProgressIndicator(),
-                          error: (e, s) => Text('Erreur stations: $e'),
+                          loading: () => CircularProgressIndicator(),
+                          error: (e, s) => Text('Erreur stations: $e'.tr),
                         ),
                     ],
                   ),
@@ -190,17 +233,17 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Annuler'),
+                  child: Text('Annuler'.tr),
                 ),
                 ElevatedButton(
                   onPressed: _isCreatingUser ? null : _createUser,
                   child: _isCreatingUser
-                      ? const SizedBox(
+                      ? SizedBox(
                           height: 16,
                           width: 16,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text('Créer'),
+                      : Text('Créer'.tr),
                 ),
               ],
             );
@@ -217,22 +260,33 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dashboard Super Admin'),
+        title: Text('Dashboard Super Admin'.tr),
         actions: [
+                    const LanguageToggleButton(),
           IconButton(
-            icon: const Icon(Icons.logout),
+            icon: Icon(Icons.password),
+            tooltip: 'Changer le code PIN'.tr,
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (_) => ChangePinDialog(),
+              );
+            },
+          ),
+          IconButton(
+            icon: Icon(Icons.logout),
             onPressed: _logout,
           ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Header Card
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(20),
               decoration: BoxDecoration(
                 gradient: AppTheme.primaryGradient,
                 borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
@@ -247,22 +301,22 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
                           fontWeight: FontWeight.bold,
                         ),
                   ),
-                  const SizedBox(height: 6),
-                  const Text(
+                  SizedBox(height: 6),
+                  Text(
                     'Configuration et supervision globale de Washify.',
                     style: TextStyle(color: Colors.white70),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
 
             // Statistics section
             Text(
               'Statistiques Globales',
               style: Theme.of(context).textTheme.titleLarge,
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
@@ -278,7 +332,7 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
                     color: AppTheme.accentCyan,
                   ),
                 ),
-                const SizedBox(width: 16),
+                SizedBox(width: 16),
                 Expanded(
                   child: _buildStatCard(
                     context,
@@ -290,14 +344,14 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
 
             // Navigation Links
             Text(
               'Gestion du Système',
               style: Theme.of(context).textTheme.titleLarge,
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             _buildMenuItem(
               context,
               title: 'Gérer les Stations',
@@ -306,7 +360,7 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
               color: AppTheme.primaryBlue,
               onTap: () => context.go('/admin/stations'),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             _buildMenuItem(
               context,
               title: 'Créer un Nouvel Utilisateur',
@@ -315,7 +369,7 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
               color: AppTheme.successGreen,
               onTap: _showAddUserDialog,
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             _buildMenuItem(
               context,
               title: 'Journaux d\'Audit',
@@ -338,7 +392,7 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
     required Color color,
   }) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppTheme.surfaceCard,
         borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
@@ -357,7 +411,7 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
               Icon(icon, color: color, size: 20),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Text(
             value,
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -382,7 +436,7 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: AppTheme.surfaceCard,
           borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
@@ -391,14 +445,14 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
               ),
               child: Icon(icon, color: color, size: 24),
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -407,7 +461,7 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
                     title,
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   Text(
                     subtitle,
                     style: Theme.of(context).textTheme.bodySmall,
@@ -415,7 +469,7 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: AppTheme.textHint),
+            Icon(Icons.chevron_right, color: AppTheme.textHint),
           ],
         ),
       ),

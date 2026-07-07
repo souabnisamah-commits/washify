@@ -32,9 +32,11 @@ mixin _$Employee {
       throw _privateConstructorUsedError; // for journalier contract
   double get salaireMensuel =>
       throw _privateConstructorUsedError; // for mensuel contract
+  double get extraHourRate =>
+      throw _privateConstructorUsedError; // Extra hour rate
   double get commissionRate =>
       throw _privateConstructorUsedError; // commission percentage
-  UserRole get role => throw _privateConstructorUsedError;
+  List<UserRole> get roles => throw _privateConstructorUsedError;
   bool get isActive => throw _privateConstructorUsedError;
   DateTime get dateEmbauche => throw _privateConstructorUsedError;
   DateTime get createdAt => throw _privateConstructorUsedError;
@@ -65,8 +67,9 @@ abstract class $EmployeeCopyWith<$Res> {
     ContractType contrat,
     double valeurJournaliere,
     double salaireMensuel,
+    double extraHourRate,
     double commissionRate,
-    UserRole role,
+    List<UserRole> roles,
     bool isActive,
     DateTime dateEmbauche,
     DateTime createdAt,
@@ -98,8 +101,9 @@ class _$EmployeeCopyWithImpl<$Res, $Val extends Employee>
     Object? contrat = null,
     Object? valeurJournaliere = null,
     Object? salaireMensuel = null,
+    Object? extraHourRate = null,
     Object? commissionRate = null,
-    Object? role = null,
+    Object? roles = null,
     Object? isActive = null,
     Object? dateEmbauche = null,
     Object? createdAt = null,
@@ -143,14 +147,18 @@ class _$EmployeeCopyWithImpl<$Res, $Val extends Employee>
                 ? _value.salaireMensuel
                 : salaireMensuel // ignore: cast_nullable_to_non_nullable
                       as double,
+            extraHourRate: null == extraHourRate
+                ? _value.extraHourRate
+                : extraHourRate // ignore: cast_nullable_to_non_nullable
+                      as double,
             commissionRate: null == commissionRate
                 ? _value.commissionRate
                 : commissionRate // ignore: cast_nullable_to_non_nullable
                       as double,
-            role: null == role
-                ? _value.role
-                : role // ignore: cast_nullable_to_non_nullable
-                      as UserRole,
+            roles: null == roles
+                ? _value.roles
+                : roles // ignore: cast_nullable_to_non_nullable
+                      as List<UserRole>,
             isActive: null == isActive
                 ? _value.isActive
                 : isActive // ignore: cast_nullable_to_non_nullable
@@ -192,8 +200,9 @@ abstract class _$$EmployeeImplCopyWith<$Res>
     ContractType contrat,
     double valeurJournaliere,
     double salaireMensuel,
+    double extraHourRate,
     double commissionRate,
-    UserRole role,
+    List<UserRole> roles,
     bool isActive,
     DateTime dateEmbauche,
     DateTime createdAt,
@@ -224,8 +233,9 @@ class __$$EmployeeImplCopyWithImpl<$Res>
     Object? contrat = null,
     Object? valeurJournaliere = null,
     Object? salaireMensuel = null,
+    Object? extraHourRate = null,
     Object? commissionRate = null,
-    Object? role = null,
+    Object? roles = null,
     Object? isActive = null,
     Object? dateEmbauche = null,
     Object? createdAt = null,
@@ -269,14 +279,18 @@ class __$$EmployeeImplCopyWithImpl<$Res>
             ? _value.salaireMensuel
             : salaireMensuel // ignore: cast_nullable_to_non_nullable
                   as double,
+        extraHourRate: null == extraHourRate
+            ? _value.extraHourRate
+            : extraHourRate // ignore: cast_nullable_to_non_nullable
+                  as double,
         commissionRate: null == commissionRate
             ? _value.commissionRate
             : commissionRate // ignore: cast_nullable_to_non_nullable
                   as double,
-        role: null == role
-            ? _value.role
-            : role // ignore: cast_nullable_to_non_nullable
-                  as UserRole,
+        roles: null == roles
+            ? _value._roles
+            : roles // ignore: cast_nullable_to_non_nullable
+                  as List<UserRole>,
         isActive: null == isActive
             ? _value.isActive
             : isActive // ignore: cast_nullable_to_non_nullable
@@ -311,13 +325,15 @@ class _$EmployeeImpl extends _Employee {
     required this.contrat,
     required this.valeurJournaliere,
     required this.salaireMensuel,
+    this.extraHourRate = 0.0,
     required this.commissionRate,
-    this.role = UserRole.ouvrier,
+    final List<UserRole> roles = const [UserRole.ouvrier],
     this.isActive = true,
     required this.dateEmbauche,
     required this.createdAt,
     required this.updatedAt,
-  }) : super._();
+  }) : _roles = roles,
+       super._();
 
   factory _$EmployeeImpl.fromJson(Map<String, dynamic> json) =>
       _$$EmployeeImplFromJson(json);
@@ -343,11 +359,22 @@ class _$EmployeeImpl extends _Employee {
   final double salaireMensuel;
   // for mensuel contract
   @override
+  @JsonKey()
+  final double extraHourRate;
+  // Extra hour rate
+  @override
   final double commissionRate;
+  // commission percentage
+  final List<UserRole> _roles;
   // commission percentage
   @override
   @JsonKey()
-  final UserRole role;
+  List<UserRole> get roles {
+    if (_roles is EqualUnmodifiableListView) return _roles;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_roles);
+  }
+
   @override
   @JsonKey()
   final bool isActive;
@@ -360,7 +387,7 @@ class _$EmployeeImpl extends _Employee {
 
   @override
   String toString() {
-    return 'Employee(id: $id, userId: $userId, tenantId: $tenantId, nom: $nom, prenom: $prenom, phone: $phone, contrat: $contrat, valeurJournaliere: $valeurJournaliere, salaireMensuel: $salaireMensuel, commissionRate: $commissionRate, role: $role, isActive: $isActive, dateEmbauche: $dateEmbauche, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'Employee(id: $id, userId: $userId, tenantId: $tenantId, nom: $nom, prenom: $prenom, phone: $phone, contrat: $contrat, valeurJournaliere: $valeurJournaliere, salaireMensuel: $salaireMensuel, extraHourRate: $extraHourRate, commissionRate: $commissionRate, roles: $roles, isActive: $isActive, dateEmbauche: $dateEmbauche, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -380,9 +407,11 @@ class _$EmployeeImpl extends _Employee {
                 other.valeurJournaliere == valeurJournaliere) &&
             (identical(other.salaireMensuel, salaireMensuel) ||
                 other.salaireMensuel == salaireMensuel) &&
+            (identical(other.extraHourRate, extraHourRate) ||
+                other.extraHourRate == extraHourRate) &&
             (identical(other.commissionRate, commissionRate) ||
                 other.commissionRate == commissionRate) &&
-            (identical(other.role, role) || other.role == role) &&
+            const DeepCollectionEquality().equals(other._roles, _roles) &&
             (identical(other.isActive, isActive) ||
                 other.isActive == isActive) &&
             (identical(other.dateEmbauche, dateEmbauche) ||
@@ -406,8 +435,9 @@ class _$EmployeeImpl extends _Employee {
     contrat,
     valeurJournaliere,
     salaireMensuel,
+    extraHourRate,
     commissionRate,
-    role,
+    const DeepCollectionEquality().hash(_roles),
     isActive,
     dateEmbauche,
     createdAt,
@@ -439,8 +469,9 @@ abstract class _Employee extends Employee {
     required final ContractType contrat,
     required final double valeurJournaliere,
     required final double salaireMensuel,
+    final double extraHourRate,
     required final double commissionRate,
-    final UserRole role,
+    final List<UserRole> roles,
     final bool isActive,
     required final DateTime dateEmbauche,
     required final DateTime createdAt,
@@ -470,9 +501,11 @@ abstract class _Employee extends Employee {
   @override
   double get salaireMensuel; // for mensuel contract
   @override
+  double get extraHourRate; // Extra hour rate
+  @override
   double get commissionRate; // commission percentage
   @override
-  UserRole get role;
+  List<UserRole> get roles;
   @override
   bool get isActive;
   @override

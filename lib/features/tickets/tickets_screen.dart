@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:washify/core/localization/app_localizations.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:washify/core/theme/app_theme.dart';
 import 'package:washify/providers/auth_provider.dart';
@@ -20,7 +22,7 @@ class TicketsScreen extends ConsumerWidget {
         : user?.stationId;
 
     if (stationId == null) {
-      return const Scaffold(
+      return Scaffold(
         body: Center(child: Text('Sélectionnez d\'abord une station.')),
       );
     }
@@ -32,18 +34,18 @@ class TicketsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Historique Tickets'),
+        title: Text('Historique Tickets'.tr),
       ),
       body: ticketsAsync.when(
         data: (tickets) {
           if (tickets.isEmpty) {
-            return const Center(
+            return Center(
               child: Text('Aucun ticket trouvé.', style: TextStyle(color: AppTheme.textHint)),
             );
           }
 
           return ListView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16),
             itemCount: tickets.length,
             itemBuilder: (context, index) {
               final ticket = tickets[index];
@@ -63,14 +65,14 @@ class TicketsScreen extends ConsumerWidget {
               }
 
               return Card(
-                margin: const EdgeInsets.only(bottom: 12),
+                margin: EdgeInsets.only(bottom: 12),
                 child: ListTile(
                   leading: Icon(Icons.receipt_long, color: statusColor),
-                  title: Text(ticket.vehiclePlate ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  title: Text(ticket.vehiclePlate ?? '', style: TextStyle(fontWeight: FontWeight.bold)),
                   subtitle: Text('${ticket.serviceName} (${ticket.vehicleType})\nLaveur: ${ticket.workerName ?? "non assigné"} - $dateStr'),
                   trailing: Text(
                     '${ticket.totalAmount.toStringAsFixed(2)} DT',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
                   ),
                   isThreeLine: true,
                 ),
@@ -78,8 +80,8 @@ class TicketsScreen extends ConsumerWidget {
             },
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, s) => Center(child: Text('Erreur: $e')),
+        loading: () => Center(child: CircularProgressIndicator()),
+        error: (e, s) => Center(child: Text('Erreur: $e'.tr)),
       ),
     );
   }

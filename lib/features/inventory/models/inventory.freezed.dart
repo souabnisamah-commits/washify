@@ -23,11 +23,11 @@ InventoryItem _$InventoryItemFromJson(Map<String, dynamic> json) {
 mixin _$InventoryItem {
   String get productId => throw _privateConstructorUsedError;
   String get productName => throw _privateConstructorUsedError;
-  int get expectedQuantity =>
-      throw _privateConstructorUsedError; // Stock théorique (Unités de consommation)
-  int get actualQuantity =>
-      throw _privateConstructorUsedError; // Stock réel mesuré (Unités de consommation)
-  int get difference => throw _privateConstructorUsedError;
+  double get expectedQuantity =>
+      throw _privateConstructorUsedError; // Stock théorique (décimal ou ml)
+  double get actualQuantity =>
+      throw _privateConstructorUsedError; // Stock réel mesuré (décimal ou ml)
+  double get difference => throw _privateConstructorUsedError;
 
   /// Serializes this InventoryItem to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -49,9 +49,9 @@ abstract class $InventoryItemCopyWith<$Res> {
   $Res call({
     String productId,
     String productName,
-    int expectedQuantity,
-    int actualQuantity,
-    int difference,
+    double expectedQuantity,
+    double actualQuantity,
+    double difference,
   });
 }
 
@@ -89,15 +89,15 @@ class _$InventoryItemCopyWithImpl<$Res, $Val extends InventoryItem>
             expectedQuantity: null == expectedQuantity
                 ? _value.expectedQuantity
                 : expectedQuantity // ignore: cast_nullable_to_non_nullable
-                      as int,
+                      as double,
             actualQuantity: null == actualQuantity
                 ? _value.actualQuantity
                 : actualQuantity // ignore: cast_nullable_to_non_nullable
-                      as int,
+                      as double,
             difference: null == difference
                 ? _value.difference
                 : difference // ignore: cast_nullable_to_non_nullable
-                      as int,
+                      as double,
           )
           as $Val,
     );
@@ -116,9 +116,9 @@ abstract class _$$InventoryItemImplCopyWith<$Res>
   $Res call({
     String productId,
     String productName,
-    int expectedQuantity,
-    int actualQuantity,
-    int difference,
+    double expectedQuantity,
+    double actualQuantity,
+    double difference,
   });
 }
 
@@ -155,15 +155,15 @@ class __$$InventoryItemImplCopyWithImpl<$Res>
         expectedQuantity: null == expectedQuantity
             ? _value.expectedQuantity
             : expectedQuantity // ignore: cast_nullable_to_non_nullable
-                  as int,
+                  as double,
         actualQuantity: null == actualQuantity
             ? _value.actualQuantity
             : actualQuantity // ignore: cast_nullable_to_non_nullable
-                  as int,
+                  as double,
         difference: null == difference
             ? _value.difference
             : difference // ignore: cast_nullable_to_non_nullable
-                  as int,
+                  as double,
       ),
     );
   }
@@ -188,13 +188,13 @@ class _$InventoryItemImpl implements _InventoryItem {
   @override
   final String productName;
   @override
-  final int expectedQuantity;
-  // Stock théorique (Unités de consommation)
+  final double expectedQuantity;
+  // Stock théorique (décimal ou ml)
   @override
-  final int actualQuantity;
-  // Stock réel mesuré (Unités de consommation)
+  final double actualQuantity;
+  // Stock réel mesuré (décimal ou ml)
   @override
-  final int difference;
+  final double difference;
 
   @override
   String toString() {
@@ -247,9 +247,9 @@ abstract class _InventoryItem implements InventoryItem {
   const factory _InventoryItem({
     required final String productId,
     required final String productName,
-    required final int expectedQuantity,
-    required final int actualQuantity,
-    required final int difference,
+    required final double expectedQuantity,
+    required final double actualQuantity,
+    required final double difference,
   }) = _$InventoryItemImpl;
 
   factory _InventoryItem.fromJson(Map<String, dynamic> json) =
@@ -260,11 +260,11 @@ abstract class _InventoryItem implements InventoryItem {
   @override
   String get productName;
   @override
-  int get expectedQuantity; // Stock théorique (Unités de consommation)
+  double get expectedQuantity; // Stock théorique (décimal ou ml)
   @override
-  int get actualQuantity; // Stock réel mesuré (Unités de consommation)
+  double get actualQuantity; // Stock réel mesuré (décimal ou ml)
   @override
-  int get difference;
+  double get difference;
 
   /// Create a copy of InventoryItem
   /// with the given fields replaced by the non-null parameter values.

@@ -17,10 +17,13 @@ _$EmployeeImpl _$$EmployeeImplFromJson(Map<String, dynamic> json) =>
       contrat: $enumDecode(_$ContractTypeEnumMap, json['contrat']),
       valeurJournaliere: (json['valeurJournaliere'] as num).toDouble(),
       salaireMensuel: (json['salaireMensuel'] as num).toDouble(),
+      extraHourRate: (json['extraHourRate'] as num?)?.toDouble() ?? 0.0,
       commissionRate: (json['commissionRate'] as num).toDouble(),
-      role:
-          $enumDecodeNullable(_$UserRoleEnumMap, json['role']) ??
-          UserRole.ouvrier,
+      roles:
+          (json['roles'] as List<dynamic>?)
+              ?.map((e) => $enumDecode(_$UserRoleEnumMap, e))
+              .toList() ??
+          const [UserRole.ouvrier],
       isActive: json['isActive'] as bool? ?? true,
       dateEmbauche: DateTime.parse(json['dateEmbauche'] as String),
       createdAt: DateTime.parse(json['createdAt'] as String),
@@ -38,8 +41,9 @@ Map<String, dynamic> _$$EmployeeImplToJson(_$EmployeeImpl instance) =>
       'contrat': _$ContractTypeEnumMap[instance.contrat]!,
       'valeurJournaliere': instance.valeurJournaliere,
       'salaireMensuel': instance.salaireMensuel,
+      'extraHourRate': instance.extraHourRate,
       'commissionRate': instance.commissionRate,
-      'role': _$UserRoleEnumMap[instance.role]!,
+      'roles': instance.roles.map((e) => _$UserRoleEnumMap[e]!).toList(),
       'isActive': instance.isActive,
       'dateEmbauche': instance.dateEmbauche.toIso8601String(),
       'createdAt': instance.createdAt.toIso8601String(),

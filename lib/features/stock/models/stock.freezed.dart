@@ -25,9 +25,10 @@ mixin _$StockLevel {
   String get tenantId => throw _privateConstructorUsedError;
   String get productId => throw _privateConstructorUsedError;
   String get productName => throw _privateConstructorUsedError;
-  int get currentQuantity =>
-      throw _privateConstructorUsedError; // Consommation en unités entières
-  int get minStock => throw _privateConstructorUsedError;
+  double get currentQuantity =>
+      throw _privateConstructorUsedError; // Support des millilitres/décimales
+  double get minStock =>
+      throw _privateConstructorUsedError; // Seuil d'alerte en double
   DateTime get updatedAt => throw _privateConstructorUsedError;
 
   /// Serializes this StockLevel to a JSON map.
@@ -52,8 +53,8 @@ abstract class $StockLevelCopyWith<$Res> {
     String tenantId,
     String productId,
     String productName,
-    int currentQuantity,
-    int minStock,
+    double currentQuantity,
+    double minStock,
     DateTime updatedAt,
   });
 }
@@ -102,11 +103,11 @@ class _$StockLevelCopyWithImpl<$Res, $Val extends StockLevel>
             currentQuantity: null == currentQuantity
                 ? _value.currentQuantity
                 : currentQuantity // ignore: cast_nullable_to_non_nullable
-                      as int,
+                      as double,
             minStock: null == minStock
                 ? _value.minStock
                 : minStock // ignore: cast_nullable_to_non_nullable
-                      as int,
+                      as double,
             updatedAt: null == updatedAt
                 ? _value.updatedAt
                 : updatedAt // ignore: cast_nullable_to_non_nullable
@@ -131,8 +132,8 @@ abstract class _$$StockLevelImplCopyWith<$Res>
     String tenantId,
     String productId,
     String productName,
-    int currentQuantity,
-    int minStock,
+    double currentQuantity,
+    double minStock,
     DateTime updatedAt,
   });
 }
@@ -180,11 +181,11 @@ class __$$StockLevelImplCopyWithImpl<$Res>
         currentQuantity: null == currentQuantity
             ? _value.currentQuantity
             : currentQuantity // ignore: cast_nullable_to_non_nullable
-                  as int,
+                  as double,
         minStock: null == minStock
             ? _value.minStock
             : minStock // ignore: cast_nullable_to_non_nullable
-                  as int,
+                  as double,
         updatedAt: null == updatedAt
             ? _value.updatedAt
             : updatedAt // ignore: cast_nullable_to_non_nullable
@@ -219,10 +220,11 @@ class _$StockLevelImpl extends _StockLevel {
   @override
   final String productName;
   @override
-  final int currentQuantity;
-  // Consommation en unités entières
+  final double currentQuantity;
+  // Support des millilitres/décimales
   @override
-  final int minStock;
+  final double minStock;
+  // Seuil d'alerte en double
   @override
   final DateTime updatedAt;
 
@@ -284,8 +286,8 @@ abstract class _StockLevel extends StockLevel {
     required final String tenantId,
     required final String productId,
     required final String productName,
-    required final int currentQuantity,
-    required final int minStock,
+    required final double currentQuantity,
+    required final double minStock,
     required final DateTime updatedAt,
   }) = _$StockLevelImpl;
   const _StockLevel._() : super._();
@@ -302,9 +304,9 @@ abstract class _StockLevel extends StockLevel {
   @override
   String get productName;
   @override
-  int get currentQuantity; // Consommation en unités entières
+  double get currentQuantity; // Support des millilitres/décimales
   @override
-  int get minStock;
+  double get minStock; // Seuil d'alerte en double
   @override
   DateTime get updatedAt;
 
@@ -327,9 +329,9 @@ mixin _$StockMovement {
   String get productId => throw _privateConstructorUsedError;
   String get productName => throw _privateConstructorUsedError;
   String get type => throw _privateConstructorUsedError; // in, out, adjustment
-  int get quantity => throw _privateConstructorUsedError;
-  int get previousQuantity => throw _privateConstructorUsedError;
-  int get newQuantity => throw _privateConstructorUsedError;
+  double get quantity => throw _privateConstructorUsedError;
+  double get previousQuantity => throw _privateConstructorUsedError;
+  double get newQuantity => throw _privateConstructorUsedError;
   String get reason => throw _privateConstructorUsedError;
   String get performedBy => throw _privateConstructorUsedError;
   DateTime get createdAt => throw _privateConstructorUsedError;
@@ -357,9 +359,9 @@ abstract class $StockMovementCopyWith<$Res> {
     String productId,
     String productName,
     String type,
-    int quantity,
-    int previousQuantity,
-    int newQuantity,
+    double quantity,
+    double previousQuantity,
+    double newQuantity,
     String reason,
     String performedBy,
     DateTime createdAt,
@@ -418,15 +420,15 @@ class _$StockMovementCopyWithImpl<$Res, $Val extends StockMovement>
             quantity: null == quantity
                 ? _value.quantity
                 : quantity // ignore: cast_nullable_to_non_nullable
-                      as int,
+                      as double,
             previousQuantity: null == previousQuantity
                 ? _value.previousQuantity
                 : previousQuantity // ignore: cast_nullable_to_non_nullable
-                      as int,
+                      as double,
             newQuantity: null == newQuantity
                 ? _value.newQuantity
                 : newQuantity // ignore: cast_nullable_to_non_nullable
-                      as int,
+                      as double,
             reason: null == reason
                 ? _value.reason
                 : reason // ignore: cast_nullable_to_non_nullable
@@ -460,9 +462,9 @@ abstract class _$$StockMovementImplCopyWith<$Res>
     String productId,
     String productName,
     String type,
-    int quantity,
-    int previousQuantity,
-    int newQuantity,
+    double quantity,
+    double previousQuantity,
+    double newQuantity,
     String reason,
     String performedBy,
     DateTime createdAt,
@@ -520,15 +522,15 @@ class __$$StockMovementImplCopyWithImpl<$Res>
         quantity: null == quantity
             ? _value.quantity
             : quantity // ignore: cast_nullable_to_non_nullable
-                  as int,
+                  as double,
         previousQuantity: null == previousQuantity
             ? _value.previousQuantity
             : previousQuantity // ignore: cast_nullable_to_non_nullable
-                  as int,
+                  as double,
         newQuantity: null == newQuantity
             ? _value.newQuantity
             : newQuantity // ignore: cast_nullable_to_non_nullable
-                  as int,
+                  as double,
         reason: null == reason
             ? _value.reason
             : reason // ignore: cast_nullable_to_non_nullable
@@ -578,11 +580,11 @@ class _$StockMovementImpl extends _StockMovement {
   final String type;
   // in, out, adjustment
   @override
-  final int quantity;
+  final double quantity;
   @override
-  final int previousQuantity;
+  final double previousQuantity;
   @override
-  final int newQuantity;
+  final double newQuantity;
   @override
   final String reason;
   @override
@@ -659,9 +661,9 @@ abstract class _StockMovement extends StockMovement {
     required final String productId,
     required final String productName,
     required final String type,
-    required final int quantity,
-    required final int previousQuantity,
-    required final int newQuantity,
+    required final double quantity,
+    required final double previousQuantity,
+    required final double newQuantity,
     required final String reason,
     required final String performedBy,
     required final DateTime createdAt,
@@ -682,11 +684,11 @@ abstract class _StockMovement extends StockMovement {
   @override
   String get type; // in, out, adjustment
   @override
-  int get quantity;
+  double get quantity;
   @override
-  int get previousQuantity;
+  double get previousQuantity;
   @override
-  int get newQuantity;
+  double get newQuantity;
   @override
   String get reason;
   @override

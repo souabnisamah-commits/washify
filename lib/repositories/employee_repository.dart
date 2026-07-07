@@ -55,8 +55,15 @@ class EmployeeRepository {
     if (data['commissionRate'] == null) {
       data['commissionRate'] = 0.0;
     }
-    if (data['role'] == null) {
-      data['role'] = 'ouvrier';
+    if (data['extraHourRate'] == null) {
+      data['extraHourRate'] = 0.0;
+    }
+    if (data['roles'] == null) {
+      if (data['role'] != null) {
+        data['roles'] = [data['role']];
+      } else {
+        data['roles'] = ['ouvrier'];
+      }
     }
 
     return Employee.fromJson(data);
@@ -68,6 +75,7 @@ class EmployeeRepository {
     map['stationId'] = employee.tenantId;
     map['name'] = employee.name;
     map['salary'] = employee.salary;
+    map['extraHourRate'] = employee.extraHourRate;
     map['hireDate'] = Timestamp.fromDate(employee.hireDate);
     map['createdAt'] = Timestamp.fromDate(employee.createdAt);
     map['updatedAt'] = Timestamp.fromDate(employee.updatedAt);
@@ -122,12 +130,44 @@ class EmployeeRepository {
   }
 
   Stream<List<Employee>> watchEmployeesByStation(String stationId) {
-    return _employeesRef
-        .where('stationId', isEqualTo: stationId)
-        .where('isActive', isEqualTo: true)
-        .orderBy('name')
-        .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => _employeeFromDoc(doc)).toList());
+    print('🔍 🔍 🔍 DÉBUT RECHERCHE EMPLOYÉS 🔍 🔍 🔍');
+    print('📍 stationId demandé: "$stationId"');
+    print('📍 Type: ${stationId.runtimeType}');
+    print('📍 Longueur: ${stationId.length}');
+    
+    final query = _employeesRef
+      .where('stationId', isEqualTo: stationId)
+      .where('isActive', isEqualTo: true);
+    
+    print('📋 Requête Firestore: collection=employees, stationId=$stationId, isActive=true');
+    
+    return query.snapshots().map((snapshot) {
+      print('📊 📊 📊 RÉSULTATS 📊 📊 📊');
+      print('📊 Nombre de documents trouvés avec la requête stricte: ${snapshot.docs.length}');
+      
+      // Afficher TOUS les employés de la collection pour comparaison
+      _employeesRef.get().then((allDocs) {
+        print('📋 📋 📋 TOUS LES EMPLOYÉS DE LA BASE 📋 📋 📋');
+        for (var doc in allDocs.docs) {
+          final data = doc.data() as Map<String, dynamic>;
+          print('  👤 ${data['nom']} ${data['prenom']} (Nom complet: ${data['name']})');
+          print('     - id doc: ${doc.id}');
+          print('     - userId: ${data['userId']}');
+          print('     - stationId: "${data['stationId']}" (${data['stationId']?.runtimeType})');
+          print('     - tenantId: "${data['tenantId']}"');
+          print('     - isActive: ${data['isActive']}');
+          print('     - role: ${data['role']}');
+          print('');
+        }
+      });
+      
+      // Afficher les résultats filtrés
+      for (var doc in snapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        print('  ✅ TROUVÉ PAR REQUÊTE: ${data['nom']} ${data['prenom']} (stationId: "${data['stationId']}")');
+      }
+      
+      return snapshot.docs.map((doc) => _employeeFromDoc(doc)).toList();
+    });
   }
 }

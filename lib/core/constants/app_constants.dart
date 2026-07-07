@@ -25,6 +25,9 @@ class AppConstants {
   static const String auditLogsCollection = 'audit_logs';
   static const String notificationsCollection = 'notifications';
   static const String commissionRulesCollection = 'commission_rules';
+  static const String vehicleCategoriesCollection = 'vehicleCategories';
+  static const String serviceDefinitionsCollection = 'serviceDefinitions';
+  static const String offersCollection = 'offers';
 
   // Pagination
   static const int defaultPageSize = 20;

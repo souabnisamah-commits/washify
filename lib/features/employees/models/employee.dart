@@ -34,8 +34,9 @@ class Employee with _$Employee {
     required ContractType contrat,
     required double valeurJournaliere, // for journalier contract
     required double salaireMensuel,    // for mensuel contract
+    @Default(0.0) double extraHourRate, // Extra hour rate
     required double commissionRate,    // commission percentage
-    @Default(UserRole.ouvrier) UserRole role,
+    @Default([UserRole.ouvrier]) List<UserRole> roles,
     @Default(true) bool isActive,
     required DateTime dateEmbauche,
     required DateTime createdAt,

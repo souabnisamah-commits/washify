@@ -47,6 +47,8 @@ class WalletRepository {
       type = WalletTransactionType.bonus;
     } else if (typeStr == 'commission') {
       type = WalletTransactionType.gainTicket;
+    } else if (typeStr == 'salaire') {
+      type = WalletTransactionType.salaireJour;
     } else if (typeStr == 'withdrawal' || typeStr == 'payroll') {
       type = WalletTransactionType.retrait;
     } else {
@@ -59,7 +61,7 @@ class WalletRepository {
       'walletId': data['walletId'] ?? '',
       'userId': data['userId'] ?? '',
       'tenantId': data['tenantId'] ?? data['stationId'] ?? '',
-      'type': type.value,
+      'type': type.name,
       'amount': (data['amount'] as num?)?.toDouble() ?? 0.0,
       'balanceBefore': (data['balanceBefore'] as num?)?.toDouble() ?? 0.0,
       'balanceAfter': (data['balanceAfter'] as num?)?.toDouble() ?? 0.0,
@@ -80,6 +82,9 @@ class WalletRepository {
         break;
       case WalletTransactionType.gainTicket:
         typeStr = 'commission';
+        break;
+      case WalletTransactionType.salaireJour:
+        typeStr = 'salaire';
         break;
       case WalletTransactionType.retrait:
         typeStr = 'withdrawal';
@@ -133,31 +138,49 @@ class WalletRepository {
         .limit(1)
         .get();
 
+    DocumentSnapshot walletDoc;
+    Wallet wallet;
+
     if (walletQuery.docs.isNotEmpty) {
-      final walletDoc = walletQuery.docs.first;
-      final wallet = _walletFromDoc(walletDoc);
-
-      final isCredit = transaction.type == WalletTransactionType.bonus ||
-          transaction.type == WalletTransactionType.gainTicket;
-
-      final newBalance = isCredit
-          ? wallet.balance + transaction.amount
-          : wallet.balance - transaction.amount;
-
-      final updates = <String, dynamic>{
-        'balance': newBalance,
-        'walletBalanceCache': newBalance,
-        'updatedAt': Timestamp.now(),
-      };
-
-      if (isCredit) {
-        updates['totalEarned'] = wallet.totalEarned + transaction.amount;
-      } else {
-        updates['totalWithdrawn'] = wallet.totalWithdrawn + transaction.amount;
-      }
-
-      batch.update(walletDoc.reference, updates);
+      walletDoc = walletQuery.docs.first;
+      wallet = _walletFromDoc(walletDoc);
+    } else {
+      wallet = Wallet(
+        id: '',
+        userId: transaction.userId,
+        userName: 'Employé',
+        tenantId: transaction.tenantId,
+        walletBalanceCache: 0,
+        totalEarned: 0,
+        totalWithdrawn: 0,
+        updatedAt: DateTime.now(),
+      );
+      final newDocRef = await _walletsRef.add(_walletToDoc(wallet));
+      walletDoc = await newDocRef.get();
+      wallet = wallet.copyWith(id: newDocRef.id);
     }
+
+    final isCredit = transaction.type == WalletTransactionType.bonus ||
+        transaction.type == WalletTransactionType.gainTicket ||
+        transaction.type == WalletTransactionType.salaireJour;
+
+    final newBalance = isCredit
+        ? wallet.balance + transaction.amount
+        : wallet.balance - transaction.amount;
+
+    final updates = <String, dynamic>{
+      'balance': newBalance,
+      'walletBalanceCache': newBalance,
+      'updatedAt': Timestamp.now(),
+    };
+
+    if (isCredit) {
+      updates['totalEarned'] = wallet.totalEarned + transaction.amount;
+    } else {
+      updates['totalWithdrawn'] = wallet.totalWithdrawn + transaction.amount;
+    }
+
+    batch.update(walletDoc.reference, updates);
 
     await batch.commit();
   }

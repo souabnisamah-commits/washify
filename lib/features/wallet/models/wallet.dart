@@ -5,6 +5,7 @@ part 'wallet.g.dart';
 
 enum WalletTransactionType {
   gainTicket('gain_ticket'),
+  salaireJour('salaire_jour'),
   bonus('bonus'),
   retrait('retrait'),
   ajustement('ajustement');

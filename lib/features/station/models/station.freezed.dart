@@ -32,6 +32,8 @@ mixin _$Station {
   double get longitude => throw _privateConstructorUsedError;
   String get logoUrl => throw _privateConstructorUsedError;
   LicenceStatus get licence => throw _privateConstructorUsedError;
+  DateTime? get subscriptionDate => throw _privateConstructorUsedError;
+  DateTime? get expiryDate => throw _privateConstructorUsedError;
   String get address => throw _privateConstructorUsedError;
   String get city => throw _privateConstructorUsedError;
   bool get isActive => throw _privateConstructorUsedError;
@@ -64,6 +66,8 @@ abstract class $StationCopyWith<$Res> {
     double longitude,
     String logoUrl,
     LicenceStatus licence,
+    DateTime? subscriptionDate,
+    DateTime? expiryDate,
     String address,
     String city,
     bool isActive,
@@ -98,6 +102,8 @@ class _$StationCopyWithImpl<$Res, $Val extends Station>
     Object? longitude = null,
     Object? logoUrl = null,
     Object? licence = null,
+    Object? subscriptionDate = freezed,
+    Object? expiryDate = freezed,
     Object? address = null,
     Object? city = null,
     Object? isActive = null,
@@ -150,6 +156,14 @@ class _$StationCopyWithImpl<$Res, $Val extends Station>
                 ? _value.licence
                 : licence // ignore: cast_nullable_to_non_nullable
                       as LicenceStatus,
+            subscriptionDate: freezed == subscriptionDate
+                ? _value.subscriptionDate
+                : subscriptionDate // ignore: cast_nullable_to_non_nullable
+                      as DateTime?,
+            expiryDate: freezed == expiryDate
+                ? _value.expiryDate
+                : expiryDate // ignore: cast_nullable_to_non_nullable
+                      as DateTime?,
             address: null == address
                 ? _value.address
                 : address // ignore: cast_nullable_to_non_nullable
@@ -196,6 +210,8 @@ abstract class _$$StationImplCopyWith<$Res> implements $StationCopyWith<$Res> {
     double longitude,
     String logoUrl,
     LicenceStatus licence,
+    DateTime? subscriptionDate,
+    DateTime? expiryDate,
     String address,
     String city,
     bool isActive,
@@ -229,6 +245,8 @@ class __$$StationImplCopyWithImpl<$Res>
     Object? longitude = null,
     Object? logoUrl = null,
     Object? licence = null,
+    Object? subscriptionDate = freezed,
+    Object? expiryDate = freezed,
     Object? address = null,
     Object? city = null,
     Object? isActive = null,
@@ -281,6 +299,14 @@ class __$$StationImplCopyWithImpl<$Res>
             ? _value.licence
             : licence // ignore: cast_nullable_to_non_nullable
                   as LicenceStatus,
+        subscriptionDate: freezed == subscriptionDate
+            ? _value.subscriptionDate
+            : subscriptionDate // ignore: cast_nullable_to_non_nullable
+                  as DateTime?,
+        expiryDate: freezed == expiryDate
+            ? _value.expiryDate
+            : expiryDate // ignore: cast_nullable_to_non_nullable
+                  as DateTime?,
         address: null == address
             ? _value.address
             : address // ignore: cast_nullable_to_non_nullable
@@ -321,6 +347,8 @@ class _$StationImpl extends _Station {
     required this.longitude,
     required this.logoUrl,
     required this.licence,
+    this.subscriptionDate,
+    this.expiryDate,
     this.address = '',
     this.city = '',
     this.isActive = true,
@@ -354,6 +382,10 @@ class _$StationImpl extends _Station {
   @override
   final LicenceStatus licence;
   @override
+  final DateTime? subscriptionDate;
+  @override
+  final DateTime? expiryDate;
+  @override
   @JsonKey()
   final String address;
   @override
@@ -369,7 +401,7 @@ class _$StationImpl extends _Station {
 
   @override
   String toString() {
-    return 'Station(id: $id, tenantId: $tenantId, name: $name, gerantName: $gerantName, phone: $phone, email: $email, matriculeFiscale: $matriculeFiscale, latitude: $latitude, longitude: $longitude, logoUrl: $logoUrl, licence: $licence, address: $address, city: $city, isActive: $isActive, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'Station(id: $id, tenantId: $tenantId, name: $name, gerantName: $gerantName, phone: $phone, email: $email, matriculeFiscale: $matriculeFiscale, latitude: $latitude, longitude: $longitude, logoUrl: $logoUrl, licence: $licence, subscriptionDate: $subscriptionDate, expiryDate: $expiryDate, address: $address, city: $city, isActive: $isActive, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -393,6 +425,10 @@ class _$StationImpl extends _Station {
                 other.longitude == longitude) &&
             (identical(other.logoUrl, logoUrl) || other.logoUrl == logoUrl) &&
             (identical(other.licence, licence) || other.licence == licence) &&
+            (identical(other.subscriptionDate, subscriptionDate) ||
+                other.subscriptionDate == subscriptionDate) &&
+            (identical(other.expiryDate, expiryDate) ||
+                other.expiryDate == expiryDate) &&
             (identical(other.address, address) || other.address == address) &&
             (identical(other.city, city) || other.city == city) &&
             (identical(other.isActive, isActive) ||
@@ -418,6 +454,8 @@ class _$StationImpl extends _Station {
     longitude,
     logoUrl,
     licence,
+    subscriptionDate,
+    expiryDate,
     address,
     city,
     isActive,
@@ -452,6 +490,8 @@ abstract class _Station extends Station {
     required final double longitude,
     required final String logoUrl,
     required final LicenceStatus licence,
+    final DateTime? subscriptionDate,
+    final DateTime? expiryDate,
     final String address,
     final String city,
     final bool isActive,
@@ -484,6 +524,10 @@ abstract class _Station extends Station {
   String get logoUrl;
   @override
   LicenceStatus get licence;
+  @override
+  DateTime? get subscriptionDate;
+  @override
+  DateTime? get expiryDate;
   @override
   String get address;
   @override

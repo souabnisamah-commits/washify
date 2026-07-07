@@ -244,6 +244,203 @@ abstract class _TicketProduct extends TicketProduct {
       throw _privateConstructorUsedError;
 }
 
+TicketService _$TicketServiceFromJson(Map<String, dynamic> json) {
+  return _TicketService.fromJson(json);
+}
+
+/// @nodoc
+mixin _$TicketService {
+  String get serviceId => throw _privateConstructorUsedError;
+  String get serviceName => throw _privateConstructorUsedError;
+  double get price => throw _privateConstructorUsedError;
+
+  /// Serializes this TicketService to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of TicketService
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $TicketServiceCopyWith<TicketService> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $TicketServiceCopyWith<$Res> {
+  factory $TicketServiceCopyWith(
+    TicketService value,
+    $Res Function(TicketService) then,
+  ) = _$TicketServiceCopyWithImpl<$Res, TicketService>;
+  @useResult
+  $Res call({String serviceId, String serviceName, double price});
+}
+
+/// @nodoc
+class _$TicketServiceCopyWithImpl<$Res, $Val extends TicketService>
+    implements $TicketServiceCopyWith<$Res> {
+  _$TicketServiceCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of TicketService
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? serviceId = null,
+    Object? serviceName = null,
+    Object? price = null,
+  }) {
+    return _then(
+      _value.copyWith(
+            serviceId: null == serviceId
+                ? _value.serviceId
+                : serviceId // ignore: cast_nullable_to_non_nullable
+                      as String,
+            serviceName: null == serviceName
+                ? _value.serviceName
+                : serviceName // ignore: cast_nullable_to_non_nullable
+                      as String,
+            price: null == price
+                ? _value.price
+                : price // ignore: cast_nullable_to_non_nullable
+                      as double,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$TicketServiceImplCopyWith<$Res>
+    implements $TicketServiceCopyWith<$Res> {
+  factory _$$TicketServiceImplCopyWith(
+    _$TicketServiceImpl value,
+    $Res Function(_$TicketServiceImpl) then,
+  ) = __$$TicketServiceImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({String serviceId, String serviceName, double price});
+}
+
+/// @nodoc
+class __$$TicketServiceImplCopyWithImpl<$Res>
+    extends _$TicketServiceCopyWithImpl<$Res, _$TicketServiceImpl>
+    implements _$$TicketServiceImplCopyWith<$Res> {
+  __$$TicketServiceImplCopyWithImpl(
+    _$TicketServiceImpl _value,
+    $Res Function(_$TicketServiceImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of TicketService
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? serviceId = null,
+    Object? serviceName = null,
+    Object? price = null,
+  }) {
+    return _then(
+      _$TicketServiceImpl(
+        serviceId: null == serviceId
+            ? _value.serviceId
+            : serviceId // ignore: cast_nullable_to_non_nullable
+                  as String,
+        serviceName: null == serviceName
+            ? _value.serviceName
+            : serviceName // ignore: cast_nullable_to_non_nullable
+                  as String,
+        price: null == price
+            ? _value.price
+            : price // ignore: cast_nullable_to_non_nullable
+                  as double,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$TicketServiceImpl implements _TicketService {
+  const _$TicketServiceImpl({
+    required this.serviceId,
+    required this.serviceName,
+    required this.price,
+  });
+
+  factory _$TicketServiceImpl.fromJson(Map<String, dynamic> json) =>
+      _$$TicketServiceImplFromJson(json);
+
+  @override
+  final String serviceId;
+  @override
+  final String serviceName;
+  @override
+  final double price;
+
+  @override
+  String toString() {
+    return 'TicketService(serviceId: $serviceId, serviceName: $serviceName, price: $price)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$TicketServiceImpl &&
+            (identical(other.serviceId, serviceId) ||
+                other.serviceId == serviceId) &&
+            (identical(other.serviceName, serviceName) ||
+                other.serviceName == serviceName) &&
+            (identical(other.price, price) || other.price == price));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, serviceId, serviceName, price);
+
+  /// Create a copy of TicketService
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$TicketServiceImplCopyWith<_$TicketServiceImpl> get copyWith =>
+      __$$TicketServiceImplCopyWithImpl<_$TicketServiceImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$TicketServiceImplToJson(this);
+  }
+}
+
+abstract class _TicketService implements TicketService {
+  const factory _TicketService({
+    required final String serviceId,
+    required final String serviceName,
+    required final double price,
+  }) = _$TicketServiceImpl;
+
+  factory _TicketService.fromJson(Map<String, dynamic> json) =
+      _$TicketServiceImpl.fromJson;
+
+  @override
+  String get serviceId;
+  @override
+  String get serviceName;
+  @override
+  double get price;
+
+  /// Create a copy of TicketService
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$TicketServiceImplCopyWith<_$TicketServiceImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
 Ticket _$TicketFromJson(Map<String, dynamic> json) {
   return _Ticket.fromJson(json);
 }
@@ -269,9 +466,24 @@ mixin _$Ticket {
   List<String> get photosApres =>
       throw _privateConstructorUsedError; // Photos after wash
   String? get vehiclePlate => throw _privateConstructorUsedError;
-  String? get vehicleType => throw _privateConstructorUsedError;
+  String? get vehicleCategoryId =>
+      throw _privateConstructorUsedError; // Added to map to Category ID for doses
+  String? get vehicleType =>
+      throw _privateConstructorUsedError; // Category Name
+  String? get vehicleBrand => throw _privateConstructorUsedError;
+  String? get vehicleModel => throw _privateConstructorUsedError;
+  String? get clientId =>
+      throw _privateConstructorUsedError; // B2B client account ID
+  String? get clientName => throw _privateConstructorUsedError;
+  String? get clientPhone => throw _privateConstructorUsedError;
+  String? get paymentMethod =>
+      throw _privateConstructorUsedError; // Espèces, TPE, Compte Client
+  String? get assignedWorkerId => throw _privateConstructorUsedError;
+  String? get assignedWorkerName => throw _privateConstructorUsedError;
   String? get serviceId => throw _privateConstructorUsedError;
   String? get serviceName => throw _privateConstructorUsedError;
+  List<TicketService> get servicesSelected =>
+      throw _privateConstructorUsedError;
   List<TicketProduct> get productsUsed => throw _privateConstructorUsedError;
   DateTime get createdAt => throw _privateConstructorUsedError;
   DateTime get updatedAt => throw _privateConstructorUsedError;
@@ -303,9 +515,19 @@ abstract class $TicketCopyWith<$Res> {
     List<String> photosAvant,
     List<String> photosApres,
     String? vehiclePlate,
+    String? vehicleCategoryId,
     String? vehicleType,
+    String? vehicleBrand,
+    String? vehicleModel,
+    String? clientId,
+    String? clientName,
+    String? clientPhone,
+    String? paymentMethod,
+    String? assignedWorkerId,
+    String? assignedWorkerName,
     String? serviceId,
     String? serviceName,
+    List<TicketService> servicesSelected,
     List<TicketProduct> productsUsed,
     DateTime createdAt,
     DateTime updatedAt,
@@ -339,9 +561,19 @@ class _$TicketCopyWithImpl<$Res, $Val extends Ticket>
     Object? photosAvant = null,
     Object? photosApres = null,
     Object? vehiclePlate = freezed,
+    Object? vehicleCategoryId = freezed,
     Object? vehicleType = freezed,
+    Object? vehicleBrand = freezed,
+    Object? vehicleModel = freezed,
+    Object? clientId = freezed,
+    Object? clientName = freezed,
+    Object? clientPhone = freezed,
+    Object? paymentMethod = freezed,
+    Object? assignedWorkerId = freezed,
+    Object? assignedWorkerName = freezed,
     Object? serviceId = freezed,
     Object? serviceName = freezed,
+    Object? servicesSelected = null,
     Object? productsUsed = null,
     Object? createdAt = null,
     Object? updatedAt = null,
@@ -396,9 +628,45 @@ class _$TicketCopyWithImpl<$Res, $Val extends Ticket>
                 ? _value.vehiclePlate
                 : vehiclePlate // ignore: cast_nullable_to_non_nullable
                       as String?,
+            vehicleCategoryId: freezed == vehicleCategoryId
+                ? _value.vehicleCategoryId
+                : vehicleCategoryId // ignore: cast_nullable_to_non_nullable
+                      as String?,
             vehicleType: freezed == vehicleType
                 ? _value.vehicleType
                 : vehicleType // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            vehicleBrand: freezed == vehicleBrand
+                ? _value.vehicleBrand
+                : vehicleBrand // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            vehicleModel: freezed == vehicleModel
+                ? _value.vehicleModel
+                : vehicleModel // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            clientId: freezed == clientId
+                ? _value.clientId
+                : clientId // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            clientName: freezed == clientName
+                ? _value.clientName
+                : clientName // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            clientPhone: freezed == clientPhone
+                ? _value.clientPhone
+                : clientPhone // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            paymentMethod: freezed == paymentMethod
+                ? _value.paymentMethod
+                : paymentMethod // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            assignedWorkerId: freezed == assignedWorkerId
+                ? _value.assignedWorkerId
+                : assignedWorkerId // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            assignedWorkerName: freezed == assignedWorkerName
+                ? _value.assignedWorkerName
+                : assignedWorkerName // ignore: cast_nullable_to_non_nullable
                       as String?,
             serviceId: freezed == serviceId
                 ? _value.serviceId
@@ -408,6 +676,10 @@ class _$TicketCopyWithImpl<$Res, $Val extends Ticket>
                 ? _value.serviceName
                 : serviceName // ignore: cast_nullable_to_non_nullable
                       as String?,
+            servicesSelected: null == servicesSelected
+                ? _value.servicesSelected
+                : servicesSelected // ignore: cast_nullable_to_non_nullable
+                      as List<TicketService>,
             productsUsed: null == productsUsed
                 ? _value.productsUsed
                 : productsUsed // ignore: cast_nullable_to_non_nullable
@@ -447,9 +719,19 @@ abstract class _$$TicketImplCopyWith<$Res> implements $TicketCopyWith<$Res> {
     List<String> photosAvant,
     List<String> photosApres,
     String? vehiclePlate,
+    String? vehicleCategoryId,
     String? vehicleType,
+    String? vehicleBrand,
+    String? vehicleModel,
+    String? clientId,
+    String? clientName,
+    String? clientPhone,
+    String? paymentMethod,
+    String? assignedWorkerId,
+    String? assignedWorkerName,
     String? serviceId,
     String? serviceName,
+    List<TicketService> servicesSelected,
     List<TicketProduct> productsUsed,
     DateTime createdAt,
     DateTime updatedAt,
@@ -482,9 +764,19 @@ class __$$TicketImplCopyWithImpl<$Res>
     Object? photosAvant = null,
     Object? photosApres = null,
     Object? vehiclePlate = freezed,
+    Object? vehicleCategoryId = freezed,
     Object? vehicleType = freezed,
+    Object? vehicleBrand = freezed,
+    Object? vehicleModel = freezed,
+    Object? clientId = freezed,
+    Object? clientName = freezed,
+    Object? clientPhone = freezed,
+    Object? paymentMethod = freezed,
+    Object? assignedWorkerId = freezed,
+    Object? assignedWorkerName = freezed,
     Object? serviceId = freezed,
     Object? serviceName = freezed,
+    Object? servicesSelected = null,
     Object? productsUsed = null,
     Object? createdAt = null,
     Object? updatedAt = null,
@@ -539,9 +831,45 @@ class __$$TicketImplCopyWithImpl<$Res>
             ? _value.vehiclePlate
             : vehiclePlate // ignore: cast_nullable_to_non_nullable
                   as String?,
+        vehicleCategoryId: freezed == vehicleCategoryId
+            ? _value.vehicleCategoryId
+            : vehicleCategoryId // ignore: cast_nullable_to_non_nullable
+                  as String?,
         vehicleType: freezed == vehicleType
             ? _value.vehicleType
             : vehicleType // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        vehicleBrand: freezed == vehicleBrand
+            ? _value.vehicleBrand
+            : vehicleBrand // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        vehicleModel: freezed == vehicleModel
+            ? _value.vehicleModel
+            : vehicleModel // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        clientId: freezed == clientId
+            ? _value.clientId
+            : clientId // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        clientName: freezed == clientName
+            ? _value.clientName
+            : clientName // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        clientPhone: freezed == clientPhone
+            ? _value.clientPhone
+            : clientPhone // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        paymentMethod: freezed == paymentMethod
+            ? _value.paymentMethod
+            : paymentMethod // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        assignedWorkerId: freezed == assignedWorkerId
+            ? _value.assignedWorkerId
+            : assignedWorkerId // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        assignedWorkerName: freezed == assignedWorkerName
+            ? _value.assignedWorkerName
+            : assignedWorkerName // ignore: cast_nullable_to_non_nullable
                   as String?,
         serviceId: freezed == serviceId
             ? _value.serviceId
@@ -551,6 +879,10 @@ class __$$TicketImplCopyWithImpl<$Res>
             ? _value.serviceName
             : serviceName // ignore: cast_nullable_to_non_nullable
                   as String?,
+        servicesSelected: null == servicesSelected
+            ? _value._servicesSelected
+            : servicesSelected // ignore: cast_nullable_to_non_nullable
+                  as List<TicketService>,
         productsUsed: null == productsUsed
             ? _value._productsUsed
             : productsUsed // ignore: cast_nullable_to_non_nullable
@@ -584,15 +916,26 @@ class _$TicketImpl extends _Ticket {
     final List<String> photosAvant = const [],
     final List<String> photosApres = const [],
     this.vehiclePlate,
+    this.vehicleCategoryId,
     this.vehicleType,
+    this.vehicleBrand,
+    this.vehicleModel,
+    this.clientId,
+    this.clientName,
+    this.clientPhone,
+    this.paymentMethod,
+    this.assignedWorkerId,
+    this.assignedWorkerName,
     this.serviceId,
     this.serviceName,
+    final List<TicketService> servicesSelected = const [],
     final List<TicketProduct> productsUsed = const [],
     required this.createdAt,
     required this.updatedAt,
   }) : _snapshotPrice = snapshotPrice,
        _photosAvant = photosAvant,
        _photosApres = photosApres,
+       _servicesSelected = servicesSelected,
        _productsUsed = productsUsed,
        super._();
 
@@ -658,11 +1001,43 @@ class _$TicketImpl extends _Ticket {
   @override
   final String? vehiclePlate;
   @override
+  final String? vehicleCategoryId;
+  // Added to map to Category ID for doses
+  @override
   final String? vehicleType;
+  // Category Name
+  @override
+  final String? vehicleBrand;
+  @override
+  final String? vehicleModel;
+  @override
+  final String? clientId;
+  // B2B client account ID
+  @override
+  final String? clientName;
+  @override
+  final String? clientPhone;
+  @override
+  final String? paymentMethod;
+  // Espèces, TPE, Compte Client
+  @override
+  final String? assignedWorkerId;
+  @override
+  final String? assignedWorkerName;
   @override
   final String? serviceId;
   @override
   final String? serviceName;
+  final List<TicketService> _servicesSelected;
+  @override
+  @JsonKey()
+  List<TicketService> get servicesSelected {
+    if (_servicesSelected is EqualUnmodifiableListView)
+      return _servicesSelected;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_servicesSelected);
+  }
+
   final List<TicketProduct> _productsUsed;
   @override
   @JsonKey()
@@ -679,7 +1054,7 @@ class _$TicketImpl extends _Ticket {
 
   @override
   String toString() {
-    return 'Ticket(id: $id, tenantId: $tenantId, ticketNumber: $ticketNumber, createdBy: $createdBy, paidBy: $paidBy, approvedBy: $approvedBy, status: $status, montant: $montant, snapshotPrice: $snapshotPrice, photosAvant: $photosAvant, photosApres: $photosApres, vehiclePlate: $vehiclePlate, vehicleType: $vehicleType, serviceId: $serviceId, serviceName: $serviceName, productsUsed: $productsUsed, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'Ticket(id: $id, tenantId: $tenantId, ticketNumber: $ticketNumber, createdBy: $createdBy, paidBy: $paidBy, approvedBy: $approvedBy, status: $status, montant: $montant, snapshotPrice: $snapshotPrice, photosAvant: $photosAvant, photosApres: $photosApres, vehiclePlate: $vehiclePlate, vehicleCategoryId: $vehicleCategoryId, vehicleType: $vehicleType, vehicleBrand: $vehicleBrand, vehicleModel: $vehicleModel, clientId: $clientId, clientName: $clientName, clientPhone: $clientPhone, paymentMethod: $paymentMethod, assignedWorkerId: $assignedWorkerId, assignedWorkerName: $assignedWorkerName, serviceId: $serviceId, serviceName: $serviceName, servicesSelected: $servicesSelected, productsUsed: $productsUsed, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -713,12 +1088,34 @@ class _$TicketImpl extends _Ticket {
             ) &&
             (identical(other.vehiclePlate, vehiclePlate) ||
                 other.vehiclePlate == vehiclePlate) &&
+            (identical(other.vehicleCategoryId, vehicleCategoryId) ||
+                other.vehicleCategoryId == vehicleCategoryId) &&
             (identical(other.vehicleType, vehicleType) ||
                 other.vehicleType == vehicleType) &&
+            (identical(other.vehicleBrand, vehicleBrand) ||
+                other.vehicleBrand == vehicleBrand) &&
+            (identical(other.vehicleModel, vehicleModel) ||
+                other.vehicleModel == vehicleModel) &&
+            (identical(other.clientId, clientId) ||
+                other.clientId == clientId) &&
+            (identical(other.clientName, clientName) ||
+                other.clientName == clientName) &&
+            (identical(other.clientPhone, clientPhone) ||
+                other.clientPhone == clientPhone) &&
+            (identical(other.paymentMethod, paymentMethod) ||
+                other.paymentMethod == paymentMethod) &&
+            (identical(other.assignedWorkerId, assignedWorkerId) ||
+                other.assignedWorkerId == assignedWorkerId) &&
+            (identical(other.assignedWorkerName, assignedWorkerName) ||
+                other.assignedWorkerName == assignedWorkerName) &&
             (identical(other.serviceId, serviceId) ||
                 other.serviceId == serviceId) &&
             (identical(other.serviceName, serviceName) ||
                 other.serviceName == serviceName) &&
+            const DeepCollectionEquality().equals(
+              other._servicesSelected,
+              _servicesSelected,
+            ) &&
             const DeepCollectionEquality().equals(
               other._productsUsed,
               _productsUsed,
@@ -731,7 +1128,7 @@ class _$TicketImpl extends _Ticket {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     runtimeType,
     id,
     tenantId,
@@ -745,13 +1142,23 @@ class _$TicketImpl extends _Ticket {
     const DeepCollectionEquality().hash(_photosAvant),
     const DeepCollectionEquality().hash(_photosApres),
     vehiclePlate,
+    vehicleCategoryId,
     vehicleType,
+    vehicleBrand,
+    vehicleModel,
+    clientId,
+    clientName,
+    clientPhone,
+    paymentMethod,
+    assignedWorkerId,
+    assignedWorkerName,
     serviceId,
     serviceName,
+    const DeepCollectionEquality().hash(_servicesSelected),
     const DeepCollectionEquality().hash(_productsUsed),
     createdAt,
     updatedAt,
-  );
+  ]);
 
   /// Create a copy of Ticket
   /// with the given fields replaced by the non-null parameter values.
@@ -781,9 +1188,19 @@ abstract class _Ticket extends Ticket {
     final List<String> photosAvant,
     final List<String> photosApres,
     final String? vehiclePlate,
+    final String? vehicleCategoryId,
     final String? vehicleType,
+    final String? vehicleBrand,
+    final String? vehicleModel,
+    final String? clientId,
+    final String? clientName,
+    final String? clientPhone,
+    final String? paymentMethod,
+    final String? assignedWorkerId,
+    final String? assignedWorkerName,
     final String? serviceId,
     final String? serviceName,
+    final List<TicketService> servicesSelected,
     final List<TicketProduct> productsUsed,
     required final DateTime createdAt,
     required final DateTime updatedAt,
@@ -817,11 +1234,31 @@ abstract class _Ticket extends Ticket {
   @override
   String? get vehiclePlate;
   @override
-  String? get vehicleType;
+  String? get vehicleCategoryId; // Added to map to Category ID for doses
+  @override
+  String? get vehicleType; // Category Name
+  @override
+  String? get vehicleBrand;
+  @override
+  String? get vehicleModel;
+  @override
+  String? get clientId; // B2B client account ID
+  @override
+  String? get clientName;
+  @override
+  String? get clientPhone;
+  @override
+  String? get paymentMethod; // Espèces, TPE, Compte Client
+  @override
+  String? get assignedWorkerId;
+  @override
+  String? get assignedWorkerName;
   @override
   String? get serviceId;
   @override
   String? get serviceName;
+  @override
+  List<TicketService> get servicesSelected;
   @override
   List<TicketProduct> get productsUsed;
   @override

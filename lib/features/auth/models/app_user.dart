@@ -15,6 +15,8 @@ class AppUser with _$AppUser {
     required String pinHash,  // PIN stored hashed
     required String name,
     required List<UserRole> roles, // Multi-roles support
+    @Default(0.0) double baseDailyWage,
+    @Default(0.0) double extraHourRate,
     @Default(true) bool isActive,
     required DateTime createdAt,
     required DateTime updatedAt,

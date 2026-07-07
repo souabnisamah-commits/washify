@@ -13,14 +13,21 @@ _$ProductImpl _$$ProductImplFromJson(Map<String, dynamic> json) =>
       name: json['name'] as String,
       description: json['description'] as String,
       family:
-          $enumDecodeNullable(_$ProductFamilyEnumMap, json['family']) ??
-          ProductFamily.produit,
+          $enumDecodeNullable(
+            _$ProductFamilyEnumMap,
+            json['family'],
+            unknownValue: ProductFamily.standard,
+          ) ??
+          ProductFamily.standard,
       unit: json['unit'] as String,
       unitPrice: (json['unitPrice'] as num).toDouble(),
       minStock: (json['minStock'] as num).toInt(),
       isActive: json['isActive'] as bool? ?? true,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
+      purchasePrice: (json['purchasePrice'] as num?)?.toDouble() ?? 0.0,
+      capacityMl: (json['capacityMl'] as num?)?.toDouble() ?? 0.0,
+      barcode: json['barcode'] as String? ?? '',
     );
 
 Map<String, dynamic> _$$ProductImplToJson(_$ProductImpl instance) =>
@@ -36,10 +43,13 @@ Map<String, dynamic> _$$ProductImplToJson(_$ProductImpl instance) =>
       'isActive': instance.isActive,
       'createdAt': instance.createdAt.toIso8601String(),
       'updatedAt': instance.updatedAt.toIso8601String(),
+      'purchasePrice': instance.purchasePrice,
+      'capacityMl': instance.capacityMl,
+      'barcode': instance.barcode,
     };
 
 const _$ProductFamilyEnumMap = {
-  ProductFamily.vrac: 'vrac',
-  ProductFamily.produit: 'produit',
+  ProductFamily.standard: 'standard',
+  ProductFamily.extra: 'extra',
   ProductFamily.revente: 'revente',
 };

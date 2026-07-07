@@ -21,6 +21,12 @@ class StationRepository {
     if (data['updatedAt'] is Timestamp) {
       data['updatedAt'] = (data['updatedAt'] as Timestamp).toDate().toIso8601String();
     }
+    if (data['subscriptionDate'] is Timestamp) {
+      data['subscriptionDate'] = (data['subscriptionDate'] as Timestamp).toDate().toIso8601String();
+    }
+    if (data['expiryDate'] is Timestamp) {
+      data['expiryDate'] = (data['expiryDate'] as Timestamp).toDate().toIso8601String();
+    }
 
     // Fallbacks for legacy DB records
     if (data['tenantId'] == null && data['patronId'] != null) {
@@ -46,6 +52,12 @@ class StationRepository {
     map['patronId'] = station.tenantId;
     map['createdAt'] = Timestamp.fromDate(station.createdAt);
     map['updatedAt'] = Timestamp.fromDate(station.updatedAt);
+    if (station.subscriptionDate != null) {
+      map['subscriptionDate'] = Timestamp.fromDate(station.subscriptionDate!);
+    }
+    if (station.expiryDate != null) {
+      map['expiryDate'] = Timestamp.fromDate(station.expiryDate!);
+    }
     return map;
   }
 

@@ -35,6 +35,8 @@ class Station with _$Station {
     required double longitude,
     required String logoUrl,
     required LicenceStatus licence,
+    DateTime? subscriptionDate,
+    DateTime? expiryDate,
     @Default('') String address,
     @Default('') String city,
     @Default(true) bool isActive,

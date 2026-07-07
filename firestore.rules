@@ -63,6 +63,14 @@ service cloud.firestore {
       allow read, write: if isSignedIn();
     }
 
+    // HR rules
+    match /shifts/{shiftId} {
+      allow read, write: if isSignedIn();
+    }
+    match /attendances/{attendanceId} {
+      allow read, write: if isSignedIn();
+    }
+
     // Audit logs rules
     match /audit_logs/{logId} {
       allow read, write: if isSignedIn();
@@ -75,6 +83,29 @@ service cloud.firestore {
 
     // Commission rules
     match /commission_rules/{ruleId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // Vehicle categories rules
+    match /vehicleCategories/{categoryId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // Service definitions rules
+    match /serviceDefinitions/{definitionId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // Offers rules
+    match /offers/{offerId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // Clients rules
+    match /clients/{clientId} {
+      allow read, write: if isSignedIn();
+    }
+    match /client_payments/{paymentId} {
       allow read, write: if isSignedIn();
     }
   }

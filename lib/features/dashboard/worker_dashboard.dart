@@ -61,44 +61,49 @@ class _WorkerDashboardState extends ConsumerState<WorkerDashboard> {
             walletStream.when(
               data: (wallet) {
                 final balance = wallet?.balance ?? 0;
-                final earned = wallet?.totalEarned ?? 0;
-
-                return Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    gradient: AppTheme.primaryGradient,
-                    borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Portefeuille Commission',
-                            style: TextStyle(color: Colors.white70, fontSize: 14),
+                return InkWell(
+                  onTap: () => context.go('/worker/wallet'),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+                  child: Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: AppTheme.successGreen.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+                      border: Border.all(color: AppTheme.successGreen, width: 2),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppTheme.successGreen.withValues(alpha: 0.2),
+                            shape: BoxShape.circle,
                           ),
-                          const SizedBox(height: 6),
-                          Text(
-                            '${balance.toStringAsFixed(2)} DT',
-                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                          child: const Icon(Icons.account_balance_wallet, color: AppTheme.successGreen, size: 48),
+                        ),
+                        const SizedBox(width: 24),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Mon Argent',
+                                style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppTheme.successGreen),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                '${balance.toStringAsFixed(1)} DT',
+                                style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                                      color: AppTheme.successGreen,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Cumul gains: ${earned.toStringAsFixed(2)} DT',
-                            style: const TextStyle(color: Colors.white60, fontSize: 12),
-                          ),
-                        ],
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.arrow_circle_right, color: Colors.white, size: 36),
-                        onPressed: () => context.go('/worker/wallet'),
-                      ),
-                    ],
+                        ),
+                        const Icon(Icons.chevron_right, color: AppTheme.successGreen, size: 36),
+                      ],
+                    ),
                   ),
                 );
               },
@@ -132,6 +137,8 @@ class _WorkerDashboardState extends ConsumerState<WorkerDashboard> {
                   }
 
                   return ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
                     itemCount: tickets.length,
                     itemBuilder: (context, index) {
                       final ticket = tickets[index];
@@ -150,86 +157,59 @@ class _WorkerDashboardState extends ConsumerState<WorkerDashboard> {
   }
 
   Widget _buildWorkerTicketCard(BuildContext context, Ticket ticket) {
-    Color statusColor = AppTheme.textHint;
-    String statusText = 'En attente';
-
-    switch (ticket.status) {
-      case TicketStatus.enAttente:
-        statusColor = AppTheme.warningOrange;
-        statusText = 'En attente';
-        break;
-      case TicketStatus.paye:
-        statusColor = AppTheme.successGreen;
-        statusText = 'Payé';
-        break;
-      case TicketStatus.rembourse:
-        statusColor = AppTheme.errorRed;
-        statusText = 'Remboursé';
-        break;
-    }
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.primaryBlue.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        border: Border.all(color: AppTheme.primaryBlue.withValues(alpha: 0.4), width: 2),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryBlue.withValues(alpha: 0.2),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.local_car_wash, size: 48, color: AppTheme.primaryBlue),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  ticket.vehiclePlate ?? '',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+                  ticket.vehiclePlate ?? 'Voiture',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    statusText,
-                    style: TextStyle(color: statusColor, fontSize: 12, fontWeight: FontWeight.bold),
-                  ),
+                const SizedBox(height: 8),
+                Text(
+                  ticket.serviceName.toString(),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(color: AppTheme.textSecondary),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Service: ${ticket.serviceName}',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            Text(
-              'Véhicule: ${ticket.vehicleType}',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            if (ticket.notes != null && ticket.notes!.isNotEmpty) ...[
-              const SizedBox(height: 6),
-              Text(
-                'Notes: ${ticket.notes}',
-                style: const TextStyle(fontStyle: FontStyle.italic, color: AppTheme.textHint),
+          ),
+          const SizedBox(width: 16),
+          if (ticket.status == TicketStatus.enAttente)
+            InkWell(
+              onTap: () => _updateStatus(ticket.id, 'completed'),
+              borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                decoration: BoxDecoration(
+                  color: AppTheme.successGreen,
+                  borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+                  boxShadow: [
+                    BoxShadow(color: AppTheme.successGreen.withValues(alpha: 0.4), blurRadius: 10, offset: const Offset(0, 4)),
+                  ],
+                ),
+                child: const Icon(Icons.check, color: Colors.white, size: 48),
               ),
-            ],
-            const Divider(height: 20),
-            // Action Buttons
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                if (ticket.status == TicketStatus.enAttente)
-                  ElevatedButton.icon(
-                    onPressed: () => _updateStatus(ticket.id, 'completed'),
-                    icon: const Icon(Icons.check),
-                    label: const Text('Terminer'),
-                    style: ElevatedButton.styleFrom(backgroundColor: AppTheme.successGreen),
-                  ),
-              ],
             ),
-          ],
-        ),
+        ],
       ),
     );
   }

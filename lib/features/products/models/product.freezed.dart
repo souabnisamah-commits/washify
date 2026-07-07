@@ -25,15 +25,21 @@ mixin _$Product {
   String get tenantId => throw _privateConstructorUsedError;
   String get name => throw _privateConstructorUsedError;
   String get description => throw _privateConstructorUsedError;
-  ProductFamily get family =>
-      throw _privateConstructorUsedError; // vrac, produit, revente
+  @JsonKey(unknownEnumValue: ProductFamily.standard)
+  ProductFamily get family => throw _privateConstructorUsedError; // standard, extra, revente
   String get unit =>
       throw _privateConstructorUsedError; // e.g. "Bidon", "Litre", "Unité"
   double get unitPrice => throw _privateConstructorUsedError;
   int get minStock => throw _privateConstructorUsedError;
   bool get isActive => throw _privateConstructorUsedError;
   DateTime get createdAt => throw _privateConstructorUsedError;
-  DateTime get updatedAt => throw _privateConstructorUsedError;
+  DateTime get updatedAt =>
+      throw _privateConstructorUsedError; // NEW: Business model fields
+  double get purchasePrice =>
+      throw _privateConstructorUsedError; // prix d'achat du produit global
+  double get capacityMl =>
+      throw _privateConstructorUsedError; // capacité totale en ml ou grammes (ex: 5000 pour 5L, ou 1 pour 1 pièce)
+  String get barcode => throw _privateConstructorUsedError;
 
   /// Serializes this Product to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -54,13 +60,16 @@ abstract class $ProductCopyWith<$Res> {
     String tenantId,
     String name,
     String description,
-    ProductFamily family,
+    @JsonKey(unknownEnumValue: ProductFamily.standard) ProductFamily family,
     String unit,
     double unitPrice,
     int minStock,
     bool isActive,
     DateTime createdAt,
     DateTime updatedAt,
+    double purchasePrice,
+    double capacityMl,
+    String barcode,
   });
 }
 
@@ -90,6 +99,9 @@ class _$ProductCopyWithImpl<$Res, $Val extends Product>
     Object? isActive = null,
     Object? createdAt = null,
     Object? updatedAt = null,
+    Object? purchasePrice = null,
+    Object? capacityMl = null,
+    Object? barcode = null,
   }) {
     return _then(
       _value.copyWith(
@@ -137,6 +149,18 @@ class _$ProductCopyWithImpl<$Res, $Val extends Product>
                 ? _value.updatedAt
                 : updatedAt // ignore: cast_nullable_to_non_nullable
                       as DateTime,
+            purchasePrice: null == purchasePrice
+                ? _value.purchasePrice
+                : purchasePrice // ignore: cast_nullable_to_non_nullable
+                      as double,
+            capacityMl: null == capacityMl
+                ? _value.capacityMl
+                : capacityMl // ignore: cast_nullable_to_non_nullable
+                      as double,
+            barcode: null == barcode
+                ? _value.barcode
+                : barcode // ignore: cast_nullable_to_non_nullable
+                      as String,
           )
           as $Val,
     );
@@ -156,13 +180,16 @@ abstract class _$$ProductImplCopyWith<$Res> implements $ProductCopyWith<$Res> {
     String tenantId,
     String name,
     String description,
-    ProductFamily family,
+    @JsonKey(unknownEnumValue: ProductFamily.standard) ProductFamily family,
     String unit,
     double unitPrice,
     int minStock,
     bool isActive,
     DateTime createdAt,
     DateTime updatedAt,
+    double purchasePrice,
+    double capacityMl,
+    String barcode,
   });
 }
 
@@ -191,6 +218,9 @@ class __$$ProductImplCopyWithImpl<$Res>
     Object? isActive = null,
     Object? createdAt = null,
     Object? updatedAt = null,
+    Object? purchasePrice = null,
+    Object? capacityMl = null,
+    Object? barcode = null,
   }) {
     return _then(
       _$ProductImpl(
@@ -238,6 +268,18 @@ class __$$ProductImplCopyWithImpl<$Res>
             ? _value.updatedAt
             : updatedAt // ignore: cast_nullable_to_non_nullable
                   as DateTime,
+        purchasePrice: null == purchasePrice
+            ? _value.purchasePrice
+            : purchasePrice // ignore: cast_nullable_to_non_nullable
+                  as double,
+        capacityMl: null == capacityMl
+            ? _value.capacityMl
+            : capacityMl // ignore: cast_nullable_to_non_nullable
+                  as double,
+        barcode: null == barcode
+            ? _value.barcode
+            : barcode // ignore: cast_nullable_to_non_nullable
+                  as String,
       ),
     );
   }
@@ -251,13 +293,17 @@ class _$ProductImpl extends _Product {
     required this.tenantId,
     required this.name,
     required this.description,
-    this.family = ProductFamily.produit,
+    @JsonKey(unknownEnumValue: ProductFamily.standard)
+    this.family = ProductFamily.standard,
     required this.unit,
     required this.unitPrice,
     required this.minStock,
     this.isActive = true,
     required this.createdAt,
     required this.updatedAt,
+    this.purchasePrice = 0.0,
+    this.capacityMl = 0.0,
+    this.barcode = '',
   }) : super._();
 
   factory _$ProductImpl.fromJson(Map<String, dynamic> json) =>
@@ -272,9 +318,9 @@ class _$ProductImpl extends _Product {
   @override
   final String description;
   @override
-  @JsonKey()
+  @JsonKey(unknownEnumValue: ProductFamily.standard)
   final ProductFamily family;
-  // vrac, produit, revente
+  // standard, extra, revente
   @override
   final String unit;
   // e.g. "Bidon", "Litre", "Unité"
@@ -289,10 +335,22 @@ class _$ProductImpl extends _Product {
   final DateTime createdAt;
   @override
   final DateTime updatedAt;
+  // NEW: Business model fields
+  @override
+  @JsonKey()
+  final double purchasePrice;
+  // prix d'achat du produit global
+  @override
+  @JsonKey()
+  final double capacityMl;
+  // capacité totale en ml ou grammes (ex: 5000 pour 5L, ou 1 pour 1 pièce)
+  @override
+  @JsonKey()
+  final String barcode;
 
   @override
   String toString() {
-    return 'Product(id: $id, tenantId: $tenantId, name: $name, description: $description, family: $family, unit: $unit, unitPrice: $unitPrice, minStock: $minStock, isActive: $isActive, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'Product(id: $id, tenantId: $tenantId, name: $name, description: $description, family: $family, unit: $unit, unitPrice: $unitPrice, minStock: $minStock, isActive: $isActive, createdAt: $createdAt, updatedAt: $updatedAt, purchasePrice: $purchasePrice, capacityMl: $capacityMl, barcode: $barcode)';
   }
 
   @override
@@ -317,7 +375,12 @@ class _$ProductImpl extends _Product {
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
             (identical(other.updatedAt, updatedAt) ||
-                other.updatedAt == updatedAt));
+                other.updatedAt == updatedAt) &&
+            (identical(other.purchasePrice, purchasePrice) ||
+                other.purchasePrice == purchasePrice) &&
+            (identical(other.capacityMl, capacityMl) ||
+                other.capacityMl == capacityMl) &&
+            (identical(other.barcode, barcode) || other.barcode == barcode));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -335,6 +398,9 @@ class _$ProductImpl extends _Product {
     isActive,
     createdAt,
     updatedAt,
+    purchasePrice,
+    capacityMl,
+    barcode,
   );
 
   /// Create a copy of Product
@@ -357,6 +423,7 @@ abstract class _Product extends Product {
     required final String tenantId,
     required final String name,
     required final String description,
+    @JsonKey(unknownEnumValue: ProductFamily.standard)
     final ProductFamily family,
     required final String unit,
     required final double unitPrice,
@@ -364,6 +431,9 @@ abstract class _Product extends Product {
     final bool isActive,
     required final DateTime createdAt,
     required final DateTime updatedAt,
+    final double purchasePrice,
+    final double capacityMl,
+    final String barcode,
   }) = _$ProductImpl;
   const _Product._() : super._();
 
@@ -378,7 +448,8 @@ abstract class _Product extends Product {
   @override
   String get description;
   @override
-  ProductFamily get family; // vrac, produit, revente
+  @JsonKey(unknownEnumValue: ProductFamily.standard)
+  ProductFamily get family; // standard, extra, revente
   @override
   String get unit; // e.g. "Bidon", "Litre", "Unité"
   @override
@@ -390,7 +461,13 @@ abstract class _Product extends Product {
   @override
   DateTime get createdAt;
   @override
-  DateTime get updatedAt;
+  DateTime get updatedAt; // NEW: Business model fields
+  @override
+  double get purchasePrice; // prix d'achat du produit global
+  @override
+  double get capacityMl; // capacité totale en ml ou grammes (ex: 5000 pour 5L, ou 1 pour 1 pièce)
+  @override
+  String get barcode;
 
   /// Create a copy of Product
   /// with the given fields replaced by the non-null parameter values.

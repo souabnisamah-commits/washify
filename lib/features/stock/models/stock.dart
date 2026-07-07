@@ -12,8 +12,8 @@ class StockLevel with _$StockLevel {
     required String tenantId,
     required String productId,
     required String productName,
-    required int currentQuantity, // Consommation en unités entières
-    required int minStock,
+    required double currentQuantity, // Support des millilitres/décimales
+    required double minStock,        // Seuil d'alerte en double
     required DateTime updatedAt,
   }) = _StockLevel;
 
@@ -33,9 +33,9 @@ class StockMovement with _$StockMovement {
     required String productId,
     required String productName,
     required String type, // in, out, adjustment
-    required int quantity,
-    required int previousQuantity,
-    required int newQuantity,
+    required double quantity,
+    required double previousQuantity,
+    required double newQuantity,
     required String reason,
     required String performedBy,
     required DateTime createdAt,

@@ -16,6 +16,8 @@ _$AppUserImpl _$$AppUserImplFromJson(Map<String, dynamic> json) =>
       roles: (json['roles'] as List<dynamic>)
           .map((e) => $enumDecode(_$UserRoleEnumMap, e))
           .toList(),
+      baseDailyWage: (json['baseDailyWage'] as num?)?.toDouble() ?? 0.0,
+      extraHourRate: (json['extraHourRate'] as num?)?.toDouble() ?? 0.0,
       isActive: json['isActive'] as bool? ?? true,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
@@ -29,6 +31,8 @@ Map<String, dynamic> _$$AppUserImplToJson(_$AppUserImpl instance) =>
       'pinHash': instance.pinHash,
       'name': instance.name,
       'roles': instance.roles.map((e) => _$UserRoleEnumMap[e]!).toList(),
+      'baseDailyWage': instance.baseDailyWage,
+      'extraHourRate': instance.extraHourRate,
       'isActive': instance.isActive,
       'createdAt': instance.createdAt.toIso8601String(),
       'updatedAt': instance.updatedAt.toIso8601String(),

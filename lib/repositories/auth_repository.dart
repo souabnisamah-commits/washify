@@ -69,6 +69,16 @@ class AuthRepository {
     for (final doc in querySnapshot.docs) {
       final user = _appUserFromDoc(doc);
       if (user.pinHash == hash) {
+        // Check if the user belongs to a station and if it is suspended
+        if (user.tenantId.isNotEmpty && user.tenantId != 'admin_station') {
+          final stationDoc = await _firestore.collection(AppConstants.stationsCollection).doc(user.tenantId).get();
+          if (stationDoc.exists) {
+            final stationData = stationDoc.data()!;
+            if (stationData['licence'] == 'suspended') {
+              throw Exception('station_suspended');
+            }
+          }
+        }
         return user;
       }
     }
@@ -130,8 +140,12 @@ class AuthRepository {
   }
 
   Future<void> deactivateUser(String userId) async {
+    final doc = await _usersRef.doc(userId).get();
+    if (!doc.exists) return;
+    final phone = (doc.data() as Map<String, dynamic>?)?['phone'] as String? ?? '';
     await _usersRef.doc(userId).update({
       'isActive': false,
+      'phone': 'deleted_${DateTime.now().millisecondsSinceEpoch}_$phone',
       'updatedAt': Timestamp.now(),
     });
   }
@@ -141,5 +155,13 @@ class AuthRepository {
       'pinHash': hashPin(newPin),
       'updatedAt': Timestamp.now(),
     });
+  }
+
+  Future<List<AppUser>> getUsersByStationId(String stationId) async {
+    final querySnapshot = await _usersRef
+        .where('tenantId', isEqualTo: stationId)
+        .where('isActive', isEqualTo: true)
+        .get();
+    return querySnapshot.docs.map((doc) => _appUserFromDoc(doc)).toList();
   }
 }

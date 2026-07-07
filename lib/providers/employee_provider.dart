@@ -28,3 +28,9 @@ final employeesStreamProvider =
   final repo = ref.watch(employeeRepositoryProvider);
   return repo.watchEmployeesByStation(stationId);
 });
+
+final employeeByUserIdProvider =
+    FutureProvider.family<Employee?, String>((ref, userId) async {
+  final repo = ref.watch(employeeRepositoryProvider);
+  return repo.getEmployeeByUserId(userId);
+});

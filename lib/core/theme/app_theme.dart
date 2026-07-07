@@ -33,15 +33,15 @@ class AppTheme {
     end: Alignment.bottomRight,
   );
 
-  // Border radius
-  static const double radiusSmall = 8.0;
-  static const double radiusMedium = 12.0;
-  static const double radiusLarge = 16.0;
-  static const double radiusXLarge = 24.0;
+  // Border radius - Increased for softer "touch-friendly" UI
+  static const double radiusSmall = 12.0;
+  static const double radiusMedium = 20.0;
+  static const double radiusLarge = 28.0;
+  static const double radiusXLarge = 36.0;
 
   // Spacing
-  static const double spacingXS = 4.0;
-  static const double spacingS = 8.0;
+  static const double spacingXS = 8.0;
+  static const double spacingS = 12.0;
   static const double spacingM = 16.0;
   static const double spacingL = 24.0;
   static const double spacingXL = 32.0;

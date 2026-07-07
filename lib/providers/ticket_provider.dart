@@ -38,6 +38,12 @@ final todayTicketsStreamProvider =
   return repo.watchTodayTickets(stationId);
 });
 
+final workerTicketsStreamProvider =
+    StreamProvider.family<List<Ticket>, String>((ref, workerId) {
+  final repo = ref.watch(ticketRepositoryProvider);
+  return repo.watchWorkerTickets(workerId);
+});
+
 final revenueStatsProvider = FutureProvider.family<
     Map<String, double>,
     ({
@@ -47,4 +53,15 @@ final revenueStatsProvider = FutureProvider.family<
     })>((ref, arg) async {
   final repo = ref.watch(ticketRepositoryProvider);
   return repo.getRevenueStats(arg.stationId, arg.startDate, arg.endDate);
+});
+
+final ticketsByDateRangeProvider = FutureProvider.family<
+    List<Ticket>,
+    ({
+      String stationId,
+      DateTime startDate,
+      DateTime endDate
+    })>((ref, arg) async {
+  final repo = ref.watch(ticketRepositoryProvider);
+  return repo.getTicketsByDateRange(arg.stationId, arg.startDate, arg.endDate);
 });

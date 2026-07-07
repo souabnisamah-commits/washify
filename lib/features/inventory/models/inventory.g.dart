@@ -10,9 +10,9 @@ _$InventoryItemImpl _$$InventoryItemImplFromJson(Map<String, dynamic> json) =>
     _$InventoryItemImpl(
       productId: json['productId'] as String,
       productName: json['productName'] as String,
-      expectedQuantity: (json['expectedQuantity'] as num).toInt(),
-      actualQuantity: (json['actualQuantity'] as num).toInt(),
-      difference: (json['difference'] as num).toInt(),
+      expectedQuantity: (json['expectedQuantity'] as num).toDouble(),
+      actualQuantity: (json['actualQuantity'] as num).toDouble(),
+      difference: (json['difference'] as num).toDouble(),
     );
 
 Map<String, dynamic> _$$InventoryItemImplToJson(_$InventoryItemImpl instance) =>

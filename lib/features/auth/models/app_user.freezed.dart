@@ -29,6 +29,8 @@ mixin _$AppUser {
   String get name => throw _privateConstructorUsedError;
   List<UserRole> get roles =>
       throw _privateConstructorUsedError; // Multi-roles support
+  double get baseDailyWage => throw _privateConstructorUsedError;
+  double get extraHourRate => throw _privateConstructorUsedError;
   bool get isActive => throw _privateConstructorUsedError;
   DateTime get createdAt => throw _privateConstructorUsedError;
   DateTime get updatedAt => throw _privateConstructorUsedError;
@@ -54,6 +56,8 @@ abstract class $AppUserCopyWith<$Res> {
     String pinHash,
     String name,
     List<UserRole> roles,
+    double baseDailyWage,
+    double extraHourRate,
     bool isActive,
     DateTime createdAt,
     DateTime updatedAt,
@@ -81,6 +85,8 @@ class _$AppUserCopyWithImpl<$Res, $Val extends AppUser>
     Object? pinHash = null,
     Object? name = null,
     Object? roles = null,
+    Object? baseDailyWage = null,
+    Object? extraHourRate = null,
     Object? isActive = null,
     Object? createdAt = null,
     Object? updatedAt = null,
@@ -111,6 +117,14 @@ class _$AppUserCopyWithImpl<$Res, $Val extends AppUser>
                 ? _value.roles
                 : roles // ignore: cast_nullable_to_non_nullable
                       as List<UserRole>,
+            baseDailyWage: null == baseDailyWage
+                ? _value.baseDailyWage
+                : baseDailyWage // ignore: cast_nullable_to_non_nullable
+                      as double,
+            extraHourRate: null == extraHourRate
+                ? _value.extraHourRate
+                : extraHourRate // ignore: cast_nullable_to_non_nullable
+                      as double,
             isActive: null == isActive
                 ? _value.isActive
                 : isActive // ignore: cast_nullable_to_non_nullable
@@ -144,6 +158,8 @@ abstract class _$$AppUserImplCopyWith<$Res> implements $AppUserCopyWith<$Res> {
     String pinHash,
     String name,
     List<UserRole> roles,
+    double baseDailyWage,
+    double extraHourRate,
     bool isActive,
     DateTime createdAt,
     DateTime updatedAt,
@@ -170,6 +186,8 @@ class __$$AppUserImplCopyWithImpl<$Res>
     Object? pinHash = null,
     Object? name = null,
     Object? roles = null,
+    Object? baseDailyWage = null,
+    Object? extraHourRate = null,
     Object? isActive = null,
     Object? createdAt = null,
     Object? updatedAt = null,
@@ -200,6 +218,14 @@ class __$$AppUserImplCopyWithImpl<$Res>
             ? _value._roles
             : roles // ignore: cast_nullable_to_non_nullable
                   as List<UserRole>,
+        baseDailyWage: null == baseDailyWage
+            ? _value.baseDailyWage
+            : baseDailyWage // ignore: cast_nullable_to_non_nullable
+                  as double,
+        extraHourRate: null == extraHourRate
+            ? _value.extraHourRate
+            : extraHourRate // ignore: cast_nullable_to_non_nullable
+                  as double,
         isActive: null == isActive
             ? _value.isActive
             : isActive // ignore: cast_nullable_to_non_nullable
@@ -227,6 +253,8 @@ class _$AppUserImpl extends _AppUser {
     required this.pinHash,
     required this.name,
     required final List<UserRole> roles,
+    this.baseDailyWage = 0.0,
+    this.extraHourRate = 0.0,
     this.isActive = true,
     required this.createdAt,
     required this.updatedAt,
@@ -259,6 +287,12 @@ class _$AppUserImpl extends _AppUser {
   // Multi-roles support
   @override
   @JsonKey()
+  final double baseDailyWage;
+  @override
+  @JsonKey()
+  final double extraHourRate;
+  @override
+  @JsonKey()
   final bool isActive;
   @override
   final DateTime createdAt;
@@ -267,7 +301,7 @@ class _$AppUserImpl extends _AppUser {
 
   @override
   String toString() {
-    return 'AppUser(id: $id, tenantId: $tenantId, phone: $phone, pinHash: $pinHash, name: $name, roles: $roles, isActive: $isActive, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'AppUser(id: $id, tenantId: $tenantId, phone: $phone, pinHash: $pinHash, name: $name, roles: $roles, baseDailyWage: $baseDailyWage, extraHourRate: $extraHourRate, isActive: $isActive, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -282,6 +316,10 @@ class _$AppUserImpl extends _AppUser {
             (identical(other.pinHash, pinHash) || other.pinHash == pinHash) &&
             (identical(other.name, name) || other.name == name) &&
             const DeepCollectionEquality().equals(other._roles, _roles) &&
+            (identical(other.baseDailyWage, baseDailyWage) ||
+                other.baseDailyWage == baseDailyWage) &&
+            (identical(other.extraHourRate, extraHourRate) ||
+                other.extraHourRate == extraHourRate) &&
             (identical(other.isActive, isActive) ||
                 other.isActive == isActive) &&
             (identical(other.createdAt, createdAt) ||
@@ -300,6 +338,8 @@ class _$AppUserImpl extends _AppUser {
     pinHash,
     name,
     const DeepCollectionEquality().hash(_roles),
+    baseDailyWage,
+    extraHourRate,
     isActive,
     createdAt,
     updatedAt,
@@ -327,6 +367,8 @@ abstract class _AppUser extends AppUser {
     required final String pinHash,
     required final String name,
     required final List<UserRole> roles,
+    final double baseDailyWage,
+    final double extraHourRate,
     final bool isActive,
     required final DateTime createdAt,
     required final DateTime updatedAt,
@@ -347,6 +389,10 @@ abstract class _AppUser extends AppUser {
   String get name;
   @override
   List<UserRole> get roles; // Multi-roles support
+  @override
+  double get baseDailyWage;
+  @override
+  double get extraHourRate;
   @override
   bool get isActive;
   @override

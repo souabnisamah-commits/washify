@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:washify/core/localization/app_localizations.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:washify/core/theme/app_theme.dart';
 import 'package:washify/providers/auth_provider.dart';
 import 'package:washify/providers/wallet_provider.dart';
+import 'package:washify/providers/employee_provider.dart';
 import 'package:washify/features/wallet/models/wallet.dart';
 import 'package:intl/intl.dart';
 
@@ -12,33 +15,42 @@ class WalletScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
-    if (user == null) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (user == null) return Scaffold(body: Center(child: CircularProgressIndicator()));
 
-    final transactionsAsync = ref.watch(walletTransactionsProvider(user.id));
-    final walletAsync = ref.watch(walletStreamProvider(user.id));
+    final employeeAsync = ref.watch(employeeByUserIdProvider(user.id));
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mon Portefeuille'),
+        title: Text('Mon Portefeuille'.tr),
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      body: employeeAsync.when(
+        loading: () => Center(child: CircularProgressIndicator()),
+        error: (e, s) => Center(child: Text('Erreur: $e'.tr)),
+        data: (employee) {
+          if (employee == null) {
+            return Center(child: Text('Profil employé introuvable.'.tr));
+          }
+          final transactionsAsync = ref.watch(walletTransactionsProvider(employee.id));
+          final walletAsync = ref.watch(walletStreamProvider(employee.id));
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Wallet Banner
           walletAsync.when(
             data: (wallet) {
               final balance = wallet?.balance ?? 0;
               return Container(
-                margin: const EdgeInsets.all(16),
-                padding: const EdgeInsets.all(24),
+                margin: EdgeInsets.all(16),
+                padding: EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   gradient: AppTheme.primaryGradient,
                   borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
                 ),
                 child: Column(
                   children: [
-                    const Text('Solde Actuel', style: TextStyle(color: Colors.white70, fontSize: 14)),
-                    const SizedBox(height: 8),
+                    Text('Solde Actuel', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                    SizedBox(height: 8),
                     Text(
                       '${balance.toStringAsFixed(2)} DT',
                       style: Theme.of(context).textTheme.headlineLarge?.copyWith(
@@ -50,13 +62,13 @@ class WalletScreen extends ConsumerWidget {
                 ),
               );
             },
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, s) => Text('Erreur: $e'),
+            loading: () => Center(child: CircularProgressIndicator()),
+            error: (e, s) => Text('Erreur: $e'.tr),
           ),
 
           // Transactions Header
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+            padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
             child: Text(
               'Historique des Transactions',
               style: Theme.of(context).textTheme.titleLarge,
@@ -68,21 +80,21 @@ class WalletScreen extends ConsumerWidget {
             child: transactionsAsync.when(
               data: (list) {
                 if (list.isEmpty) {
-                  return const Center(
+                  return Center(
                     child: Text('Aucune transaction trouvée.', style: TextStyle(color: AppTheme.textHint)),
                   );
                 }
 
                 return ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: EdgeInsets.symmetric(horizontal: 16),
                   itemCount: list.length,
                   itemBuilder: (context, index) {
                     final tx = list[index];
                     final dateStr = DateFormat('dd/MM/yyyy HH:mm').format(tx.createdAt);
-                    final isCredit = tx.type == WalletTransactionType.bonus || tx.type == WalletTransactionType.gainTicket;
+                    final isCredit = tx.type == WalletTransactionType.bonus || tx.type == WalletTransactionType.gainTicket || tx.type == WalletTransactionType.salaireJour;
 
                     return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
+                      margin: EdgeInsets.only(bottom: 12),
                       child: ListTile(
                         leading: CircleAvatar(
                           backgroundColor: isCredit ? AppTheme.successGreen.withValues(alpha: 0.15) : AppTheme.errorRed.withValues(alpha: 0.15),
@@ -91,7 +103,7 @@ class WalletScreen extends ConsumerWidget {
                             color: isCredit ? AppTheme.successGreen : AppTheme.errorRed,
                           ),
                         ),
-                        title: Text(tx.description, style: const TextStyle(fontWeight: FontWeight.bold)),
+                        title: Text(tx.description, style: TextStyle(fontWeight: FontWeight.bold)),
                         subtitle: Text(dateStr),
                         trailing: Text(
                           '${isCredit ? "+" : "-"}${tx.amount.toStringAsFixed(2)} DT',
@@ -106,12 +118,14 @@ class WalletScreen extends ConsumerWidget {
                   },
                 );
               },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, s) => Center(child: Text('Erreur: $e')),
+              loading: () => Center(child: CircularProgressIndicator()),
+              error: (e, s) => Center(child: Text('Erreur: $e'.tr)),
             ),
           ),
         ],
-      ),
+      );
+    },
+    ),
     );
   }
 }

@@ -162,7 +162,29 @@ class TicketRepository {
   }
 
   Future<void> updateTicket(Ticket ticket) async {
+    // Fetch old ticket to see its status
+    final oldDoc = await _ticketsRef.doc(ticket.id).get();
+    String? oldStatus;
+    if (oldDoc.exists) {
+      final data = oldDoc.data() as Map<String, dynamic>?;
+      oldStatus = data?['status'] as String?;
+    }
+
     await _ticketsRef.doc(ticket.id).update(_ticketToDoc(ticket));
+
+    // If it transitioned to paye, we deduct stock and update client balance
+    if (oldStatus != 'paye' && ticket.status == TicketStatus.paye) {
+      final stockRepo = StockRepository(firestore: _firestore);
+      await stockRepo.deductStockForTicket(ticket);
+
+      if (ticket.paymentMethod == 'compte_client' && ticket.clientId != null) {
+        final clientRepo = ClientRepository(firestore: _firestore);
+        await clientRepo.updateClientBalance(ticket.clientId!, ticket.totalAmount);
+        if (ticket.vehiclePlate != null && ticket.vehiclePlate!.isNotEmpty) {
+          await clientRepo.addVehicleToClient(ticket.clientId!, ticket.vehiclePlate!);
+        }
+      }
+    }
   }
 
   Future<void> updateTicketStatus(String ticketId, String status) async {

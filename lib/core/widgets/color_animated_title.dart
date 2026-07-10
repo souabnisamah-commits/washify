@@ -27,10 +27,22 @@ class _ColorAnimatedTitleState extends State<ColorAnimatedTitle> with TickerProv
       vsync: this,
     )..repeat(reverse: true);
 
-    _colorAnimation = ColorTween(
-      begin: const Color(0xFFF5F5DC), // Beige
-      end: AppTheme.primaryBlue,
-    ).animate(_colorController);
+    _colorAnimation = TweenSequence<Color?>([
+      TweenSequenceItem(
+        weight: 1.0,
+        tween: ColorTween(
+          begin: AppTheme.primaryBlue,
+          end: Colors.white,
+        ),
+      ),
+      TweenSequenceItem(
+        weight: 1.0,
+        tween: ColorTween(
+          begin: Colors.white,
+          end: AppTheme.successGreen,
+        ),
+      ),
+    ]).animate(_colorController);
 
     // Slide (Marquee) Animation
     _slideController = AnimationController(

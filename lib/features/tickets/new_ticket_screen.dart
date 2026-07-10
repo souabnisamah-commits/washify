@@ -919,7 +919,7 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
                   final shifts = shiftsAsync.valueOrNull ?? [];
                   final attendances = attendancesAsync.valueOrNull ?? [];
                   
-                  Shift? currentShift;
+                  List<Shift> activeShifts = [];
                   final now = DateTime.now();
                   final currentMinutes = now.hour * 60 + now.minute;
                   for (final shift in shifts) {
@@ -930,17 +930,18 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
                     final endMins = int.parse(endParts[0]) * 60 + int.parse(endParts[1]);
                     
                     if (startMins <= endMins) {
-                      if (currentMinutes >= startMins && currentMinutes <= endMins) currentShift = shift;
+                      if (currentMinutes >= startMins && currentMinutes <= endMins) activeShifts.add(shift);
                     } else {
-                      if (currentMinutes >= startMins || currentMinutes <= endMins) currentShift = shift;
+                      if (currentMinutes >= startMins || currentMinutes <= endMins) activeShifts.add(shift);
                     }
                   }
 
                   List<Employee> ouvriers = employees.toList();
                   
-                  if (currentShift != null) {
+                  if (activeShifts.isNotEmpty) {
+                    final activeShiftIds = activeShifts.map((s) => s.id).toSet();
                     final plannedEmployeeIds = attendances
-                        .where((a) => a.shiftId == currentShift!.id && (a.status == AttendanceStatus.planned || a.status == AttendanceStatus.present))
+                        .where((a) => activeShiftIds.contains(a.shiftId) && (a.status == AttendanceStatus.planned || a.status == AttendanceStatus.present))
                         .map((a) => a.employeeId)
                         .toSet();
                     ouvriers = ouvriers.where((e) => plannedEmployeeIds.contains(e.id)).toList();

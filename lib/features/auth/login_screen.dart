@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:washify/core/localization/app_localizations.dart';
 import 'package:washify/core/widgets/color_animated_title.dart';
+import 'package:washify/core/theme/app_theme.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:washify/providers/auth_provider.dart';
@@ -101,10 +102,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         color: Colors.transparent,
                       ),
                       clipBehavior: Clip.antiAlias,
-                      child: Image.network(
-                        'https://lh3.googleusercontent.com/aida/AP1WRLvsTNO9H42qCT3SOSwMxlMUjGEM5yu7omKNrfJ0DuUHgfpvX78-f7JfcuiXCRb3GE2r5bM2cBRK_mOyGKU2cBnVy3yRUUObTiqTqskfVGGhHShPVSj09vc_H64YkLO7UcvMEXopFFpw-3TcwUz1XetrhjA2dY80kI_3dk_Kvtpdjd7CDuveQwRgt3Hl-Y0SOgoXbyeac8PpUSIfD2wu_WHyjt7l1aRWjvrjJBzHC-YQePh6BB6h4tW3RVM',
-                        fit: BoxFit.cover,
-                        colorBlendMode: BlendMode.multiply,
+                      child: Image.asset(
+                        'assets/images/souteqsa_logo.png',
+                        fit: BoxFit.contain,
                       ),
                     ),
                     
@@ -117,7 +117,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
                     
-                    SizedBox(height: 8),
+                    const SizedBox(height: 4),
+                    // Gouttelette d'eau élégante
+                    ShaderMask(
+                      shaderCallback: (bounds) => const LinearGradient(
+                        colors: [AppTheme.primaryBlue, AppTheme.accentCyan],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ).createShader(bounds),
+                      child: const Icon(
+                        Icons.water_drop_rounded,
+                        size: 28,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    
                     Text(
                       'Gestion intelligente de vos stations de lavage',
                       style: TextStyle(
@@ -129,24 +144,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     
                     SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(height: 1, width: 16, color: const Color(0xFF475569)), // slate-600
-                        SizedBox(width: 8),
-                        Text(
-                          'CREATED BY SOUTEQSA',
-                          style: TextStyle(
-                            fontSize: 10,
-                            letterSpacing: 2,
-                            color: Color(0xFF94A3B8), // slate-400
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        SizedBox(width: 8),
-                        Container(height: 1, width: 16, color: const Color(0xFF475569)), // slate-600
-                      ],
-                    ),
+                    // Removed 'CREATED BY SOUTEQSA' row
                     
                     SizedBox(height: 48),
 
@@ -295,12 +293,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     // Footer
                     RichText(
                       text: const TextSpan(
-                        text: 'Powered by ',
-                        style: TextStyle(color: Color(0xFF64748B), fontSize: 14), // slate-500
+                        text: 'Created By ',
+                        style: TextStyle(color: Colors.white70, fontSize: 14),
                         children: [
                           TextSpan(
-                            text: 'SouTeQSa Technologies',
-                            style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF94A3B8)), // slate-400
+                            text: 'Sou',
+                            style: TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
+                          ),
+                          TextSpan(
+                            text: 'Te',
+                            style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryBlue),
+                          ),
+                          TextSpan(
+                            text: 'Q',
+                            style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.successGreen),
+                          ),
+                          TextSpan(
+                            text: 'Sa',
+                            style: TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
                           ),
                         ],
                       ),

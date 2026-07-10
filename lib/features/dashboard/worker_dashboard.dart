@@ -188,16 +188,13 @@ class _WorkerDashboardState extends ConsumerState<WorkerDashboard> {
 
     final employeeAsync = ref.watch(employeeByUserIdProvider(user.id));
     final walletStream = ref.watch(walletStreamProvider(employeeAsync.value?.id ?? user.id));
-    final assignedTicketsAsync = ref.watch(ticketsByWorkerProvider((
-      workerId: user.id,
-      status: null,
-    )));
+    final ticketsStream = ref.watch(todayTicketsStreamProvider(user.stationId!));
 
     return Scaffold(
       appBar: AppBar(
         title: ColorAnimatedTitle(
-          text: 'Bienvenue ${user.name}, dans votre Espace ${_getStationName(ref, user.stationId ?? '')}'.tr,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          text: 'Bienvenue ${user.name},\ndans votre Espace ${_getStationName(ref, user.stationId ?? '')}'.tr,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, height: 1.2),
         ),
         actions: [
           IconButton(
@@ -235,7 +232,7 @@ class _WorkerDashboardState extends ConsumerState<WorkerDashboard> {
                   value: '${balance.toStringAsFixed(1)} DT',
                   icon: Icons.account_balance_wallet,
                   color: AppTheme.successGreen,
-                  onTap: () => context.go('/worker/wallet'),
+                  onTap: () {},
                 );
               },
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -257,11 +254,15 @@ class _WorkerDashboardState extends ConsumerState<WorkerDashboard> {
             const SizedBox(height: 24),
 
             // 3. Recettes
-            assignedTicketsAsync.when(
-              data: (tickets) {
+            ticketsStream.when(
+              data: (allTickets) {
+                final employeeId = employeeAsync.value?.id ?? user.id;
+                final tickets = allTickets.where((t) => t.assignedWorkerId == employeeId).toList();
                 double total = 0;
                 for (var t in tickets) {
-                  total += t.totalAmount;
+                  if (t.status == TicketStatus.paye) {
+                    total += t.totalAmount;
+                  }
                 }
                 return _buildActionCard(
                   context,

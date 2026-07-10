@@ -1,11 +1,12 @@
-import 'dart:html' as html;
+import 'package:shared_preferences/shared_preferences.dart';
 
-/// Manages user session persistence using HTML localStorage.
+/// Manages user session persistence using SharedPreferences.
 /// Stores only the user ID — the full profile is re-fetched from Firestore on restore.
 class SessionService {
   static const String _keyUserId = 'washify_session_user_id';
 
   static final SessionService _instance = SessionService._();
+  static late SharedPreferences _prefs;
 
   SessionService._();
 
@@ -14,24 +15,25 @@ class SessionService {
 
   /// Must be called once at app startup (in main.dart).
   static Future<SessionService> init() async {
+    _prefs = await SharedPreferences.getInstance();
     return _instance;
   }
 
   /// Persist the logged-in user's ID.
   Future<void> saveSession(String userId) async {
     try {
-      html.window.localStorage[_keyUserId] = userId;
+      await _prefs.setString(_keyUserId, userId);
     } catch (e) {
-      print('Error saving to localStorage: $e');
+      print('Error saving session: $e');
     }
   }
 
   /// Retrieve the stored user ID, or null if no session exists.
   String? getSavedUserId() {
     try {
-      return html.window.localStorage[_keyUserId];
+      return _prefs.getString(_keyUserId);
     } catch (e) {
-      print('Error reading from localStorage: $e');
+      print('Error reading session: $e');
       return null;
     }
   }
@@ -39,9 +41,9 @@ class SessionService {
   /// Clear the saved session (on logout).
   Future<void> clearSession() async {
     try {
-      html.window.localStorage.remove(_keyUserId);
+      await _prefs.remove(_keyUserId);
     } catch (e) {
-      print('Error clearing localStorage: $e');
+      print('Error clearing session: $e');
     }
   }
 }

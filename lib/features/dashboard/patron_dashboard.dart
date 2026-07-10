@@ -296,9 +296,8 @@ class _PatronDashboardState extends ConsumerState<PatronDashboard> {
     return Scaffold(
       appBar: AppBar(
         title: ColorAnimatedTitle(
-          text:
-              'Bienvenue ${user.name}, dans votre Espace ${_currentStation?.name ?? ''}',
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          text: 'Bienvenue ${user.name},\ndans votre Espace ${_currentStation?.name ?? ''}',
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, height: 1.2),
         ),
         actions: [
           IconButton(
@@ -680,64 +679,12 @@ class _PatronDashboardState extends ConsumerState<PatronDashboard> {
     required Color color,
     VoidCallback? onTap,
   }) {
-    final isDark = ref.watch(themeProvider) == ThemeMode.dark;
-    return InkWell(
+    return ProMaxStatCard(
+      title: title.tr,
+      value: value,
+      icon: icon,
+      color: color,
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF161B22) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withValues(alpha: isDark ? 0.3 : 0.6), width: 1.5),
-          boxShadow: isDark
-              ? []
-              : [
-                  BoxShadow(
-                    color: color.withValues(alpha: 0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    title.tr,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: isDark ? Colors.white70 : Colors.black87,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                Container(
-                  padding: EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(icon, color: color, size: 20),
-                ),
-              ],
-            ),
-            SizedBox(height: 12),
-            Text(
-              value,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : Colors.black,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -748,50 +695,66 @@ class _PatronDashboardState extends ConsumerState<PatronDashboard> {
     required Color color,
     required VoidCallback onTap,
   }) {
-    final isDark = ref.watch(themeProvider) == ThemeMode.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(20),
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF161B22) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withValues(alpha: isDark ? 0.3 : 0.6), width: 1.5),
-          boxShadow: isDark
-              ? []
-              : [
-                  BoxShadow(
-                    color: color.withValues(alpha: 0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+          color: isDark 
+              ? Colors.white.withValues(alpha: 0.05) 
+              : Colors.white.withValues(alpha: 0.7),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isDark 
+                ? Colors.white.withValues(alpha: 0.1) 
+                : Colors.white.withValues(alpha: 0.5),
+            width: 1.5,
+          ),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              color.withValues(alpha: isDark ? 0.15 : 0.1),
+              color.withValues(alpha: 0.0),
+            ],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Row(
           children: [
             Container(
-              padding: EdgeInsets.all(12),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, color: color, size: 24),
+              child: Icon(icon, color: color, size: 22),
             ),
-            SizedBox(width: 16),
+            const SizedBox(width: 8),
             Expanded(
-              child: Text(
-                title.tr,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Colors.black87,
-                  fontSize: 15,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  title.tr,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
                 ),
               ),
             ),
             Icon(
               Icons.chevron_right,
-              color: isDark ? Colors.white38 : Colors.black45,
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
               size: 20,
             ),
           ],

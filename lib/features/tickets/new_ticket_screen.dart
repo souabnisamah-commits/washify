@@ -20,6 +20,7 @@ import 'package:washify/providers/offer_provider.dart';
 import 'package:washify/features/services/models/offer.dart';
 import 'package:washify/features/employees/models/employee.dart';
 import 'package:washify/providers/employee_provider.dart';
+import 'package:washify/core/constants/user_roles.dart';
 import 'package:washify/features/hr/providers/hr_provider.dart';
 import 'package:washify/features/hr/models/attendance.dart';
 import 'package:washify/features/hr/models/shift.dart';
@@ -952,6 +953,9 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
                       ouvriers = ouvriers.where((e) => plannedEmployeeIds.contains(e.id)).toList();
                     }
                   }
+
+                  // Force le filtre : l'ouvrier doit posséder le rôle 'ouvrier'
+                  ouvriers = ouvriers.where((e) => e.roles.contains(UserRole.ouvrier)).toList();
 
                   if (ouvriers.isEmpty) {
                     return Container(

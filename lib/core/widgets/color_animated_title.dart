@@ -65,6 +65,8 @@ class _ColorAnimatedTitleState extends State<ColorAnimatedTitle> with TickerProv
             widget.text,
             style: widget.style?.copyWith(color: _colorAnimation.value) ??
                 TextStyle(color: _colorAnimation.value, fontWeight: FontWeight.bold),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         );
       },

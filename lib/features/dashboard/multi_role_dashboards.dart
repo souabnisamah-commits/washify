@@ -296,8 +296,31 @@ class _WorkerCashierDashboardState extends ConsumerState<WorkerCashierDashboard>
                                 child: Icon(Icons.receipt_long, color: statusColor),
                               ),
                               title: Text(ticket.vehiclePlate ?? 'Véhicule', style: TextStyle(fontWeight: FontWeight.bold)),
-                              subtitle: Text('${ticket.serviceName} • $dateStr\nLaveur: ${ticket.workerName ?? "Non assigné"}'),
-                              trailing: Text('${ticket.totalAmount.toStringAsFixed(2)} DT', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                              subtitle: Text('${ticket.serviceName} • $dateStr\nLaveur: ${ticket.assignedWorkerName ?? ticket.workerName ?? "Non assigné"}'),
+                              trailing: ticket.status == TicketStatus.enAttente 
+                                  ? ElevatedButton(
+                                      onPressed: () async {
+                                        try {
+                                          final updated = ticket.copyWith(
+                                            status: TicketStatus.paye,
+                                            paidBy: ref.read(currentUserProvider)?.name,
+                                            updatedAt: DateTime.now(),
+                                          );
+                                          await ref.read(ticketRepositoryProvider).updateTicket(updated);
+                                          if (context.mounted) Navigator.pop(context);
+                                          if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Ticket validé'.tr)));
+                                        } catch (e) {
+                                          if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e'.tr)));
+                                        }
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: AppTheme.successGreen,
+                                        foregroundColor: Colors.white,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                      ),
+                                      child: Text('Valider'.tr),
+                                    )
+                                  : Text('${ticket.totalAmount.toStringAsFixed(2)} DT', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                               isThreeLine: true,
                             ),
                           );
@@ -321,16 +344,13 @@ class _WorkerCashierDashboardState extends ConsumerState<WorkerCashierDashboard>
     final ticketsStream = ref.watch(todayTicketsStreamProvider(user.stationId!));
     final employeeAsync = ref.watch(employeeByUserIdProvider(user.id));
     final walletStream = ref.watch(walletStreamProvider(employeeAsync.value?.id ?? user.id));
-    final myTicketsAsync = ref.watch(ticketsByWorkerProvider((
-      workerId: user.id,
-      status: null,
-    )));
+
 
     return Scaffold(
       appBar: AppBar(
         title: ColorAnimatedTitle(
-          text: 'Bienvenue ${user.name}, dans votre Espace ${_getStationName(ref, user.stationId ?? '')}'.tr,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          text: 'Bienvenue ${user.name},\ndans votre Espace ${_getStationName(ref, user.stationId ?? '')}'.tr,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, height: 1.2),
         ),
         actions: [
           IconButton(
@@ -402,7 +422,7 @@ class _WorkerCashierDashboardState extends ConsumerState<WorkerCashierDashboard>
                   value: '${balance.toStringAsFixed(1)} DT',
                   icon: Icons.account_balance_wallet,
                   color: AppTheme.successGreen,
-                  onTap: () => context.go('/worker/wallet'),
+                  onTap: () {},
                 );
               },
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -424,11 +444,15 @@ class _WorkerCashierDashboardState extends ConsumerState<WorkerCashierDashboard>
             const SizedBox(height: 24),
 
             // 4. Mes Recettes
-            myTicketsAsync.when(
-              data: (tickets) {
+            ticketsStream.when(
+              data: (allTickets) {
+                final employeeId = employeeAsync.value?.id ?? user.id;
+                final tickets = allTickets.where((t) => t.assignedWorkerId == employeeId).toList();
                 double total = 0;
                 for (var t in tickets) {
-                  total += t.totalAmount;
+                  if (t.status == TicketStatus.paye) {
+                    total += t.totalAmount;
+                  }
                 }
                 return _buildActionCard(
                   context,

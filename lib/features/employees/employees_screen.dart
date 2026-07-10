@@ -65,6 +65,16 @@ class _EmployeesScreenState extends ConsumerState<EmployeesScreen> {
 
       await repo.updateEmployee(updated);
 
+      final authRepo = ref.read(authRepositoryProvider);
+      final existingUser = await authRepo.getUserById(employee.userId);
+      if (existingUser != null) {
+        final updatedUser = existingUser.copyWith(
+          roles: updated.roles,
+          updatedAt: DateTime.now(),
+        );
+        await authRepo.updateUser(updatedUser);
+      }
+
       final selectedStation = ref.read(selectedStationProvider);
       if (selectedStation != null) {
         ref.invalidate(employeesStreamProvider(selectedStation.id));

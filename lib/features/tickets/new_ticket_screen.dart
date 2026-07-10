@@ -938,22 +938,14 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
 
                   List<Employee> ouvriers = employees.toList();
                   
-                  if (activeShifts.isNotEmpty) {
-                    final activeShiftIds = activeShifts.map((s) => s.id).toSet();
-                    final plannedEmployeeIds = attendances
-                        .where((a) => activeShiftIds.contains(a.shiftId) && (a.status == AttendanceStatus.planned || a.status == AttendanceStatus.present))
-                        .map((a) => a.employeeId)
-                        .toSet();
-                    ouvriers = ouvriers.where((e) => plannedEmployeeIds.contains(e.id)).toList();
-                  } else {
-                    final plannedEmployeeIds = attendances
-                        .where((a) => (a.status == AttendanceStatus.planned || a.status == AttendanceStatus.present))
-                        .map((a) => a.employeeId)
-                        .toSet();
-                    if (plannedEmployeeIds.isNotEmpty) {
-                      ouvriers = ouvriers.where((e) => plannedEmployeeIds.contains(e.id)).toList();
-                    }
-                  }
+                  // On filtre strictement sur les shifts actifs (l'heure actuelle est incluse dans le shift)
+                  final activeShiftIds = activeShifts.map((s) => s.id).toSet();
+                  final plannedEmployeeIds = attendances
+                      .where((a) => activeShiftIds.contains(a.shiftId) && (a.status == AttendanceStatus.planned || a.status == AttendanceStatus.present))
+                      .map((a) => a.employeeId)
+                      .toSet();
+                  
+                  ouvriers = ouvriers.where((e) => plannedEmployeeIds.contains(e.id)).toList();
 
                   // Force le filtre : l'ouvrier doit posséder le rôle 'ouvrier'
                   ouvriers = ouvriers.where((e) => e.roles.contains(UserRole.ouvrier)).toList();

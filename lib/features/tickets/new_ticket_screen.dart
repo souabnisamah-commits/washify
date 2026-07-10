@@ -515,29 +515,82 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
 
                   final selectedCategory = _selectedVehicleCategory ?? categories.first;
 
-                  return DropdownButtonFormField<VehicleCategory>(
-                    value: selectedCategory,
-                    decoration: InputDecoration(
-                      labelText: 'Catégorie de Véhicule'.tr,
-                      prefixIcon: Icon(Icons.directions_car, color: AppTheme.accentCyan),
-                    ),
-                    items: categories
-                        .map((cat) => DropdownMenuItem<VehicleCategory>(
-                              value: cat,
-                              child: Text('${cat.name} (${cat.examples})'),
-                            ))
-                        .toList(),
-                    onChanged: (val) {
-                      if (val != null) {
-                        setState(() {
-                          _selectedVehicleCategory = val;
-                          _selectedOffer = null;
-                          _selectedServices.clear();
-                          _selectedProducts.clear();
-                        });
-                      }
-                    },
-                    validator: (v) => v == null ? 'Veuillez sélectionner une catégorie' : null,
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Catégorie de Véhicule'.tr,
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                      ),
+                      SizedBox(height: 12),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: categories.map((cat) {
+                            final isSelected = selectedCategory == cat;
+                            return GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _selectedVehicleCategory = cat;
+                                  _selectedOffer = null;
+                                  _selectedServices.clear();
+                                  _selectedProducts.clear();
+                                });
+                              },
+                              child: Container(
+                                margin: EdgeInsets.only(right: 12),
+                                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                                decoration: BoxDecoration(
+                                  color: isSelected ? AppTheme.accentCyan : Theme.of(context).cardColor,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: isSelected ? AppTheme.accentCyan : Colors.grey.withValues(alpha: 0.3),
+                                    width: 2,
+                                  ),
+                                  boxShadow: [
+                                    if (isSelected)
+                                      BoxShadow(
+                                        color: AppTheme.accentCyan.withValues(alpha: 0.3),
+                                        blurRadius: 12,
+                                        spreadRadius: 2,
+                                      ),
+                                  ],
+                                ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.directions_car, // Generic car icon
+                                      size: 40,
+                                      color: isSelected ? Colors.white : AppTheme.primaryBlue,
+                                    ),
+                                    SizedBox(height: 8),
+                                    Text(
+                                      cat.name,
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: isSelected ? Colors.white : Colors.black87,
+                                      ),
+                                    ),
+                                    if (cat.examples.isNotEmpty) ...[
+                                      SizedBox(height: 4),
+                                      Text(
+                                        cat.examples,
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: isSelected ? Colors.white70 : Colors.black54,
+                                        ),
+                                      ),
+                                    ]
+                                  ],
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ],
                   );
                 },
                 loading: () => Center(child: CircularProgressIndicator()),
@@ -558,59 +611,148 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      DropdownButtonFormField<Offer?>(
-                        value: _selectedOffer,
-                        decoration: InputDecoration(
-                          labelText: 'Offre / Package Promotionnel (Optionnel)'.tr,
-                          prefixIcon: Icon(Icons.card_giftcard, color: AppTheme.accentCyan),
+                      Text(
+                        'Offre / Package Promotionnel'.tr,
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                      ),
+                      SizedBox(height: 12),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            // "Aucune offre" card
+                            GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _selectedOffer = null;
+                                  _selectedServices.clear();
+                                  _selectedProducts.clear();
+                                });
+                              },
+                              child: Container(
+                                margin: EdgeInsets.only(right: 12),
+                                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                                decoration: BoxDecoration(
+                                  color: _selectedOffer == null ? AppTheme.accentCyan : Theme.of(context).cardColor,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: _selectedOffer == null ? AppTheme.accentCyan : Colors.grey.withValues(alpha: 0.3),
+                                    width: 2,
+                                  ),
+                                ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.money_off,
+                                      size: 32,
+                                      color: _selectedOffer == null ? Colors.white : AppTheme.primaryBlue,
+                                    ),
+                                    SizedBox(height: 8),
+                                    Text(
+                                      'Tarifs standards'.tr,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: _selectedOffer == null ? Colors.white : Colors.black87,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            // Offer cards
+                            ...categoryOffers.map((o) {
+                              final isSelected = _selectedOffer == o;
+                              return GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _selectedOffer = o;
+                                    _selectedServices.clear();
+                                    if (serviceDefsAsync.value != null) {
+                                      for (final serviceId in o.serviceIds) {
+                                        final matches = serviceDefsAsync.value!.where((s) => s.id == serviceId);
+                                        if (matches.isNotEmpty) {
+                                          _selectedServices.add(matches.first);
+                                        }
+                                      }
+                                    }
+                                    _selectedProducts.clear();
+                                    if (productsAsync.value != null) {
+                                      for (final prodId in o.productIds) {
+                                        final matches = productsAsync.value!.where((p) => p.id == prodId);
+                                        if (matches.isNotEmpty) {
+                                          final prod = matches.first;
+                                          _selectedProducts.add(TicketProduct(
+                                            productId: prod.id,
+                                            productName: prod.name,
+                                            quantity: 1,
+                                            unitPrice: prod.unitPrice,
+                                          ));
+                                        }
+                                      }
+                                    }
+                                  });
+                                },
+                                child: Container(
+                                  margin: EdgeInsets.only(right: 12),
+                                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                                  decoration: BoxDecoration(
+                                    gradient: isSelected
+                                        ? LinearGradient(
+                                            colors: [Color(0xFFFFD700), Color(0xFFFFA500)], // Gold gradient
+                                            begin: Alignment.topLeft,
+                                            end: Alignment.bottomRight,
+                                          )
+                                        : null,
+                                    color: isSelected ? null : Theme.of(context).cardColor,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: isSelected ? Color(0xFFFFD700) : Colors.grey.withValues(alpha: 0.3),
+                                      width: 2,
+                                    ),
+                                    boxShadow: [
+                                      if (isSelected)
+                                        BoxShadow(
+                                          color: Color(0xFFFFD700).withValues(alpha: 0.4),
+                                          blurRadius: 12,
+                                          spreadRadius: 2,
+                                        ),
+                                    ],
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.stars,
+                                        size: 32,
+                                        color: isSelected ? Colors.white : AppTheme.warningOrange,
+                                      ),
+                                      SizedBox(height: 8),
+                                      Text(
+                                        o.name,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          color: isSelected ? Colors.white : Colors.black87,
+                                        ),
+                                      ),
+                                      SizedBox(height: 4),
+                                      Text(
+                                        '${o.offerPrice.toStringAsFixed(0)} DT',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w900,
+                                          color: isSelected ? Colors.white : AppTheme.primaryBlue,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ],
                         ),
-                        items: [
-                          DropdownMenuItem(
-                            value: null,
-                            child: Text('Aucune offre (Tarifs standards)'.tr),
-                          ),
-                          ...categoryOffers.map((o) => DropdownMenuItem<Offer?>(
-                                value: o,
-                                child: Text('${o.name} (${o.offerPrice.toStringAsFixed(0)} DT)'),
-                              )),
-                        ],
-                        onChanged: (Offer? val) {
-                          setState(() {
-                            _selectedOffer = val;
-                            if (val != null) {
-                              // Auto-select the services included in the offer
-                              _selectedServices.clear();
-                              if (serviceDefsAsync.value != null) {
-                                for (final serviceId in val.serviceIds) {
-                                  final matches = serviceDefsAsync.value!.where((s) => s.id == serviceId);
-                                  if (matches.isNotEmpty) {
-                                    _selectedServices.add(matches.first);
-                                  }
-                                }
-                              }
-                              // Auto-select products/extras included in the offer
-                              _selectedProducts.clear();
-                              if (productsAsync.value != null) {
-                                for (final prodId in val.productIds) {
-                                  final matches = productsAsync.value!.where((p) => p.id == prodId);
-                                  if (matches.isNotEmpty) {
-                                    final prod = matches.first;
-                                    final price = prod.unitPrice;
-                                    _selectedProducts.add(TicketProduct(
-                                      productId: prod.id,
-                                      productName: prod.name,
-                                      quantity: 1,
-                                      unitPrice: price,
-                                    ));
-                                  }
-                                }
-                              }
-                            } else {
-                              _selectedServices.clear();
-                              _selectedProducts.clear();
-                            }
-                          });
-                        },
                       ),
                       SizedBox(height: 16),
                     ],
@@ -644,31 +786,82 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Services de Lavage (Sélectionnez un ou plusieurs)',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        'Services de Lavage'.tr,
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                       ),
-                      SizedBox(height: 8),
+                      SizedBox(height: 12),
                       Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
+                        spacing: 12,
+                        runSpacing: 12,
                         children: services.where((s) => s.serviceType == ServiceType.lavage).map((srv) {
                           final price = category != null ? srv.getPriceForCategory(category.id) : 0.0;
                           final isSelected = _selectedServices.any((s) => s.id == srv.id);
-                          return FilterChip(
-                            label: Text('${srv.name} (${price.toStringAsFixed(0)} DT)'),
-                            selected: isSelected,
-                            selectedColor: AppTheme.accentCyan.withValues(alpha: 0.2),
-                            checkmarkColor: AppTheme.accentCyan,
-                            onSelected: (selected) {
+                          return GestureDetector(
+                            onTap: () {
                               setState(() {
                                 _selectedOffer = null; // deselect offer on manual change
-                                if (selected) {
-                                  _selectedServices.add(srv);
-                                } else {
+                                if (isSelected) {
                                   _selectedServices.removeWhere((s) => s.id == srv.id);
+                                } else {
+                                  _selectedServices.add(srv);
                                 }
                               });
                             },
+                            child: Container(
+                              width: (MediaQuery.of(context).size.width - 64) / 2, // 2 columns
+                              padding: EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: isSelected ? AppTheme.primaryBlue : Theme.of(context).cardColor,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: isSelected ? AppTheme.primaryBlue : Colors.grey.withValues(alpha: 0.3),
+                                  width: 2,
+                                ),
+                                boxShadow: [
+                                  if (isSelected)
+                                    BoxShadow(
+                                      color: AppTheme.primaryBlue.withValues(alpha: 0.3),
+                                      blurRadius: 10,
+                                      spreadRadius: 1,
+                                    ),
+                                ],
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.water_drop,
+                                    size: 32,
+                                    color: isSelected ? Colors.white : AppTheme.accentCyan,
+                                  ),
+                                  SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          srv.name,
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: isSelected ? Colors.white : Colors.black87,
+                                            fontSize: 15,
+                                          ),
+                                        ),
+                                        SizedBox(height: 4),
+                                        Text(
+                                          '${price.toStringAsFixed(0)} DT',
+                                          style: TextStyle(
+                                            color: isSelected ? Colors.white70 : AppTheme.primaryBlue,
+                                            fontWeight: FontWeight.w900,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  if (isSelected)
+                                    Icon(Icons.check_circle, color: Colors.white, size: 28),
+                                ],
+                              ),
+                            ),
                           );
                         }).toList(),
                       ),
@@ -691,36 +884,85 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
                       if (extras.isNotEmpty) ...[
                         SizedBox(height: 16),
                         Text(
-                          'Options & Suppléments (Extras)',
-                          style: Theme.of(context).textTheme.titleMedium,
+                          'Options & Suppléments (Extras)'.tr,
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                         ),
-                        SizedBox(height: 8),
+                        SizedBox(height: 12),
                         Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
+                          spacing: 12,
+                          runSpacing: 12,
                           children: extras.map((srv) {
                             final isSelected = _selectedServices.any((s) => s.id == srv.id);
                             final price = category != null ? srv.getPriceForCategory(category.id) : 0.0;
                             final isIncludedInOffer = _selectedOffer != null && _selectedOffer!.serviceIds.contains(srv.id);
-                            final labelText = isIncludedInOffer 
-                                ? '${srv.name} (Inclus)'
-                                : '${srv.name} (+${price.toStringAsFixed(0)} DT)';
-                            return FilterChip(
-                              label: Text(labelText),
-                              selected: isSelected,
-                              selectedColor: AppTheme.accentCyan.withValues(alpha: 0.2),
-                              checkmarkColor: AppTheme.accentCyan,
-                              onSelected: (selected) {
+                            
+                            return GestureDetector(
+                              onTap: () {
                                 setState(() {
                                   _selectedOffer = null;
-                                  if (selected) {
-                                    _selectedServices.add(srv);
-                                  } else {
+                                  if (isSelected) {
                                     _selectedServices.removeWhere((s) => s.id == srv.id);
+                                  } else {
+                                    _selectedServices.add(srv);
                                   }
                                   _updateIncludedProducts();
                                 });
                               },
+                              child: Container(
+                                width: (MediaQuery.of(context).size.width - 64) / 2, // 2 columns
+                                padding: EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: isSelected ? AppTheme.warningOrange : Theme.of(context).cardColor,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: isSelected ? AppTheme.warningOrange : Colors.grey.withValues(alpha: 0.3),
+                                    width: 2,
+                                  ),
+                                  boxShadow: [
+                                    if (isSelected)
+                                      BoxShadow(
+                                        color: AppTheme.warningOrange.withValues(alpha: 0.3),
+                                        blurRadius: 10,
+                                        spreadRadius: 1,
+                                      ),
+                                  ],
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.add_circle,
+                                      size: 32,
+                                      color: isSelected ? Colors.white : AppTheme.warningOrange,
+                                    ),
+                                    SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            srv.name,
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: isSelected ? Colors.white : Colors.black87,
+                                              fontSize: 15,
+                                            ),
+                                          ),
+                                          SizedBox(height: 4),
+                                          Text(
+                                            isIncludedInOffer ? 'Inclus dans l\'offre' : '+${price.toStringAsFixed(0)} DT',
+                                            style: TextStyle(
+                                              color: isSelected ? Colors.white70 : AppTheme.primaryBlue,
+                                              fontWeight: FontWeight.w900,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    if (isSelected)
+                                      Icon(Icons.check_circle, color: Colors.white, size: 28),
+                                  ],
+                                ),
+                              ),
                             );
                           }).toList(),
                         ),
@@ -971,25 +1213,80 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
                     });
                   }
 
-                  return DropdownButtonFormField<Employee>(
-                    value: _assignedWorker,
-                    decoration: InputDecoration(
-                      labelText: 'Ouvrier Assigné (Laveur)'.tr,
-                      prefixIcon: Icon(Icons.engineering, color: AppTheme.accentCyan),
-                      hintText: 'Qui va laver ce véhicule ?'.tr,
-                    ),
-                    items: ouvriers.map((emp) {
-                      return DropdownMenuItem(
-                        value: emp,
-                        child: Text(emp.name),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      setState(() {
-                        _assignedWorker = val;
-                      });
-                    },
-                    validator: (v) => v == null ? 'Veuillez sélectionner un ouvrier' : null,
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Ouvrier Assigné (Laveur)'.tr,
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                      ),
+                      SizedBox(height: 12),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: ouvriers.map((emp) {
+                            final isSelected = _assignedWorker == emp;
+                            return GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _assignedWorker = emp;
+                                });
+                              },
+                              child: Container(
+                                margin: EdgeInsets.only(right: 12),
+                                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                                decoration: BoxDecoration(
+                                  color: isSelected ? AppTheme.successGreen : Theme.of(context).cardColor,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: isSelected ? AppTheme.successGreen : Colors.grey.withValues(alpha: 0.3),
+                                    width: 2,
+                                  ),
+                                  boxShadow: [
+                                    if (isSelected)
+                                      BoxShadow(
+                                        color: AppTheme.successGreen.withValues(alpha: 0.3),
+                                        blurRadius: 10,
+                                        spreadRadius: 2,
+                                      ),
+                                  ],
+                                ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 28,
+                                      backgroundColor: isSelected ? Colors.white : AppTheme.successGreen.withValues(alpha: 0.1),
+                                      child: Icon(
+                                        Icons.engineering,
+                                        size: 32,
+                                        color: isSelected ? AppTheme.successGreen : AppTheme.successGreen,
+                                      ),
+                                    ),
+                                    SizedBox(height: 8),
+                                    Text(
+                                      emp.name,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: isSelected ? Colors.white : Colors.black87,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                      if (_assignedWorker == null) ...[
+                        SizedBox(height: 8),
+                        Text(
+                          '⚠️ Veuillez sélectionner un ouvrier',
+                          style: TextStyle(color: AppTheme.errorRed, fontSize: 12),
+                        ),
+                      ]
+                    ],
                   );
                 },
                 loading: () => Center(child: CircularProgressIndicator()),
@@ -1073,48 +1370,88 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
               ),
               SizedBox(height: 24),
 
-              // Summary Total
+            ],
+          ),
+        ),
+      ),
+      bottomNavigationBar: Container(
+        padding: EdgeInsets.all(16).copyWith(bottom: MediaQuery.of(context).padding.bottom + 16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 20,
+              offset: Offset(0, -5),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
               categoriesAsync.when(
                 data: (categories) {
                   final selectedCategory = _selectedVehicleCategory ?? (categories.isNotEmpty ? categories.first : null);
                   final total = _calculateTotalAmount(selectedCategory);
-                  return Container(
-                    padding: EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppTheme.surfaceCard,
-                      borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-                      border: Border.all(color: AppTheme.dividerColor),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Total à Payer', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                        Text(
-                          '${total.toStringAsFixed(2)} DT',
-                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.successGreen),
-                        ),
-                      ],
-                    ),
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Total à Payer'.tr,
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey.shade700),
+                      ),
+                      Text(
+                        '${total.toStringAsFixed(2)} DT',
+                        style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: AppTheme.successGreen),
+                      ),
+                    ],
                   );
                 },
                 loading: () => SizedBox(),
                 error: (e, s) => SizedBox(),
               ),
-              SizedBox(height: 24),
-
-              // Create Ticket Button
+              SizedBox(height: 16),
               categoriesAsync.when(
                 data: (categories) {
                   final selectedCategory = _selectedVehicleCategory ?? (categories.isNotEmpty ? categories.first : null);
-                  return ElevatedButton(
-                    onPressed: _isSaving ? null : () => _submitTicket(selectedCategory),
-                    child: _isSaving
-                        ? SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(Colors.white)))
-                        : Text('Enregistrer le Ticket'.tr),
+                  return SizedBox(
+                    width: double.infinity,
+                    height: 60,
+                    child: ElevatedButton(
+                      onPressed: _isSaving ? null : () => _submitTicket(selectedCategory),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.successGreen,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        elevation: 4,
+                      ),
+                      child: _isSaving
+                          ? CircularProgressIndicator(color: Colors.white)
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.check_circle_outline, size: 28),
+                                SizedBox(width: 12),
+                                Text(
+                                  'Valider le Ticket'.tr,
+                                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                    ),
                   );
                 },
-                loading: () => ElevatedButton(onPressed: null, child: Text('Chargement...'.tr)),
-                error: (e, s) => ElevatedButton(onPressed: null, child: Text('Erreur'.tr)),
+                loading: () => SizedBox(
+                  width: double.infinity,
+                  height: 60,
+                  child: ElevatedButton(onPressed: null, child: Text('Chargement...'.tr)),
+                ),
+                error: (e, s) => SizedBox(
+                  width: double.infinity,
+                  height: 60,
+                  child: ElevatedButton(onPressed: null, child: Text('Erreur'.tr)),
+                ),
               ),
             ],
           ),

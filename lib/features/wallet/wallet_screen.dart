@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:washify/core/localization/app_localizations.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:washify/core/theme/app_theme.dart';
@@ -21,6 +22,16 @@ class WalletScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/worker'); // Fallback route
+            }
+          },
+        ),
         title: Text('Mon Portefeuille'.tr),
       ),
       body: employeeAsync.when(

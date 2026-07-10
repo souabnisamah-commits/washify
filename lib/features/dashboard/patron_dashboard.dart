@@ -1,4 +1,12 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
+
+import 'package:washify/core/widgets/color_animated_title.dart';
+import 'package:washify/core/widgets/language_toggle_button.dart';
+import 'package:washify/features/auth/widgets/change_pin_dialog.dart';
+import 'package:washify/providers/theme_provider.dart';
+import 'package:washify/core/widgets/pro_max_stat_card.dart';
+
 import 'package:washify/core/widgets/language_toggle_button.dart';
 import 'package:washify/core/localization/app_localizations.dart';
 
@@ -32,7 +40,7 @@ class _PatronDashboardState extends ConsumerState<PatronDashboard> {
     final today = DateTime.now();
     _startDate = DateTime(today.year, today.month, today.day);
     _endDate = _startDate.add(const Duration(days: 1));
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadFirstStation();
     });
@@ -73,27 +81,34 @@ class _PatronDashboardState extends ConsumerState<PatronDashboard> {
   String get _dateRangeText {
     final today = DateTime.now();
     final todayStart = DateTime(today.year, today.month, today.day);
-    
-    if (_startDate.isAtSameMomentAs(todayStart) && _endDate.difference(_startDate).inDays == 1) {
+
+    if (_startDate.isAtSameMomentAs(todayStart) &&
+        _endDate.difference(_startDate).inDays == 1) {
       return "Aujourd'hui";
     }
-    
+
     final dateFormat = DateFormat('dd/MM/yyyy');
     final endToDisplay = _endDate.subtract(const Duration(days: 1));
-    
+
     if (_startDate.isAtSameMomentAs(endToDisplay)) {
       return "Le ${dateFormat.format(_startDate)}";
     }
-    
+
     return "Du ${dateFormat.format(_startDate)} au ${dateFormat.format(endToDisplay)}";
   }
 
-  void _showTicketsDetails(BuildContext context, String title, List<Ticket> tickets) {
+  void _showTicketsDetails(
+    BuildContext context,
+    String title,
+    List<Ticket> tickets,
+  ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: AppTheme.surfaceCard,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
       builder: (context) {
         return FractionallySizedBox(
           heightFactor: 0.8,
@@ -106,27 +121,46 @@ class _PatronDashboardState extends ConsumerState<PatronDashboard> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(title, style: Theme.of(context).textTheme.titleLarge),
-                    IconButton(icon: Icon(Icons.close), onPressed: () => Navigator.pop(context)),
+                    IconButton(
+                      icon: Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
                   ],
                 ),
                 const Divider(),
                 Expanded(
-                  child: tickets.isEmpty 
-                    ? Center(child: Text("Aucun ticket sur cette période.".tr))
-                    : ListView.separated(
-                        itemCount: tickets.length,
-                        separatorBuilder: (context, index) => Divider(height: 1),
-                        itemBuilder: (context, index) {
-                          final ticket = tickets[index];
-                          final timeStr = DateFormat('dd/MM HH:mm').format(ticket.updatedAt);
-                          return ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: Text("Ticket ${ticket.id.substring(ticket.id.length > 5 ? ticket.id.length - 5 : 0).toUpperCase()} - ${ticket.totalAmount.toStringAsFixed(1)} DT", style: TextStyle(fontWeight: FontWeight.bold)),
-                            subtitle: Text("${ticket.servicesSelected.map((s)=>s.serviceName).join(', ')}\nTraité par: ${ticket.assignedWorkerName ?? 'Non assigné'}"),
-                            trailing: Text(timeStr, style: TextStyle(color: AppTheme.textHint, fontSize: 12)),
-                          );
-                        },
-                      ),
+                  child: tickets.isEmpty
+                      ? Center(
+                          child: Text("Aucun ticket sur cette période.".tr),
+                        )
+                      : ListView.separated(
+                          itemCount: tickets.length,
+                          separatorBuilder: (context, index) =>
+                              Divider(height: 1),
+                          itemBuilder: (context, index) {
+                            final ticket = tickets[index];
+                            final timeStr = DateFormat(
+                              'dd/MM HH:mm',
+                            ).format(ticket.updatedAt);
+                            return ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              title: Text(
+                                "Ticket ${ticket.id.substring(ticket.id.length > 5 ? ticket.id.length - 5 : 0).toUpperCase()} - ${ticket.totalAmount.toStringAsFixed(1)} DT",
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              subtitle: Text(
+                                "${ticket.servicesSelected.map((s) => s.serviceName).join(', ')}\nTraité par: ${ticket.assignedWorkerName ?? 'Non assigné'}",
+                              ),
+                              trailing: Text(
+                                timeStr,
+                                style: TextStyle(
+                                  color: AppTheme.textHint,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
                 ),
               ],
             ),
@@ -150,7 +184,9 @@ class _PatronDashboardState extends ConsumerState<PatronDashboard> {
       context: context,
       isScrollControlled: true,
       backgroundColor: AppTheme.surfaceCard,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
       builder: (context) {
         return FractionallySizedBox(
           heightFactor: 0.6,
@@ -162,29 +198,52 @@ class _PatronDashboardState extends ConsumerState<PatronDashboard> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text("Lavages par Employé", style: Theme.of(context).textTheme.titleLarge),
-                    IconButton(icon: Icon(Icons.close), onPressed: () => Navigator.pop(context)),
+                    Text(
+                      "Lavages par Employé",
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
                   ],
                 ),
                 const Divider(),
                 Expanded(
-                  child: sortedStats.isEmpty 
-                    ? Center(child: Text("Aucun lavage sur cette période.".tr))
-                    : ListView.separated(
-                        itemCount: sortedStats.length,
-                        separatorBuilder: (context, index) => Divider(height: 1),
-                        itemBuilder: (context, index) {
-                          final stat = sortedStats[index];
-                          return ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: AppTheme.accentCyan,
-                              child: Icon(Icons.person, color: Colors.white, size: 20),
-                            ),
-                            title: Text(stat.key, style: TextStyle(fontWeight: FontWeight.bold)),
-                            trailing: Text("${stat.value} lavage(s)", style: TextStyle(fontSize: 16, color: AppTheme.successGreen, fontWeight: FontWeight.bold)),
-                          );
-                        },
-                      ),
+                  child: sortedStats.isEmpty
+                      ? Center(
+                          child: Text("Aucun lavage sur cette période.".tr),
+                        )
+                      : ListView.separated(
+                          itemCount: sortedStats.length,
+                          separatorBuilder: (context, index) =>
+                              Divider(height: 1),
+                          itemBuilder: (context, index) {
+                            final stat = sortedStats[index];
+                            return ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: AppTheme.accentCyan,
+                                child: Icon(
+                                  Icons.person,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                              ),
+                              title: Text(
+                                stat.key,
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              trailing: Text(
+                                "${stat.value} lavage(s)",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: AppTheme.successGreen,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
                 ),
               ],
             ),
@@ -215,41 +274,50 @@ class _PatronDashboardState extends ConsumerState<PatronDashboard> {
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(currentUserProvider);
-    if (user == null) return Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (user == null)
+      return Scaffold(body: Center(child: CircularProgressIndicator()));
 
     // Watch station assigned to this patron
-    final stationAsync = user.tenantId.isEmpty 
+    final stationAsync = user.tenantId.isEmpty
         ? const AsyncValue<Station?>.data(null)
         : ref.watch(stationByIdProvider(user.tenantId));
 
     // Stats for selected station
     final statsAsync = _currentStation == null
         ? null
-        : ref.watch(revenueStatsProvider((
-            stationId: _currentStation!.id,
-            startDate: _startDate,
-            endDate: _endDate,
-          )));
+        : ref.watch(
+            revenueStatsProvider((
+              stationId: _currentStation!.id,
+              startDate: _startDate,
+              endDate: _endDate,
+            )),
+          );
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Espace Patron'.tr),
+        title: ColorAnimatedTitle(
+          text:
+              'Bienvenue ${user.name}, dans votre Espace ${_currentStation?.name ?? ''}',
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+        ),
         actions: [
-                    const LanguageToggleButton(),
           IconButton(
-            icon: Icon(Icons.password),
+            icon: Icon(
+              ref.watch(themeProvider) == ThemeMode.light
+                  ? Icons.dark_mode_outlined
+                  : Icons.light_mode_outlined,
+            ),
+            onPressed: () => ref.read(themeProvider.notifier).toggleTheme(),
+          ),
+          const LanguageToggleButton(),
+          IconButton(
+            icon: const Icon(Icons.lock_outline),
             tooltip: 'Changer le code PIN'.tr,
             onPressed: () {
-              showDialog(
-                context: context,
-                builder: (_) => ChangePinDialog(),
-              );
+              showDialog(context: context, builder: (_) => ChangePinDialog());
             },
           ),
-          IconButton(
-            icon: Icon(Icons.logout),
-            onPressed: _logout,
-          ),
+          IconButton(icon: const Icon(Icons.exit_to_app), onPressed: _logout),
         ],
       ),
       body: SingleChildScrollView(
@@ -265,8 +333,12 @@ class _PatronDashboardState extends ConsumerState<PatronDashboard> {
                     padding: EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: AppTheme.surfaceCard,
-                      borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-                      border: Border.all(color: AppTheme.errorRed.withValues(alpha: 0.5)),
+                      borderRadius: BorderRadius.circular(
+                        AppTheme.radiusMedium,
+                      ),
+                      border: Border.all(
+                        color: AppTheme.errorRed.withValues(alpha: 0.5),
+                      ),
                     ),
                     child: Text(
                       'Aucune station ne vous est assignée. Veuillez contacter le Super Admin.',
@@ -285,27 +357,7 @@ class _PatronDashboardState extends ConsumerState<PatronDashboard> {
                   });
                 }
 
-                return DropdownButtonFormField<Station>(
-                  initialValue: _currentStation ?? station,
-                  decoration: InputDecoration(
-                    labelText: 'Sélectionner la Station'.tr,
-                    prefixIcon: Icon(Icons.store, color: AppTheme.accentCyan),
-                  ),
-                  items: [
-                    DropdownMenuItem(
-                      value: station,
-                      child: Text(station.name),
-                    )
-                  ],
-                  onChanged: (val) {
-                    if (val != null) {
-                      setState(() {
-                        _currentStation = val;
-                      });
-                      ref.read(selectedStationProvider.notifier).state = val;
-                    }
-                  },
-                );
+                return const SizedBox.shrink();
               },
               loading: () => Center(child: CircularProgressIndicator()),
               error: (e, s) => Text('Erreur chargement station: $e'.tr),
@@ -317,15 +369,15 @@ class _PatronDashboardState extends ConsumerState<PatronDashboard> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Statistiques',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
+                  _buildSectionTitle(context, 'Statistiques', Icons.bar_chart),
                   InkWell(
                     onTap: () => _selectDateRange(context),
                     borderRadius: BorderRadius.circular(16),
                     child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: AppTheme.surfaceCardLight,
                         borderRadius: BorderRadius.circular(16),
@@ -334,11 +386,25 @@ class _PatronDashboardState extends ConsumerState<PatronDashboard> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.calendar_month, size: 16, color: AppTheme.accentCyan),
+                          Icon(
+                            Icons.calendar_month,
+                            size: 16,
+                            color: AppTheme.accentCyan,
+                          ),
                           SizedBox(width: 8),
-                          Text(_dateRangeText, style: TextStyle(color: AppTheme.accentCyan, fontWeight: FontWeight.bold)),
+                          Text(
+                            _dateRangeText,
+                            style: TextStyle(
+                              color: AppTheme.accentCyan,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                           SizedBox(width: 4),
-                          Icon(Icons.arrow_drop_down, size: 16, color: AppTheme.accentCyan),
+                          Icon(
+                            Icons.arrow_drop_down,
+                            size: 16,
+                            color: AppTheme.accentCyan,
+                          ),
                         ],
                       ),
                     ),
@@ -361,17 +427,34 @@ class _PatronDashboardState extends ConsumerState<PatronDashboard> {
                             icon: Icons.monetization_on_outlined,
                             color: AppTheme.successGreen,
                             onTap: () async {
-                              showDialog(context: context, barrierDismissible: false, builder: (_) => Center(child: CircularProgressIndicator()));
+                              showDialog(
+                                context: context,
+                                barrierDismissible: false,
+                                builder: (_) =>
+                                    Center(child: CircularProgressIndicator()),
+                              );
                               try {
-                                final tickets = await ref.read(ticketsByDateRangeProvider((stationId: _currentStation!.id, startDate: _startDate, endDate: _endDate)).future);
+                                final tickets = await ref.read(
+                                  ticketsByDateRangeProvider((
+                                    stationId: _currentStation!.id,
+                                    startDate: _startDate,
+                                    endDate: _endDate,
+                                  )).future,
+                                );
                                 if (mounted) {
                                   Navigator.pop(context);
-                                  _showTicketsDetails(context, 'Détail Chiffre d\'Affaires', tickets);
+                                  _showTicketsDetails(
+                                    context,
+                                    'Détail Chiffre d\'Affaires',
+                                    tickets,
+                                  );
                                 }
                               } catch (e) {
                                 if (mounted) {
                                   Navigator.pop(context);
-                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e'.tr)));
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Erreur: $e'.tr)),
+                                  );
                                 }
                               }
                             },
@@ -386,9 +469,20 @@ class _PatronDashboardState extends ConsumerState<PatronDashboard> {
                             icon: Icons.local_car_wash,
                             color: AppTheme.accentCyan,
                             onTap: () async {
-                              showDialog(context: context, barrierDismissible: false, builder: (_) => Center(child: CircularProgressIndicator()));
+                              showDialog(
+                                context: context,
+                                barrierDismissible: false,
+                                builder: (_) =>
+                                    Center(child: CircularProgressIndicator()),
+                              );
                               try {
-                                final t = await ref.read(ticketsByDateRangeProvider((stationId: _currentStation!.id, startDate: _startDate, endDate: _endDate)).future);
+                                final t = await ref.read(
+                                  ticketsByDateRangeProvider((
+                                    stationId: _currentStation!.id,
+                                    startDate: _startDate,
+                                    endDate: _endDate,
+                                  )).future,
+                                );
                                 if (mounted) {
                                   Navigator.pop(context);
                                   _showEmployeeStats(context, t);
@@ -396,7 +490,9 @@ class _PatronDashboardState extends ConsumerState<PatronDashboard> {
                               } catch (e) {
                                 if (mounted) {
                                   Navigator.pop(context);
-                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e'.tr)));
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Erreur: $e'.tr)),
+                                  );
                                 }
                               }
                             },
@@ -408,46 +504,100 @@ class _PatronDashboardState extends ConsumerState<PatronDashboard> {
                   loading: () => Center(child: CircularProgressIndicator()),
                   error: (e, s) => Text('Erreur stats: $e'.tr),
                 ),
-              SizedBox(height: 24),
+              SizedBox(height: 32),
 
-              // Menu
-              Text(
-                'Gestion de la Station',
-                style: Theme.of(context).textTheme.titleLarge,
+              // Section: Opérations Quotidiennes
+              _buildSectionTitle(
+                context,
+                'Opérations Quotidiennes',
+                Icons.calendar_today,
               ),
               SizedBox(height: 16),
-              
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  int crossAxisCount = constraints.maxWidth > 800
+                      ? 3
+                      : (constraints.maxWidth > 500 ? 2 : 1);
+                  return GridView.count(
+                    crossAxisCount: crossAxisCount,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    childAspectRatio: 2.5,
+                    shrinkWrap: true,
+                    physics: NeverScrollableScrollPhysics(),
+                    children: [
+                      _buildGridItem(
+                        context,
+                        title: 'RH & Pointage',
+                        icon: Icons.access_time_filled,
+                        color: Colors.orange,
+                        onTap: () => context.go('/patron/hr'),
+                      ),
+                      _buildGridItem(
+                        context,
+                        title: 'Employés',
+                        icon: Icons.people,
+                        color: Colors.orangeAccent,
+                        onTap: () => context.go('/patron/employees'),
+                      ),
+                      _buildGridItem(
+                        context,
+                        title: 'Stock & Achats',
+                        icon: Icons.local_shipping,
+                        color: AppTheme.accentCyan,
+                        onTap: () => context.go('/patron/stock'),
+                      ),
+                    ],
+                  );
+                },
+              ),
+
+              SizedBox(height: 32),
+
+              // Section: Inventaire & Audits
+              _buildSectionTitle(
+                context,
+                'Inventaire & Audits',
+                Icons.fact_check_outlined,
+              ),
+              SizedBox(height: 16),
               GridView.count(
-                crossAxisCount: 2,
+                crossAxisCount: MediaQuery.of(context).size.width > 600 ? 2 : 1,
                 crossAxisSpacing: 16,
                 mainAxisSpacing: 16,
+                childAspectRatio: 3.5,
                 shrinkWrap: true,
                 physics: NeverScrollableScrollPhysics(),
                 children: [
-                  // Bloc Personnel (Orange)
                   _buildGridItem(
                     context,
-                    title: 'RH & Pointage',
-                    icon: Icons.engineering,
-                    color: Colors.orange,
-                    onTap: () => context.go('/patron/hr'),
+                    title: 'Audits',
+                    icon: Icons.checklist_rtl,
+                    color: Colors.purpleAccent,
+                    onTap: () => context.go('/patron/inventory'),
                   ),
-                  _buildGridItem(
-                    context,
-                    title: 'Employés',
-                    icon: Icons.people_outline,
-                    color: Colors.orangeAccent,
-                    onTap: () => context.go('/patron/employees'),
-                  ),
-                  _buildGridItem(
-                    context,
-                    title: 'Fiches de Paie',
-                    icon: Icons.payments_outlined,
-                    color: Colors.deepOrangeAccent,
-                    onTap: () => context.go('/patron/payroll'),
-                  ),
-                  
-                  // Bloc Atelier (Bleu)
+                ],
+              ),
+
+              SizedBox(height: 32),
+
+              // Section: Configuration & Catalogue
+              _buildSectionTitle(
+                context,
+                'Configuration & Catalogue',
+                Icons.settings,
+              ),
+              SizedBox(height: 16),
+              GridView.count(
+                crossAxisCount: MediaQuery.of(context).size.width > 800
+                    ? 4
+                    : (MediaQuery.of(context).size.width > 500 ? 3 : 2),
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: 2.5,
+                shrinkWrap: true,
+                physics: NeverScrollableScrollPhysics(),
+                children: [
                   _buildGridItem(
                     context,
                     title: 'Catégories',
@@ -458,55 +608,67 @@ class _PatronDashboardState extends ConsumerState<PatronDashboard> {
                   _buildGridItem(
                     context,
                     title: 'Services Lavage',
-                    icon: Icons.dry_cleaning,
+                    icon: Icons.water_drop,
                     color: AppTheme.accentTeal,
                     onTap: () => context.go('/patron/service-definitions'),
                   ),
                   _buildGridItem(
                     context,
-                    title: 'Offres & Pack',
-                    icon: Icons.local_offer,
-                    color: Colors.blueAccent,
-                    onTap: () => context.go('/patron/offers'),
-                  ),
-                  
-                  // Bloc Finances & Commerce (Vert)
-                  _buildGridItem(
-                    context,
-                    title: 'Comptes B2B',
-                    icon: Icons.business,
-                    color: AppTheme.successGreen,
-                    onTap: () => context.go('/patron/clients'),
-                  ),
-
-                  // Bloc Matériel (Violet/Cyan)
-                  _buildGridItem(
-                    context,
                     title: 'Produits',
-                    icon: Icons.inventory_2_outlined,
+                    icon: Icons.inventory_2,
                     color: const Color(0xFF7C3AED),
                     onTap: () => context.go('/patron/products'),
                   ),
                   _buildGridItem(
                     context,
-                    title: 'Stock & Achats',
-                    icon: Icons.inventory_2,
-                    color: AppTheme.accentCyan,
-                    onTap: () => context.go('/patron/stock'),
+                    title: 'Offres & Pack',
+                    icon: Icons.stars,
+                    color: Colors.blueAccent,
+                    onTap: () => context.go('/patron/offers'),
                   ),
                   _buildGridItem(
                     context,
-                    title: 'Audits',
-                    icon: Icons.assignment_turned_in_outlined,
-                    color: Colors.purpleAccent,
-                    onTap: () => context.go('/patron/inventory'),
+                    title: 'Comptes B2B',
+                    icon: Icons.business_center,
+                    color: AppTheme.successGreen,
+                    onTap: () => context.go('/patron/clients'),
                   ),
                 ],
               ),
-            ]
+
+              SizedBox(height: 48),
+              Center(
+                child: Text(
+                  'Created By SouTeQsa',
+                  style: TextStyle(
+                    color: Colors.white38,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+              SizedBox(height: 32),
+            ],
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildSectionTitle(BuildContext context, String title, IconData icon) {
+    return Row(
+      children: [
+        Icon(icon, color: AppTheme.primaryBlue, size: 24),
+        SizedBox(width: 8),
+        Text(
+          title.tr,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: AppTheme.primaryBlue,
+            fontSize: 18,
+          ),
+        ),
+      ],
     );
   }
 
@@ -518,42 +680,63 @@ class _PatronDashboardState extends ConsumerState<PatronDashboard> {
     required Color color,
     VoidCallback? onTap,
   }) {
+    final isDark = ref.watch(themeProvider) == ThemeMode.dark;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: EdgeInsets.all(16),
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         decoration: BoxDecoration(
-          color: AppTheme.surfaceCard,
-          borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-          border: Border.all(color: AppTheme.dividerColor),
+          color: isDark ? const Color(0xFF161B22) : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withValues(alpha: isDark ? 0.3 : 0.6), width: 1.5),
+          boxShadow: isDark
+              ? []
+              : [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
         ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: Theme.of(context).textTheme.bodySmall,
-                  overflow: TextOverflow.ellipsis,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    title.tr,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: isDark ? Colors.white70 : Colors.black87,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
+                Container(
+                  padding: EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, color: color, size: 20),
+                ),
+              ],
+            ),
+            SizedBox(height: 12),
+            Text(
+              value,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.black,
               ),
-              Icon(icon, color: color, size: 28),
-            ],
-          ),
-          SizedBox(height: 12),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-          ),
-        ],
-      ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -565,34 +748,51 @@ class _PatronDashboardState extends ConsumerState<PatronDashboard> {
     required Color color,
     required VoidCallback onTap,
   }) {
+    final isDark = ref.watch(themeProvider) == ThemeMode.dark;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
-          border: Border.all(color: color.withValues(alpha: 0.3), width: 2),
+          color: isDark ? const Color(0xFF161B22) : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withValues(alpha: isDark ? 0.3 : 0.6), width: 1.5),
+          boxShadow: isDark
+              ? []
+              : [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Row(
           children: [
             Container(
-              padding: EdgeInsets.all(16),
+              padding: EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.2),
-                shape: BoxShape.circle,
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, color: color, size: 48),
+              child: Icon(icon, color: color, size: 24),
             ),
-            SizedBox(height: 12),
-            Text(
-              title.tr,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
+            SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                title.tr,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.black87,
+                  fontSize: 15,
+                ),
               ),
+            ),
+            Icon(
+              Icons.chevron_right,
+              color: isDark ? Colors.white38 : Colors.black45,
+              size: 20,
             ),
           ],
         ),

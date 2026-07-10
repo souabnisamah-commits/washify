@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:washify/core/localization/app_localizations.dart';
+import 'package:washify/core/widgets/color_animated_title.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:washify/providers/auth_provider.dart';
@@ -107,20 +108,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
                     
-                    ShaderMask(
-                      shaderCallback: (bounds) => LinearGradient(
-                        colors: [Color(0xFF00C2FF), Color(0xFF00FF88)],
-                        begin: Alignment.centerLeft,
-                        end: Alignment.centerRight,
-                      ).createShader(bounds),
-                      child: Text(
-                        'Washify',
-                        style: TextStyle(
-                          fontSize: 48,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          letterSpacing: -1,
-                        ),
+                    ColorAnimatedTitle(
+                      text: 'Washify',
+                      style: const TextStyle(
+                        fontSize: 48,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: -1,
                       ),
                     ),
                     

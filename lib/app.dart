@@ -1,3 +1,4 @@
+import 'package:washify/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -15,7 +16,9 @@ class WashifyApp extends ConsumerWidget {
 
     return MaterialApp.router(
       title: 'Washify',
-      theme: AppTheme.darkTheme,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ref.watch(themeProvider),
       routerConfig: router,
       debugShowCheckedModeBanner: false,
       localizationsDelegates: const [

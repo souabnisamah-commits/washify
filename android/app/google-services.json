@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1086980819930",
+    "project_id": "washify-souteqsa",
+    "storage_bucket": "washify-souteqsa.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1086980819930:android:3ecf1f8efa137abf90cee3",
+        "android_client_info": {
+          "package_name": "com.example.washify"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDzLhKtN0CYGPqTXhWyjRKgeUfNeEtUhes"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

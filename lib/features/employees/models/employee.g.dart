@@ -10,7 +10,7 @@ _$EmployeeImpl _$$EmployeeImplFromJson(Map<String, dynamic> json) =>
     _$EmployeeImpl(
       id: json['id'] as String,
       userId: json['userId'] as String,
-      tenantId: json['tenantId'] as String,
+      tenantId: readTenantId(json, 'tenantId') as String,
       nom: json['nom'] as String,
       prenom: json['prenom'] as String,
       phone: json['phone'] as String,

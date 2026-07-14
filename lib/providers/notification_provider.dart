@@ -1,9 +1,11 @@
+import 'package:washify/providers/auth_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:washify/features/notifications/models/app_notification.dart';
 import 'package:washify/repositories/notification_repository.dart';
 
 final notificationRepositoryProvider = Provider<NotificationRepository>((ref) {
-  return NotificationRepository();
+  final user = ref.watch(currentUserProvider);
+  return NotificationRepository(tenantId: user?.tenantId ?? '');
 });
 
 final notificationsProvider =

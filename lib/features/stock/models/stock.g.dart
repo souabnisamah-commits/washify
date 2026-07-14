@@ -9,7 +9,7 @@ part of 'stock.dart';
 _$StockLevelImpl _$$StockLevelImplFromJson(Map<String, dynamic> json) =>
     _$StockLevelImpl(
       id: json['id'] as String,
-      tenantId: json['tenantId'] as String,
+      tenantId: readTenantId(json, 'tenantId') as String,
       productId: json['productId'] as String,
       productName: json['productName'] as String,
       currentQuantity: (json['currentQuantity'] as num).toDouble(),
@@ -31,7 +31,7 @@ Map<String, dynamic> _$$StockLevelImplToJson(_$StockLevelImpl instance) =>
 _$StockMovementImpl _$$StockMovementImplFromJson(Map<String, dynamic> json) =>
     _$StockMovementImpl(
       id: json['id'] as String,
-      tenantId: json['tenantId'] as String,
+      tenantId: readTenantId(json, 'tenantId') as String,
       productId: json['productId'] as String,
       productName: json['productName'] as String,
       type: json['type'] as String,

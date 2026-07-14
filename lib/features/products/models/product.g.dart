@@ -9,7 +9,7 @@ part of 'product.dart';
 _$ProductImpl _$$ProductImplFromJson(Map<String, dynamic> json) =>
     _$ProductImpl(
       id: json['id'] as String,
-      tenantId: json['tenantId'] as String,
+      tenantId: readTenantId(json, 'tenantId') as String,
       name: json['name'] as String,
       description: json['description'] as String,
       family:

@@ -22,6 +22,7 @@ AuditLog _$AuditLogFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$AuditLog {
   String get id => throw _privateConstructorUsedError;
+  @JsonKey(readValue: readTenantId)
   String get tenantId => throw _privateConstructorUsedError;
   String get userId => throw _privateConstructorUsedError;
   String get userName => throw _privateConstructorUsedError;
@@ -51,7 +52,7 @@ abstract class $AuditLogCopyWith<$Res> {
   @useResult
   $Res call({
     String id,
-    String tenantId,
+    @JsonKey(readValue: readTenantId) String tenantId,
     String userId,
     String userName,
     String action,
@@ -148,7 +149,7 @@ abstract class _$$AuditLogImplCopyWith<$Res>
   @useResult
   $Res call({
     String id,
-    String tenantId,
+    @JsonKey(readValue: readTenantId) String tenantId,
     String userId,
     String userName,
     String action,
@@ -237,7 +238,7 @@ class __$$AuditLogImplCopyWithImpl<$Res>
 class _$AuditLogImpl extends _AuditLog {
   const _$AuditLogImpl({
     required this.id,
-    required this.tenantId,
+    @JsonKey(readValue: readTenantId) required this.tenantId,
     required this.userId,
     required this.userName,
     required this.action,
@@ -256,6 +257,7 @@ class _$AuditLogImpl extends _AuditLog {
   @override
   final String id;
   @override
+  @JsonKey(readValue: readTenantId)
   final String tenantId;
   @override
   final String userId;
@@ -354,7 +356,7 @@ class _$AuditLogImpl extends _AuditLog {
 abstract class _AuditLog extends AuditLog {
   const factory _AuditLog({
     required final String id,
-    required final String tenantId,
+    @JsonKey(readValue: readTenantId) required final String tenantId,
     required final String userId,
     required final String userName,
     required final String action,
@@ -372,6 +374,7 @@ abstract class _AuditLog extends AuditLog {
   @override
   String get id;
   @override
+  @JsonKey(readValue: readTenantId)
   String get tenantId;
   @override
   String get userId;

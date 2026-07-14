@@ -8,7 +8,7 @@ part of 'client.dart';
 
 _$ClientImpl _$$ClientImplFromJson(Map<String, dynamic> json) => _$ClientImpl(
   id: json['id'] as String,
-  tenantId: json['tenantId'] as String,
+  tenantId: readTenantId(json, 'tenantId') as String,
   companyName: json['companyName'] as String,
   contactName: json['contactName'] as String,
   taxId: json['taxId'] as String,

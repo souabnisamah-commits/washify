@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:washify/core/utils/json_utils.dart';
 
 import 'package:washify/core/constants/user_roles.dart';
 
@@ -27,7 +28,7 @@ class Employee with _$Employee {
   const factory Employee({
     required String id,
     required String userId,
-    required String tenantId,
+    @JsonKey(readValue: readTenantId) required String tenantId,
     required String nom,
     required String prenom,
     required String phone,

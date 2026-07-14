@@ -281,6 +281,7 @@ Inventory _$InventoryFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$Inventory {
   String get id => throw _privateConstructorUsedError;
+  @JsonKey(readValue: readTenantId)
   String get tenantId => throw _privateConstructorUsedError;
   String get performedBy => throw _privateConstructorUsedError;
   String get performedByName => throw _privateConstructorUsedError;
@@ -306,7 +307,7 @@ abstract class $InventoryCopyWith<$Res> {
   @useResult
   $Res call({
     String id,
-    String tenantId,
+    @JsonKey(readValue: readTenantId) String tenantId,
     String performedBy,
     String performedByName,
     DateTime date,
@@ -391,7 +392,7 @@ abstract class _$$InventoryImplCopyWith<$Res>
   @useResult
   $Res call({
     String id,
-    String tenantId,
+    @JsonKey(readValue: readTenantId) String tenantId,
     String performedBy,
     String performedByName,
     DateTime date,
@@ -468,7 +469,7 @@ class __$$InventoryImplCopyWithImpl<$Res>
 class _$InventoryImpl extends _Inventory {
   const _$InventoryImpl({
     required this.id,
-    required this.tenantId,
+    @JsonKey(readValue: readTenantId) required this.tenantId,
     required this.performedBy,
     required this.performedByName,
     required this.date,
@@ -484,6 +485,7 @@ class _$InventoryImpl extends _Inventory {
   @override
   final String id;
   @override
+  @JsonKey(readValue: readTenantId)
   final String tenantId;
   @override
   final String performedBy;
@@ -560,7 +562,7 @@ class _$InventoryImpl extends _Inventory {
 abstract class _Inventory extends Inventory {
   const factory _Inventory({
     required final String id,
-    required final String tenantId,
+    @JsonKey(readValue: readTenantId) required final String tenantId,
     required final String performedBy,
     required final String performedByName,
     required final DateTime date,
@@ -576,6 +578,7 @@ abstract class _Inventory extends Inventory {
   @override
   String get id;
   @override
+  @JsonKey(readValue: readTenantId)
   String get tenantId;
   @override
   String get performedBy;

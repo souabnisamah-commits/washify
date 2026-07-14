@@ -23,6 +23,7 @@ ClientPayment _$ClientPaymentFromJson(Map<String, dynamic> json) {
 mixin _$ClientPayment {
   String get id => throw _privateConstructorUsedError;
   String get clientId => throw _privateConstructorUsedError;
+  @JsonKey(readValue: readTenantId)
   String get tenantId => throw _privateConstructorUsedError;
   double get amount => throw _privateConstructorUsedError;
   String get paymentMethod =>
@@ -53,7 +54,7 @@ abstract class $ClientPaymentCopyWith<$Res> {
   $Res call({
     String id,
     String clientId,
-    String tenantId,
+    @JsonKey(readValue: readTenantId) String tenantId,
     double amount,
     String paymentMethod,
     String? reference,
@@ -138,7 +139,7 @@ abstract class _$$ClientPaymentImplCopyWith<$Res>
   $Res call({
     String id,
     String clientId,
-    String tenantId,
+    @JsonKey(readValue: readTenantId) String tenantId,
     double amount,
     String paymentMethod,
     String? reference,
@@ -215,7 +216,7 @@ class _$ClientPaymentImpl implements _ClientPayment {
   const _$ClientPaymentImpl({
     required this.id,
     required this.clientId,
-    required this.tenantId,
+    @JsonKey(readValue: readTenantId) required this.tenantId,
     required this.amount,
     required this.paymentMethod,
     this.reference,
@@ -231,6 +232,7 @@ class _$ClientPaymentImpl implements _ClientPayment {
   @override
   final String clientId;
   @override
+  @JsonKey(readValue: readTenantId)
   final String tenantId;
   @override
   final double amount;
@@ -304,7 +306,7 @@ abstract class _ClientPayment implements ClientPayment {
   const factory _ClientPayment({
     required final String id,
     required final String clientId,
-    required final String tenantId,
+    @JsonKey(readValue: readTenantId) required final String tenantId,
     required final double amount,
     required final String paymentMethod,
     final String? reference,
@@ -320,6 +322,7 @@ abstract class _ClientPayment implements ClientPayment {
   @override
   String get clientId;
   @override
+  @JsonKey(readValue: readTenantId)
   String get tenantId;
   @override
   double get amount;

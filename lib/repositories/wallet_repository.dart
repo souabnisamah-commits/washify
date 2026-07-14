@@ -4,15 +4,16 @@ import 'package:washify/features/wallet/models/wallet.dart';
 
 class WalletRepository {
   final FirebaseFirestore _firestore;
+  final String tenantId;
 
-  WalletRepository({FirebaseFirestore? firestore})
+  WalletRepository({FirebaseFirestore? firestore, this.tenantId = ''})
       : _firestore = firestore ?? FirebaseFirestore.instance;
 
-  CollectionReference get _walletsRef =>
-      _firestore.collection(AppConstants.walletsCollection);
-
-  CollectionReference get _transactionsRef =>
-      _firestore.collection(AppConstants.walletTransactionsCollection);
+  CollectionReference get _walletsRef => _firestore.collection(AppConstants.walletsCollection);
+  CollectionReference get _transactionsRef => _firestore.collection(AppConstants.walletTransactionsCollection);
+  
+  Query get _tenantWalletsRef => tenantId.isEmpty ? _walletsRef : _walletsRef.where('stationId', isEqualTo: tenantId);
+  Query get _tenantTransactionsRef => tenantId.isEmpty ? _transactionsRef : _transactionsRef.where('stationId', isEqualTo: tenantId);
 
   Wallet _walletFromDoc(DocumentSnapshot doc) {
     final data = doc.data()! as Map<String, dynamic>;
@@ -100,7 +101,7 @@ class WalletRepository {
   }
 
   Future<Wallet?> getWalletByUser(String userId) async {
-    final querySnapshot = await _walletsRef
+    final querySnapshot = await _tenantWalletsRef
         .where('userId', isEqualTo: userId)
         .limit(1)
         .get();
@@ -133,7 +134,7 @@ class WalletRepository {
     final transRef = _transactionsRef.doc();
     batch.set(transRef, _transactionToDoc(transaction));
 
-    final walletQuery = await _walletsRef
+    final walletQuery = await _tenantWalletsRef
         .where('userId', isEqualTo: transaction.userId)
         .limit(1)
         .get();
@@ -187,18 +188,24 @@ class WalletRepository {
 
   Future<List<WalletTransaction>> getTransactions(String userId,
       {int limit = 50}) async {
-    final querySnapshot = await _transactionsRef
+    final querySnapshot = await _tenantTransactionsRef
         .where('userId', isEqualTo: userId)
-        .orderBy('createdAt', descending: true)
-        .limit(limit)
         .get();
-    return querySnapshot.docs
+    
+    final transactions = querySnapshot.docs
         .map((doc) => _transactionFromDoc(doc))
         .toList();
+        
+    transactions.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    
+    if (transactions.length > limit) {
+      return transactions.sublist(0, limit);
+    }
+    return transactions;
   }
 
   Stream<Wallet?> watchWallet(String userId) {
-    return _walletsRef
+    return _tenantWalletsRef
         .where('userId', isEqualTo: userId)
         .limit(1)
         .snapshots()

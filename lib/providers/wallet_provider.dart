@@ -1,9 +1,11 @@
+import 'package:washify/providers/auth_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:washify/features/wallet/models/wallet.dart';
 import 'package:washify/repositories/wallet_repository.dart';
 
 final walletRepositoryProvider = Provider<WalletRepository>((ref) {
-  return WalletRepository();
+  final user = ref.watch(currentUserProvider);
+  return WalletRepository(tenantId: user?.tenantId ?? '');
 });
 
 final walletByUserProvider =

@@ -295,7 +295,7 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Bienvenue, ${user?.name ?? 'Admin'}',
+                    '${'Bienvenue'.tr}, ${user?.name ?? 'Admin'}',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,

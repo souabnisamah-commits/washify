@@ -9,7 +9,7 @@ part of 'wash_service.dart';
 _$WashServiceImpl _$$WashServiceImplFromJson(Map<String, dynamic> json) =>
     _$WashServiceImpl(
       id: json['id'] as String,
-      tenantId: json['tenantId'] as String,
+      tenantId: readTenantId(json, 'tenantId') as String,
       name: json['name'] as String,
       description: json['description'] as String,
       price: (json['price'] as num).toDouble(),

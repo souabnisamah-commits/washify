@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:washify/core/utils/json_utils.dart';
 
 part 'wallet.freezed.dart';
 part 'wallet.g.dart';
@@ -29,7 +30,7 @@ class Wallet with _$Wallet {
     required String id,
     required String userId,
     required String userName,
-    required String tenantId,
+    @JsonKey(readValue: readTenantId) required String tenantId,
     required double walletBalanceCache, // Solde calculé uniquement par Cloud Functions
     required double totalEarned,
     required double totalWithdrawn,
@@ -50,7 +51,7 @@ class WalletTransaction with _$WalletTransaction {
     required String id,
     required String walletId,
     required String userId,
-    required String tenantId,
+    @JsonKey(readValue: readTenantId) required String tenantId,
     required WalletTransactionType type, // gain_ticket, bonus, retrait, ajustement
     required double amount,
     required double balanceBefore,

@@ -19,6 +19,7 @@ class WashifyApp extends ConsumerWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ref.watch(themeProvider),
+      locale: locale,
       routerConfig: router,
       debugShowCheckedModeBanner: false,
       localizationsDelegates: const [

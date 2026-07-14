@@ -24,6 +24,7 @@ mixin _$Wallet {
   String get id => throw _privateConstructorUsedError;
   String get userId => throw _privateConstructorUsedError;
   String get userName => throw _privateConstructorUsedError;
+  @JsonKey(readValue: readTenantId)
   String get tenantId => throw _privateConstructorUsedError;
   double get walletBalanceCache =>
       throw _privateConstructorUsedError; // Solde calculé uniquement par Cloud Functions
@@ -49,7 +50,7 @@ abstract class $WalletCopyWith<$Res> {
     String id,
     String userId,
     String userName,
-    String tenantId,
+    @JsonKey(readValue: readTenantId) String tenantId,
     double walletBalanceCache,
     double totalEarned,
     double totalWithdrawn,
@@ -133,7 +134,7 @@ abstract class _$$WalletImplCopyWith<$Res> implements $WalletCopyWith<$Res> {
     String id,
     String userId,
     String userName,
-    String tenantId,
+    @JsonKey(readValue: readTenantId) String tenantId,
     double walletBalanceCache,
     double totalEarned,
     double totalWithdrawn,
@@ -210,7 +211,7 @@ class _$WalletImpl extends _Wallet {
     required this.id,
     required this.userId,
     required this.userName,
-    required this.tenantId,
+    @JsonKey(readValue: readTenantId) required this.tenantId,
     required this.walletBalanceCache,
     required this.totalEarned,
     required this.totalWithdrawn,
@@ -227,6 +228,7 @@ class _$WalletImpl extends _Wallet {
   @override
   final String userName;
   @override
+  @JsonKey(readValue: readTenantId)
   final String tenantId;
   @override
   final double walletBalanceCache;
@@ -297,7 +299,7 @@ abstract class _Wallet extends Wallet {
     required final String id,
     required final String userId,
     required final String userName,
-    required final String tenantId,
+    @JsonKey(readValue: readTenantId) required final String tenantId,
     required final double walletBalanceCache,
     required final double totalEarned,
     required final double totalWithdrawn,
@@ -314,6 +316,7 @@ abstract class _Wallet extends Wallet {
   @override
   String get userName;
   @override
+  @JsonKey(readValue: readTenantId)
   String get tenantId;
   @override
   double get walletBalanceCache; // Solde calculé uniquement par Cloud Functions
@@ -341,6 +344,7 @@ mixin _$WalletTransaction {
   String get id => throw _privateConstructorUsedError;
   String get walletId => throw _privateConstructorUsedError;
   String get userId => throw _privateConstructorUsedError;
+  @JsonKey(readValue: readTenantId)
   String get tenantId => throw _privateConstructorUsedError;
   WalletTransactionType get type =>
       throw _privateConstructorUsedError; // gain_ticket, bonus, retrait, ajustement
@@ -373,7 +377,7 @@ abstract class $WalletTransactionCopyWith<$Res> {
     String id,
     String walletId,
     String userId,
-    String tenantId,
+    @JsonKey(readValue: readTenantId) String tenantId,
     WalletTransactionType type,
     double amount,
     double balanceBefore,
@@ -476,7 +480,7 @@ abstract class _$$WalletTransactionImplCopyWith<$Res>
     String id,
     String walletId,
     String userId,
-    String tenantId,
+    @JsonKey(readValue: readTenantId) String tenantId,
     WalletTransactionType type,
     double amount,
     double balanceBefore,
@@ -571,7 +575,7 @@ class _$WalletTransactionImpl extends _WalletTransaction {
     required this.id,
     required this.walletId,
     required this.userId,
-    required this.tenantId,
+    @JsonKey(readValue: readTenantId) required this.tenantId,
     required this.type,
     required this.amount,
     required this.balanceBefore,
@@ -591,6 +595,7 @@ class _$WalletTransactionImpl extends _WalletTransaction {
   @override
   final String userId;
   @override
+  @JsonKey(readValue: readTenantId)
   final String tenantId;
   @override
   final WalletTransactionType type;
@@ -678,7 +683,7 @@ abstract class _WalletTransaction extends WalletTransaction {
     required final String id,
     required final String walletId,
     required final String userId,
-    required final String tenantId,
+    @JsonKey(readValue: readTenantId) required final String tenantId,
     required final WalletTransactionType type,
     required final double amount,
     required final double balanceBefore,
@@ -699,6 +704,7 @@ abstract class _WalletTransaction extends WalletTransaction {
   @override
   String get userId;
   @override
+  @JsonKey(readValue: readTenantId)
   String get tenantId;
   @override
   WalletTransactionType get type; // gain_ticket, bonus, retrait, ajustement

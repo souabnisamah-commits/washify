@@ -1,16 +1,11 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import 'package:washify/core/widgets/color_animated_title.dart';
 import 'package:washify/core/widgets/language_toggle_button.dart';
+import 'package:washify/core/localization/app_localizations.dart';
 import 'package:washify/features/auth/widgets/change_pin_dialog.dart';
 import 'package:washify/providers/theme_provider.dart';
 import 'package:washify/core/widgets/pro_max_stat_card.dart';
-
-import 'package:washify/core/widgets/language_toggle_button.dart';
-import 'package:washify/core/localization/app_localizations.dart';
-
-import 'package:washify/features/auth/widgets/change_pin_dialog.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -274,8 +269,9 @@ class _PatronDashboardState extends ConsumerState<PatronDashboard> {
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(currentUserProvider);
-    if (user == null)
+    if (user == null) {
       return Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
 
     // Watch station assigned to this patron
     final stationAsync = user.tenantId.isEmpty
@@ -296,7 +292,7 @@ class _PatronDashboardState extends ConsumerState<PatronDashboard> {
     return Scaffold(
       appBar: AppBar(
         title: ColorAnimatedTitle(
-          text: 'Bienvenue ${user.name},\ndans votre Espace ${_currentStation?.name ?? ''}',
+          text: '${'Bienvenue'.tr} ${user.name},\n${'dans votre Espace'.tr} ${_currentStation?.name ?? ''}',
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, height: 1.2),
         ),
         actions: [
@@ -440,7 +436,7 @@ class _PatronDashboardState extends ConsumerState<PatronDashboard> {
                                     endDate: _endDate,
                                   )).future,
                                 );
-                                if (mounted) {
+                                if (context.mounted) {
                                   Navigator.pop(context);
                                   _showTicketsDetails(
                                     context,
@@ -449,7 +445,7 @@ class _PatronDashboardState extends ConsumerState<PatronDashboard> {
                                   );
                                 }
                               } catch (e) {
-                                if (mounted) {
+                                if (context.mounted) {
                                   Navigator.pop(context);
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(content: Text('Erreur: $e'.tr)),
@@ -482,12 +478,12 @@ class _PatronDashboardState extends ConsumerState<PatronDashboard> {
                                     endDate: _endDate,
                                   )).future,
                                 );
-                                if (mounted) {
+                                if (context.mounted) {
                                   Navigator.pop(context);
                                   _showEmployeeStats(context, t);
                                 }
                               } catch (e) {
-                                if (mounted) {
+                                if (context.mounted) {
                                   Navigator.pop(context);
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(content: Text('Erreur: $e'.tr)),

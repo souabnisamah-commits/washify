@@ -4,10 +4,11 @@ import 'package:washify/core/localization/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:washify/core/theme/app_theme.dart';
+import 'package:washify/core/constants/user_roles.dart';
 import 'package:washify/features/clients/models/client.dart';
 import 'package:washify/features/clients/models/client_payment.dart';
 import 'package:washify/features/clients/models/client_vehicle.dart';
-import 'package:washify/features/services/models/vehicle_category.dart';
+
 import 'package:washify/features/tickets/components/vehicle_info_input.dart';
 import 'package:washify/features/tickets/models/ticket.dart';
 import 'package:washify/providers/auth_provider.dart';
@@ -65,12 +66,20 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
                   initialValue: amount.toStringAsFixed(3),
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   decoration: InputDecoration(labelText: 'Montant à payer (DT)'.tr),
-                  validator: (v) => v == null || double.tryParse(v) == null ? 'Invalide' : null,
+                  validator: (v) {
+                    if (v == null || double.tryParse(v) == null) return 'Invalide';
+                    final parsed = double.parse(v);
+                    if (parsed > _currentClient.currentBalance) {
+                      return 'Max: ${currencyFormat.format(_currentClient.currentBalance)}';
+                    }
+                    if (parsed <= 0) return 'Doit être > 0';
+                    return null;
+                  },
                   onSaved: (v) => amount = double.parse(v!),
                 ),
                 SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: paymentMethod,
+                  initialValue: paymentMethod,
                   decoration: InputDecoration(labelText: 'Mode de paiement'.tr),
                   items: ['Espèces', 'Chèque', 'Virement', 'TPE'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
                   onChanged: (v) => paymentMethod = v!,
@@ -104,7 +113,7 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
                   );
 
                   await ref.read(clientRepositoryProvider).addPayment(payment);
-                  if (mounted) Navigator.of(context).pop();
+                  if (context.mounted) Navigator.of(context).pop();
                 }
               },
               child: Text('Marquer comme payé'.tr),
@@ -190,7 +199,7 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
                   );
 
                   await ref.read(clientRepositoryProvider).updateClient(updatedClient);
-                  if (mounted) {
+                  if (context.mounted) {
                     setState(() {
                       _currentClient = updatedClient;
                     });
@@ -348,6 +357,8 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
   }
 
   Widget _buildPaymentsTab(WidgetRef ref) {
+    final user = ref.watch(currentUserProvider);
+    final isPatron = user != null && user.roles.contains(UserRole.patron);
     final paymentsAsync = ref.watch(clientPaymentsStreamProvider(_currentClient.id));
     return paymentsAsync.when(
       data: (payments) {
@@ -362,7 +373,43 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
                 leading: Icon(Icons.check_circle, color: AppTheme.successGreen),
                 title: Text('Paiement: ${p.paymentMethod}'.tr),
                 subtitle: Text('${DateFormat('dd/MM/yyyy HH:mm').format(p.paymentDate)}\nPar: ${p.createdBy}${p.reference != null ? ' - Réf: ${p.reference}' : ''}'),
-                trailing: Text(currencyFormat.format(p.amount), style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.successGreen)),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(currencyFormat.format(p.amount), style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.successGreen)),
+                    if (isPatron) ...[
+                      SizedBox(width: 8),
+                      IconButton(
+                        icon: Icon(Icons.delete, color: AppTheme.errorRed),
+                        onPressed: () async {
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              title: Text('Supprimer ce paiement ?'),
+                              content: Text('Le solde du client sera recrédité de ${currencyFormat.format(p.amount)}.'),
+                              actions: [
+                                TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Annuler')),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(backgroundColor: AppTheme.errorRed),
+                                  onPressed: () => Navigator.pop(ctx, true),
+                                  child: Text('Supprimer', style: TextStyle(color: Colors.white)),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (confirm == true) {
+                            try {
+                              await ref.read(clientRepositoryProvider).deletePayment(p);
+                              if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Paiement supprimé.')));
+                            } catch (e) {
+                              if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e')));
+                            }
+                          }
+                        },
+                      ),
+                    ],
+                  ],
+                ),
                 isThreeLine: true,
               ),
             );
@@ -466,7 +513,7 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
                               labelText: 'Catégorie de véhicule'.tr,
                               prefixIcon: Icon(Icons.category, color: AppTheme.primaryBlue),
                             ),
-                            value: newCategoryId.isEmpty ? null : newCategoryId,
+                            initialValue: newCategoryId.isEmpty ? null : newCategoryId,
                             items: categories.map((c) => DropdownMenuItem(value: c.id, child: Text(c.name))).toList(),
                             onChanged: (val) {
                               if (val != null) newCategoryId = val;
@@ -505,7 +552,7 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
                   updatedAt: DateTime.now(),
                 );
                 await ref.read(clientRepositoryProvider).updateClient(updatedClient);
-                if (mounted) {
+                if (context.mounted) {
                   setState(() {
                     _currentClient = updatedClient;
                   });
@@ -568,7 +615,7 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
                               labelText: 'Catégorie de véhicule'.tr,
                               prefixIcon: Icon(Icons.category, color: AppTheme.primaryBlue),
                             ),
-                            value: newCategoryId.isEmpty ? null : newCategoryId,
+                            initialValue: newCategoryId.isEmpty ? null : newCategoryId,
                             items: categories.map((c) => DropdownMenuItem(value: c.id, child: Text(c.name))).toList(),
                             onChanged: (val) {
                               if (val != null) newCategoryId = val;
@@ -613,7 +660,7 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
                   updatedAt: DateTime.now(),
                 );
                 await ref.read(clientRepositoryProvider).updateClient(updatedClient);
-                if (mounted) {
+                if (context.mounted) {
                   setState(() {
                     _currentClient = updatedClient;
                   });

@@ -9,7 +9,7 @@ part of 'app_user.dart';
 _$AppUserImpl _$$AppUserImplFromJson(Map<String, dynamic> json) =>
     _$AppUserImpl(
       id: json['id'] as String,
-      tenantId: json['tenantId'] as String,
+      tenantId: readTenantId(json, 'tenantId') as String,
       phone: json['phone'] as String,
       pinHash: json['pinHash'] as String,
       name: json['name'] as String,

@@ -22,6 +22,7 @@ Product _$ProductFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$Product {
   String get id => throw _privateConstructorUsedError;
+  @JsonKey(readValue: readTenantId)
   String get tenantId => throw _privateConstructorUsedError;
   String get name => throw _privateConstructorUsedError;
   String get description => throw _privateConstructorUsedError;
@@ -57,7 +58,7 @@ abstract class $ProductCopyWith<$Res> {
   @useResult
   $Res call({
     String id,
-    String tenantId,
+    @JsonKey(readValue: readTenantId) String tenantId,
     String name,
     String description,
     @JsonKey(unknownEnumValue: ProductFamily.standard) ProductFamily family,
@@ -177,7 +178,7 @@ abstract class _$$ProductImplCopyWith<$Res> implements $ProductCopyWith<$Res> {
   @useResult
   $Res call({
     String id,
-    String tenantId,
+    @JsonKey(readValue: readTenantId) String tenantId,
     String name,
     String description,
     @JsonKey(unknownEnumValue: ProductFamily.standard) ProductFamily family,
@@ -290,7 +291,7 @@ class __$$ProductImplCopyWithImpl<$Res>
 class _$ProductImpl extends _Product {
   const _$ProductImpl({
     required this.id,
-    required this.tenantId,
+    @JsonKey(readValue: readTenantId) required this.tenantId,
     required this.name,
     required this.description,
     @JsonKey(unknownEnumValue: ProductFamily.standard)
@@ -312,6 +313,7 @@ class _$ProductImpl extends _Product {
   @override
   final String id;
   @override
+  @JsonKey(readValue: readTenantId)
   final String tenantId;
   @override
   final String name;
@@ -420,7 +422,7 @@ class _$ProductImpl extends _Product {
 abstract class _Product extends Product {
   const factory _Product({
     required final String id,
-    required final String tenantId,
+    @JsonKey(readValue: readTenantId) required final String tenantId,
     required final String name,
     required final String description,
     @JsonKey(unknownEnumValue: ProductFamily.standard)
@@ -442,6 +444,7 @@ abstract class _Product extends Product {
   @override
   String get id;
   @override
+  @JsonKey(readValue: readTenantId)
   String get tenantId;
   @override
   String get name;

@@ -27,7 +27,7 @@ Map<String, dynamic> _$$InventoryItemImplToJson(_$InventoryItemImpl instance) =>
 _$InventoryImpl _$$InventoryImplFromJson(Map<String, dynamic> json) =>
     _$InventoryImpl(
       id: json['id'] as String,
-      tenantId: json['tenantId'] as String,
+      tenantId: readTenantId(json, 'tenantId') as String,
       performedBy: json['performedBy'] as String,
       performedByName: json['performedByName'] as String,
       date: DateTime.parse(json['date'] as String),

@@ -22,6 +22,7 @@ Station _$StationFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$Station {
   String get id => throw _privateConstructorUsedError;
+  @JsonKey(readValue: readTenantId)
   String get tenantId => throw _privateConstructorUsedError;
   String get name => throw _privateConstructorUsedError;
   String get gerantName => throw _privateConstructorUsedError;
@@ -56,7 +57,7 @@ abstract class $StationCopyWith<$Res> {
   @useResult
   $Res call({
     String id,
-    String tenantId,
+    @JsonKey(readValue: readTenantId) String tenantId,
     String name,
     String gerantName,
     String phone,
@@ -200,7 +201,7 @@ abstract class _$$StationImplCopyWith<$Res> implements $StationCopyWith<$Res> {
   @useResult
   $Res call({
     String id,
-    String tenantId,
+    @JsonKey(readValue: readTenantId) String tenantId,
     String name,
     String gerantName,
     String phone,
@@ -337,7 +338,7 @@ class __$$StationImplCopyWithImpl<$Res>
 class _$StationImpl extends _Station {
   const _$StationImpl({
     required this.id,
-    required this.tenantId,
+    @JsonKey(readValue: readTenantId) required this.tenantId,
     required this.name,
     required this.gerantName,
     required this.phone,
@@ -362,6 +363,7 @@ class _$StationImpl extends _Station {
   @override
   final String id;
   @override
+  @JsonKey(readValue: readTenantId)
   final String tenantId;
   @override
   final String name;
@@ -480,7 +482,7 @@ class _$StationImpl extends _Station {
 abstract class _Station extends Station {
   const factory _Station({
     required final String id,
-    required final String tenantId,
+    @JsonKey(readValue: readTenantId) required final String tenantId,
     required final String name,
     required final String gerantName,
     required final String phone,
@@ -505,6 +507,7 @@ abstract class _Station extends Station {
   @override
   String get id;
   @override
+  @JsonKey(readValue: readTenantId)
   String get tenantId;
   @override
   String get name;

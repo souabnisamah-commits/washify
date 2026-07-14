@@ -4,12 +4,15 @@ import 'package:washify/features/payroll/models/payroll.dart';
 
 class PayrollRepository {
   final FirebaseFirestore _firestore;
+  final String tenantId;
 
-  PayrollRepository({FirebaseFirestore? firestore})
+  PayrollRepository({FirebaseFirestore? firestore, this.tenantId = ''})
       : _firestore = firestore ?? FirebaseFirestore.instance;
 
   CollectionReference get _payrollRef =>
       _firestore.collection(AppConstants.payrollCollection);
+
+  Query get _tenantPayrollRef => _payrollRef.where('stationId', isEqualTo: tenantId);
 
   Payroll _payrollFromDoc(DocumentSnapshot doc) {
     final data = doc.data()! as Map<String, dynamic>;
@@ -46,7 +49,7 @@ class PayrollRepository {
 
   Future<List<Payroll>> getPayrollByStation(String stationId,
       {String? period}) async {
-    Query query = _payrollRef
+    Query query = _tenantPayrollRef
         .where('stationId', isEqualTo: stationId)
         .orderBy('createdAt', descending: true);
 
@@ -61,7 +64,7 @@ class PayrollRepository {
   }
 
   Future<List<Payroll>> getPayrollByEmployee(String employeeId) async {
-    final querySnapshot = await _payrollRef
+    final querySnapshot = await _tenantPayrollRef
         .where('employeeId', isEqualTo: employeeId)
         .orderBy('createdAt', descending: true)
         .get();
@@ -102,7 +105,7 @@ class PayrollRepository {
   }
 
   Stream<List<Payroll>> watchPayrollByStation(String stationId) {
-    return _payrollRef
+    return _tenantPayrollRef
         .where('stationId', isEqualTo: stationId)
         .orderBy('createdAt', descending: true)
         .snapshots()

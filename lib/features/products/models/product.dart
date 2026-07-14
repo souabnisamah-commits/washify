@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:washify/core/utils/json_utils.dart';
 
 part 'product.freezed.dart';
 part 'product.g.dart';
@@ -31,7 +32,7 @@ class Product with _$Product {
 
   const factory Product({
     required String id,
-    required String tenantId,
+    @JsonKey(readValue: readTenantId) required String tenantId,
     required String name,
     required String description,
     @JsonKey(unknownEnumValue: ProductFamily.standard)

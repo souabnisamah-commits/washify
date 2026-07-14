@@ -4,8 +4,9 @@ import 'package:washify/features/products/models/product.dart';
 
 class ProductRepository {
   final FirebaseFirestore _firestore;
+  final String tenantId;
 
-  ProductRepository({FirebaseFirestore? firestore})
+  ProductRepository({FirebaseFirestore? firestore, this.tenantId = ''})
       : _firestore = firestore ?? FirebaseFirestore.instance;
 
   CollectionReference get _productsRef =>

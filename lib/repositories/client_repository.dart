@@ -3,8 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:washify/features/clients/models/client.dart';
 import 'package:washify/features/clients/models/client_payment.dart';
 
+import 'package:washify/providers/auth_provider.dart';
+
 final clientRepositoryProvider = Provider<ClientRepository>((ref) {
-  return ClientRepository();
+  final user = ref.watch(currentUserProvider);
+  return ClientRepository(tenantId: user?.tenantId ?? '');
 });
 
 final clientsStreamProvider = StreamProvider.family<List<Client>, String>((ref, stationId) {
@@ -19,12 +22,16 @@ final clientPaymentsStreamProvider = StreamProvider.family<List<ClientPayment>, 
 
 class ClientRepository {
   final FirebaseFirestore _firestore;
+  final String tenantId;
 
-  ClientRepository({FirebaseFirestore? firestore})
+  ClientRepository({FirebaseFirestore? firestore, this.tenantId = ''})
       : _firestore = firestore ?? FirebaseFirestore.instance;
 
   CollectionReference get _clientsRef => _firestore.collection('clients');
   CollectionReference get _paymentsRef => _firestore.collection('client_payments');
+  
+  Query get _tenantClientsRef => tenantId.isEmpty ? _clientsRef : _clientsRef.where('tenantId', isEqualTo: tenantId);
+  Query get _tenantPaymentsRef => tenantId.isEmpty ? _paymentsRef : _paymentsRef.where('tenantId', isEqualTo: tenantId);
 
   Map<String, dynamic> _clientToDoc(Client client) {
     final map = client.toJson();
@@ -96,7 +103,7 @@ class ClientRepository {
 
   // CHECK IF DELETE IS POSSIBLE
   Future<bool> canDeleteClient(String clientId) async {
-    final paymentsSnap = await _paymentsRef.where('clientId', isEqualTo: clientId).limit(1).get();
+    final paymentsSnap = await _tenantPaymentsRef.where('clientId', isEqualTo: clientId).limit(1).get();
     if (paymentsSnap.docs.isNotEmpty) return false;
 
     final ticketsSnap = await _firestore.collection('tickets').where('clientId', isEqualTo: clientId).limit(1).get();
@@ -107,7 +114,7 @@ class ClientRepository {
 
   // WATCH CLIENTS
   Stream<List<Client>> watchClients(String stationId) {
-    return _clientsRef
+    return _tenantClientsRef
         .where('tenantId', isEqualTo: stationId)
         .orderBy('createdAt', descending: true)
         .snapshots()
@@ -132,9 +139,28 @@ class ClientRepository {
     await batch.commit();
   }
 
+  // DELETE PAYMENT
+  Future<void> deletePayment(ClientPayment payment) async {
+    final batch = _firestore.batch();
+
+    // 1. Remove payment record
+    final paymentDoc = _paymentsRef.doc(payment.id);
+    batch.delete(paymentDoc);
+
+    // 2. Refund client balance (increase current balance)
+    final clientDoc = _clientsRef.doc(payment.clientId);
+    batch.update(clientDoc, {
+      'currentBalance': FieldValue.increment(payment.amount),
+      'updatedAt': Timestamp.now(),
+    });
+
+    await batch.commit();
+  }
+
+
   // WATCH PAYMENTS FOR A CLIENT
   Stream<List<ClientPayment>> watchClientPayments(String clientId) {
-    return _paymentsRef
+    return _tenantPaymentsRef
         .where('clientId', isEqualTo: clientId)
         .orderBy('paymentDate', descending: true)
         .snapshots()

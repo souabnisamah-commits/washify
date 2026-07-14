@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:washify/core/utils/json_utils.dart';
 import 'package:washify/features/clients/models/client_vehicle.dart';
 
 part 'client.freezed.dart';
@@ -26,7 +27,7 @@ class VehicleListConverter implements JsonConverter<List<ClientVehicle>, List<dy
 class Client with _$Client {
   const factory Client({
     required String id,
-    required String tenantId,
+    @JsonKey(readValue: readTenantId) required String tenantId,
     required String companyName,
     required String contactName,
     required String taxId, // Matricule Fiscale

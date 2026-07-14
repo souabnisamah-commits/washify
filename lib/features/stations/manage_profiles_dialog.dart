@@ -10,13 +10,11 @@ import 'package:washify/core/utils/hash_util.dart';
 
 // Tailwind Colors
 const _cPrimary = Color(0xFF0052FF);
-const _cSurface = Color(0xFFF8F9FF);
 const _cWhite = Colors.white;
 const _cSlate50 = Color(0xFFF8FAFC);
 const _cSlate100 = Color(0xFFF1F5F9);
 const _cSlate400 = Color(0xFF94A3B8);
 const _cSlate500 = Color(0xFF64748B);
-const _cSlate600 = Color(0xFF475569);
 const _cSlate800 = Color(0xFF1E293B);
 const _cSlate900 = Color(0xFF0F172A);
 const _cRed500 = Color(0xFFEF4444);

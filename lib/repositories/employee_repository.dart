@@ -4,12 +4,15 @@ import 'package:washify/features/employees/models/employee.dart';
 
 class EmployeeRepository {
   final FirebaseFirestore _firestore;
+  final String tenantId;
 
-  EmployeeRepository({FirebaseFirestore? firestore})
+  EmployeeRepository({FirebaseFirestore? firestore, this.tenantId = ''})
       : _firestore = firestore ?? FirebaseFirestore.instance;
 
   CollectionReference get _employeesRef =>
       _firestore.collection(AppConstants.employeesCollection);
+
+  Query get _tenantEmployeesRef => tenantId.isEmpty ? _employeesRef : _employeesRef.where('stationId', isEqualTo: tenantId);
 
   Employee _employeeFromDoc(DocumentSnapshot doc) {
     final data = doc.data()! as Map<String, dynamic>;
@@ -83,14 +86,14 @@ class EmployeeRepository {
   }
 
   Future<List<Employee>> getAllEmployees() async {
-    final querySnapshot = await _employeesRef
+    final querySnapshot = await _tenantEmployeesRef
         .orderBy('name')
         .get();
     return querySnapshot.docs.map((doc) => _employeeFromDoc(doc)).toList();
   }
 
   Future<List<Employee>> getEmployeesByStation(String stationId) async {
-    final querySnapshot = await _employeesRef
+    final querySnapshot = await _tenantEmployeesRef
         .where('stationId', isEqualTo: stationId)
         .where('isActive', isEqualTo: true)
         .orderBy('name')
@@ -130,44 +133,10 @@ class EmployeeRepository {
   }
 
   Stream<List<Employee>> watchEmployeesByStation(String stationId) {
-    print('🔍 🔍 🔍 DÉBUT RECHERCHE EMPLOYÉS 🔍 🔍 🔍');
-    print('📍 stationId demandé: "$stationId"');
-    print('📍 Type: ${stationId.runtimeType}');
-    print('📍 Longueur: ${stationId.length}');
-    
-    final query = _employeesRef
+    return _tenantEmployeesRef
       .where('stationId', isEqualTo: stationId)
-      .where('isActive', isEqualTo: true);
-    
-    print('📋 Requête Firestore: collection=employees, stationId=$stationId, isActive=true');
-    
-    return query.snapshots().map((snapshot) {
-      print('📊 📊 📊 RÉSULTATS 📊 📊 📊');
-      print('📊 Nombre de documents trouvés avec la requête stricte: ${snapshot.docs.length}');
-      
-      // Afficher TOUS les employés de la collection pour comparaison
-      _employeesRef.get().then((allDocs) {
-        print('📋 📋 📋 TOUS LES EMPLOYÉS DE LA BASE 📋 📋 📋');
-        for (var doc in allDocs.docs) {
-          final data = doc.data() as Map<String, dynamic>;
-          print('  👤 ${data['nom']} ${data['prenom']} (Nom complet: ${data['name']})');
-          print('     - id doc: ${doc.id}');
-          print('     - userId: ${data['userId']}');
-          print('     - stationId: "${data['stationId']}" (${data['stationId']?.runtimeType})');
-          print('     - tenantId: "${data['tenantId']}"');
-          print('     - isActive: ${data['isActive']}');
-          print('     - role: ${data['role']}');
-          print('');
-        }
-      });
-      
-      // Afficher les résultats filtrés
-      for (var doc in snapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
-        print('  ✅ TROUVÉ PAR REQUÊTE: ${data['nom']} ${data['prenom']} (stationId: "${data['stationId']}")');
-      }
-      
-      return snapshot.docs.map((doc) => _employeeFromDoc(doc)).toList();
-    });
+      .where('isActive', isEqualTo: true)
+      .snapshots()
+      .map((snapshot) => snapshot.docs.map((doc) => _employeeFromDoc(doc)).toList());
   }
 }

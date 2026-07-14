@@ -17,20 +17,8 @@ import 'package:washify/core/localization/app_localizations.dart';
 import 'package:washify/features/auth/widgets/change_pin_dialog.dart';
 import 'package:washify/core/widgets/language_toggle_button.dart';
 
-import 'package:shimmer/shimmer.dart';
 import 'package:intl/intl.dart';
-import 'package:washify/providers/station_provider.dart';
-import 'package:washify/providers/employee_provider.dart';
-import 'package:washify/features/hr/providers/hr_provider.dart';
-import 'package:washify/features/hr/models/attendance.dart';
-import 'package:washify/features/hr/models/shift.dart';
 import 'package:washify/providers/theme_provider.dart';
-
-import 'package:washify/providers/station_provider.dart';
-import 'package:washify/providers/employee_provider.dart';
-import 'package:washify/features/hr/providers/hr_provider.dart';
-import 'package:washify/features/hr/models/attendance.dart';
-import 'package:washify/features/hr/models/shift.dart';
 
 
 class WorkerDashboard extends ConsumerStatefulWidget {
@@ -193,7 +181,7 @@ class _WorkerDashboardState extends ConsumerState<WorkerDashboard> {
     return Scaffold(
       appBar: AppBar(
         title: ColorAnimatedTitle(
-          text: 'Bienvenue ${user.name},\ndans votre Espace ${_getStationName(ref, user.stationId ?? '')}'.tr,
+          text: '${'Bienvenue'.tr} ${user.name},\n${'dans votre Espace'.tr} ${_getStationName(ref, user.stationId ?? '')}',
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, height: 1.2),
         ),
         actions: [
@@ -256,18 +244,29 @@ class _WorkerDashboardState extends ConsumerState<WorkerDashboard> {
             // 3. Recettes
             ticketsStream.when(
               data: (allTickets) {
-                final employeeId = employeeAsync.value?.id ?? user.id;
+                final employee = employeeAsync.value;
+                final employeeId = employee?.id ?? user.id;
+                final commissionRate = employee?.commissionRate ?? 0.0;
+                
                 final tickets = allTickets.where((t) => t.assignedWorkerId == employeeId).toList();
-                double total = 0;
+                
+                double totalAmount = 0;
+                int ticketsCount = 0;
                 for (var t in tickets) {
                   if (t.status == TicketStatus.paye) {
-                    total += t.totalAmount;
+                    totalAmount += t.totalAmount;
+                    ticketsCount++;
                   }
                 }
+                
+                // Assuming commissionRate is a percentage (e.g., 10 for 10%)
+                // If the app uses fixed commission, you can adjust this logic, but for now we calculate percentage
+                final commission = totalAmount * (commissionRate / 100);
+
                 return _buildActionCard(
                   context,
                   title: 'Mes Recettes',
-                  value: '${total.toStringAsFixed(1)} DT',
+                  value: '$ticketsCount Ticket(s) • ${commission.toStringAsFixed(1)} DT',
                   icon: Icons.payments,
                   color: Colors.orange,
                   onTap: () => _showTicketsBottomSheet(context, tickets),

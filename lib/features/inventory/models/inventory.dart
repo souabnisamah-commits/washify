@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:washify/core/utils/json_utils.dart';
 
 part 'inventory.freezed.dart';
 part 'inventory.g.dart';
@@ -22,7 +23,7 @@ class Inventory with _$Inventory {
 
   const factory Inventory({
     required String id,
-    required String tenantId,
+    @JsonKey(readValue: readTenantId) required String tenantId,
     required String performedBy,
     required String performedByName,
     required DateTime date,

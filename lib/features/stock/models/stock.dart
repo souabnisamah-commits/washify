@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:washify/core/utils/json_utils.dart';
 
 part 'stock.freezed.dart';
 part 'stock.g.dart';
@@ -9,7 +10,7 @@ class StockLevel with _$StockLevel {
 
   const factory StockLevel({
     required String id,
-    required String tenantId,
+    @JsonKey(readValue: readTenantId) required String tenantId,
     required String productId,
     required String productName,
     required double currentQuantity, // Support des millilitres/décimales
@@ -29,7 +30,7 @@ class StockMovement with _$StockMovement {
 
   const factory StockMovement({
     required String id,
-    required String tenantId,
+    @JsonKey(readValue: readTenantId) required String tenantId,
     required String productId,
     required String productName,
     required String type, // in, out, adjustment

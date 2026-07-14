@@ -9,7 +9,7 @@ part of 'audit_log.dart';
 _$AuditLogImpl _$$AuditLogImplFromJson(Map<String, dynamic> json) =>
     _$AuditLogImpl(
       id: json['id'] as String,
-      tenantId: json['tenantId'] as String,
+      tenantId: readTenantId(json, 'tenantId') as String,
       userId: json['userId'] as String,
       userName: json['userName'] as String,
       action: json['action'] as String,

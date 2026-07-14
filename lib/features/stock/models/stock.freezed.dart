@@ -22,6 +22,7 @@ StockLevel _$StockLevelFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$StockLevel {
   String get id => throw _privateConstructorUsedError;
+  @JsonKey(readValue: readTenantId)
   String get tenantId => throw _privateConstructorUsedError;
   String get productId => throw _privateConstructorUsedError;
   String get productName => throw _privateConstructorUsedError;
@@ -50,7 +51,7 @@ abstract class $StockLevelCopyWith<$Res> {
   @useResult
   $Res call({
     String id,
-    String tenantId,
+    @JsonKey(readValue: readTenantId) String tenantId,
     String productId,
     String productName,
     double currentQuantity,
@@ -129,7 +130,7 @@ abstract class _$$StockLevelImplCopyWith<$Res>
   @useResult
   $Res call({
     String id,
-    String tenantId,
+    @JsonKey(readValue: readTenantId) String tenantId,
     String productId,
     String productName,
     double currentQuantity,
@@ -200,7 +201,7 @@ class __$$StockLevelImplCopyWithImpl<$Res>
 class _$StockLevelImpl extends _StockLevel {
   const _$StockLevelImpl({
     required this.id,
-    required this.tenantId,
+    @JsonKey(readValue: readTenantId) required this.tenantId,
     required this.productId,
     required this.productName,
     required this.currentQuantity,
@@ -214,6 +215,7 @@ class _$StockLevelImpl extends _StockLevel {
   @override
   final String id;
   @override
+  @JsonKey(readValue: readTenantId)
   final String tenantId;
   @override
   final String productId;
@@ -283,7 +285,7 @@ class _$StockLevelImpl extends _StockLevel {
 abstract class _StockLevel extends StockLevel {
   const factory _StockLevel({
     required final String id,
-    required final String tenantId,
+    @JsonKey(readValue: readTenantId) required final String tenantId,
     required final String productId,
     required final String productName,
     required final double currentQuantity,
@@ -298,6 +300,7 @@ abstract class _StockLevel extends StockLevel {
   @override
   String get id;
   @override
+  @JsonKey(readValue: readTenantId)
   String get tenantId;
   @override
   String get productId;
@@ -325,6 +328,7 @@ StockMovement _$StockMovementFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$StockMovement {
   String get id => throw _privateConstructorUsedError;
+  @JsonKey(readValue: readTenantId)
   String get tenantId => throw _privateConstructorUsedError;
   String get productId => throw _privateConstructorUsedError;
   String get productName => throw _privateConstructorUsedError;
@@ -355,7 +359,7 @@ abstract class $StockMovementCopyWith<$Res> {
   @useResult
   $Res call({
     String id,
-    String tenantId,
+    @JsonKey(readValue: readTenantId) String tenantId,
     String productId,
     String productName,
     String type,
@@ -458,7 +462,7 @@ abstract class _$$StockMovementImplCopyWith<$Res>
   @useResult
   $Res call({
     String id,
-    String tenantId,
+    @JsonKey(readValue: readTenantId) String tenantId,
     String productId,
     String productName,
     String type,
@@ -553,7 +557,7 @@ class __$$StockMovementImplCopyWithImpl<$Res>
 class _$StockMovementImpl extends _StockMovement {
   const _$StockMovementImpl({
     required this.id,
-    required this.tenantId,
+    @JsonKey(readValue: readTenantId) required this.tenantId,
     required this.productId,
     required this.productName,
     required this.type,
@@ -571,6 +575,7 @@ class _$StockMovementImpl extends _StockMovement {
   @override
   final String id;
   @override
+  @JsonKey(readValue: readTenantId)
   final String tenantId;
   @override
   final String productId;
@@ -657,7 +662,7 @@ class _$StockMovementImpl extends _StockMovement {
 abstract class _StockMovement extends StockMovement {
   const factory _StockMovement({
     required final String id,
-    required final String tenantId,
+    @JsonKey(readValue: readTenantId) required final String tenantId,
     required final String productId,
     required final String productName,
     required final String type,
@@ -676,6 +681,7 @@ abstract class _StockMovement extends StockMovement {
   @override
   String get id;
   @override
+  @JsonKey(readValue: readTenantId)
   String get tenantId;
   @override
   String get productId;

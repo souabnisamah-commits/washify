@@ -9,7 +9,7 @@ part of 'station.dart';
 _$StationImpl _$$StationImplFromJson(Map<String, dynamic> json) =>
     _$StationImpl(
       id: json['id'] as String,
-      tenantId: json['tenantId'] as String,
+      tenantId: readTenantId(json, 'tenantId') as String,
       name: json['name'] as String,
       gerantName: json['gerantName'] as String,
       phone: json['phone'] as String,

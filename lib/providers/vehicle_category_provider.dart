@@ -1,9 +1,11 @@
+import 'package:washify/providers/auth_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:washify/features/services/models/vehicle_category.dart';
 import 'package:washify/repositories/vehicle_category_repository.dart';
 
 final vehicleCategoryRepositoryProvider = Provider<VehicleCategoryRepository>((ref) {
-  return VehicleCategoryRepository();
+  final user = ref.watch(currentUserProvider);
+  return VehicleCategoryRepository(tenantId: user?.tenantId ?? '');
 });
 
 final vehicleCategoriesByStationProvider =

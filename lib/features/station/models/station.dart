@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:washify/core/utils/json_utils.dart';
 
 part 'station.freezed.dart';
 part 'station.g.dart';
@@ -25,7 +26,7 @@ class Station with _$Station {
 
   const factory Station({
     required String id,
-    required String tenantId,
+    @JsonKey(readValue: readTenantId) required String tenantId,
     required String name,
     required String gerantName,
     required String phone,

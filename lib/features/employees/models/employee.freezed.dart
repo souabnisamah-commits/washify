@@ -23,6 +23,7 @@ Employee _$EmployeeFromJson(Map<String, dynamic> json) {
 mixin _$Employee {
   String get id => throw _privateConstructorUsedError;
   String get userId => throw _privateConstructorUsedError;
+  @JsonKey(readValue: readTenantId)
   String get tenantId => throw _privateConstructorUsedError;
   String get nom => throw _privateConstructorUsedError;
   String get prenom => throw _privateConstructorUsedError;
@@ -60,7 +61,7 @@ abstract class $EmployeeCopyWith<$Res> {
   $Res call({
     String id,
     String userId,
-    String tenantId,
+    @JsonKey(readValue: readTenantId) String tenantId,
     String nom,
     String prenom,
     String phone,
@@ -193,7 +194,7 @@ abstract class _$$EmployeeImplCopyWith<$Res>
   $Res call({
     String id,
     String userId,
-    String tenantId,
+    @JsonKey(readValue: readTenantId) String tenantId,
     String nom,
     String prenom,
     String phone,
@@ -318,7 +319,7 @@ class _$EmployeeImpl extends _Employee {
   const _$EmployeeImpl({
     required this.id,
     required this.userId,
-    required this.tenantId,
+    @JsonKey(readValue: readTenantId) required this.tenantId,
     required this.nom,
     required this.prenom,
     required this.phone,
@@ -343,6 +344,7 @@ class _$EmployeeImpl extends _Employee {
   @override
   final String userId;
   @override
+  @JsonKey(readValue: readTenantId)
   final String tenantId;
   @override
   final String nom;
@@ -462,7 +464,7 @@ abstract class _Employee extends Employee {
   const factory _Employee({
     required final String id,
     required final String userId,
-    required final String tenantId,
+    @JsonKey(readValue: readTenantId) required final String tenantId,
     required final String nom,
     required final String prenom,
     required final String phone,
@@ -487,6 +489,7 @@ abstract class _Employee extends Employee {
   @override
   String get userId;
   @override
+  @JsonKey(readValue: readTenantId)
   String get tenantId;
   @override
   String get nom;

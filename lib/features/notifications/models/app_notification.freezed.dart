@@ -22,6 +22,7 @@ AppNotification _$AppNotificationFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$AppNotification {
   String get id => throw _privateConstructorUsedError;
+  @JsonKey(readValue: readTenantId)
   String get tenantId => throw _privateConstructorUsedError;
   String get userId => throw _privateConstructorUsedError;
   String get title => throw _privateConstructorUsedError;
@@ -51,7 +52,7 @@ abstract class $AppNotificationCopyWith<$Res> {
   @useResult
   $Res call({
     String id,
-    String tenantId,
+    @JsonKey(readValue: readTenantId) String tenantId,
     String userId,
     String title,
     String body,
@@ -142,7 +143,7 @@ abstract class _$$AppNotificationImplCopyWith<$Res>
   @useResult
   $Res call({
     String id,
-    String tenantId,
+    @JsonKey(readValue: readTenantId) String tenantId,
     String userId,
     String title,
     String body,
@@ -225,7 +226,7 @@ class __$$AppNotificationImplCopyWithImpl<$Res>
 class _$AppNotificationImpl extends _AppNotification {
   const _$AppNotificationImpl({
     required this.id,
-    required this.tenantId,
+    @JsonKey(readValue: readTenantId) required this.tenantId,
     required this.userId,
     required this.title,
     required this.body,
@@ -241,6 +242,7 @@ class _$AppNotificationImpl extends _AppNotification {
   @override
   final String id;
   @override
+  @JsonKey(readValue: readTenantId)
   final String tenantId;
   @override
   final String userId;
@@ -318,7 +320,7 @@ class _$AppNotificationImpl extends _AppNotification {
 abstract class _AppNotification extends AppNotification {
   const factory _AppNotification({
     required final String id,
-    required final String tenantId,
+    @JsonKey(readValue: readTenantId) required final String tenantId,
     required final String userId,
     required final String title,
     required final String body,
@@ -335,6 +337,7 @@ abstract class _AppNotification extends AppNotification {
   @override
   String get id;
   @override
+  @JsonKey(readValue: readTenantId)
   String get tenantId;
   @override
   String get userId;

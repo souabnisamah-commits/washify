@@ -1,9 +1,11 @@
+import 'package:washify/providers/auth_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:washify/features/employees/models/employee.dart';
 import 'package:washify/repositories/employee_repository.dart';
 
 final employeeRepositoryProvider = Provider<EmployeeRepository>((ref) {
-  return EmployeeRepository();
+  final user = ref.watch(currentUserProvider);
+  return EmployeeRepository(tenantId: user?.tenantId ?? '');
 });
 
 final employeesProvider = FutureProvider<List<Employee>>((ref) async {

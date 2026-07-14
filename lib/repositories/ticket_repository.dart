@@ -5,18 +5,30 @@ import 'package:washify/features/tickets/models/ticket.dart';
 import 'package:washify/repositories/stock_repository.dart';
 import 'package:washify/repositories/client_repository.dart';
 
+import 'package:washify/providers/auth_provider.dart';
+
+import 'package:washify/features/auth/models/app_user.dart';
+import 'package:washify/core/constants/user_roles.dart';
+
 final ticketRepositoryProvider = Provider<TicketRepository>((ref) {
-  return TicketRepository();
+  final user = ref.watch(currentUserProvider);
+  return TicketRepository(tenantId: user?.tenantId ?? '', currentUser: user);
 });
 
 class TicketRepository {
   final FirebaseFirestore _firestore;
+  final String tenantId;
+  final AppUser? currentUser;
 
-  TicketRepository({FirebaseFirestore? firestore})
+  TicketRepository({FirebaseFirestore? firestore, this.tenantId = '', this.currentUser})
       : _firestore = firestore ?? FirebaseFirestore.instance;
 
   CollectionReference get _ticketsRef =>
       _firestore.collection(AppConstants.ticketsCollection);
+      
+  Query get _tenantTicketsRef => tenantId.isEmpty 
+      ? _ticketsRef 
+      : _ticketsRef.where('tenantId', isEqualTo: tenantId);
 
   Ticket _ticketFromDoc(DocumentSnapshot doc) {
     final data = doc.data()! as Map<String, dynamic>;
@@ -87,7 +99,7 @@ class TicketRepository {
 
   Future<List<Ticket>> getTicketsByStation(String stationId,
       {String? status, int limit = 50}) async {
-    Query query = _ticketsRef
+    Query query = _tenantTicketsRef
         .where('stationId', isEqualTo: stationId)
         .orderBy('createdAt', descending: true)
         .limit(limit);
@@ -110,7 +122,7 @@ class TicketRepository {
 
   Future<List<Ticket>> getTicketsByWorker(String workerId,
       {String? status, int limit = 50}) async {
-    Query query = _ticketsRef
+    Query query = _tenantTicketsRef
         .where('workerId', isEqualTo: workerId)
         .orderBy('createdAt', descending: true)
         .limit(limit);
@@ -136,7 +148,7 @@ class TicketRepository {
     final startOfDay = DateTime(now.year, now.month, now.day);
     final endOfDay = startOfDay.add(const Duration(days: 1));
 
-    final querySnapshot = await _ticketsRef
+    final querySnapshot = await _tenantTicketsRef
         .where('stationId', isEqualTo: stationId)
         .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
         .where('createdAt', isLessThan: Timestamp.fromDate(endOfDay))
@@ -155,10 +167,23 @@ class TicketRepository {
   Future<String> createTicket(Ticket ticket) async {
     final docRef = await _ticketsRef.add(_ticketToDoc(ticket));
     if (ticket.status == TicketStatus.paye) {
-      final stockRepo = StockRepository(firestore: _firestore);
+      final stockRepo = StockRepository(firestore: _firestore, tenantId: tenantId);
       await stockRepo.deductStockForTicket(ticket.copyWith(id: docRef.id));
     }
     return docRef.id;
+  }
+
+  Future<void> deleteTicket(String ticketId) async {
+    final doc = await _ticketsRef.doc(ticketId).get();
+    if (doc.exists) {
+      final data = doc.data() as Map<String, dynamic>?;
+      final status = data?['status'];
+      if (status == 'en_attente' || status == 'enAttente' || status == 'pending' || status == 'in_progress') {
+        await _ticketsRef.doc(ticketId).delete();
+      } else {
+        throw Exception("Impossible de supprimer un ticket déjà payé ou remboursé.");
+      }
+    }
   }
 
   Future<void> updateTicket(Ticket ticket) async {
@@ -170,15 +195,23 @@ class TicketRepository {
       oldStatus = data?['status'] as String?;
     }
 
+    if (currentUser != null &&
+        currentUser!.roles.length == 1 &&
+        currentUser!.roles.contains(UserRole.ouvrier)) {
+      if (ticket.assignedWorkerId != currentUser!.id) {
+        throw Exception("Opération refusée : Vous n'êtes pas assigné à ce ticket.");
+      }
+    }
+
     await _ticketsRef.doc(ticket.id).update(_ticketToDoc(ticket));
 
     // If it transitioned to paye, we deduct stock and update client balance
     if (oldStatus != 'paye' && ticket.status == TicketStatus.paye) {
-      final stockRepo = StockRepository(firestore: _firestore);
+      final stockRepo = StockRepository(firestore: _firestore, tenantId: tenantId);
       await stockRepo.deductStockForTicket(ticket);
 
       if (ticket.paymentMethod == 'compte_client' && ticket.clientId != null) {
-        final clientRepo = ClientRepository(firestore: _firestore);
+        final clientRepo = ClientRepository(firestore: _firestore, tenantId: tenantId);
         await clientRepo.updateClientBalance(ticket.clientId!, ticket.totalAmount);
         if (ticket.vehiclePlate != null && ticket.vehiclePlate!.isNotEmpty) {
           await clientRepo.addVehicleToClient(ticket.clientId!, ticket.vehiclePlate!);
@@ -204,11 +237,11 @@ class TicketRepository {
     if (mappedStatus == 'paye') {
       final ticket = await getTicketById(ticketId);
       if (ticket != null) {
-        final stockRepo = StockRepository(firestore: _firestore);
+        final stockRepo = StockRepository(firestore: _firestore, tenantId: tenantId);
         await stockRepo.deductStockForTicket(ticket);
 
         if (ticket.paymentMethod == 'compte_client' && ticket.clientId != null) {
-          final clientRepo = ClientRepository(firestore: _firestore);
+          final clientRepo = ClientRepository(firestore: _firestore, tenantId: tenantId);
           await clientRepo.updateClientBalance(ticket.clientId!, ticket.totalAmount);
           if (ticket.vehiclePlate != null && ticket.vehiclePlate!.isNotEmpty) {
             await clientRepo.addVehicleToClient(ticket.clientId!, ticket.vehiclePlate!);
@@ -233,7 +266,7 @@ class TicketRepository {
     final startOfDay = DateTime(now.year, now.month, now.day);
     final endOfDay = startOfDay.add(const Duration(days: 1));
 
-    return _ticketsRef
+    return _tenantTicketsRef
         .where('stationId', isEqualTo: stationId)
         .where('createdAt',
             isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
@@ -245,7 +278,7 @@ class TicketRepository {
   }
 
   Stream<List<Ticket>> watchStationTickets(String stationId) {
-    return _ticketsRef
+    return _tenantTicketsRef
         .where('tenantId', isEqualTo: stationId)
         .orderBy('createdAt', descending: true)
         .limit(100) // limit for UI performance
@@ -255,7 +288,7 @@ class TicketRepository {
 
   // WATCH UNPAID TICKETS FOR A CLIENT
   Stream<List<Ticket>> watchClientTickets(String stationId, String clientId) {
-    return _ticketsRef
+    return _tenantTicketsRef
         .where('tenantId', isEqualTo: stationId)
         .where('clientId', isEqualTo: clientId)
         // .where('status', isEqualTo: TicketStatus.enAttente.toString()) // if we only want unpaid. Wait, maybe we want all client tickets?
@@ -267,7 +300,7 @@ class TicketRepository {
   Stream<List<Ticket>> watchWorkerTickets(String workerId) {
     final now = DateTime.now();
     final startOfDay = DateTime(now.year, now.month, now.day);
-    return _ticketsRef
+    return _tenantTicketsRef
         .where('workerId', isEqualTo: workerId)
         .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
         .orderBy('createdAt', descending: true)
@@ -278,7 +311,7 @@ class TicketRepository {
 
   Future<Map<String, double>> getRevenueStats(
       String stationId, DateTime startDate, DateTime endDate) async {
-    final querySnapshot = await _ticketsRef
+    final querySnapshot = await _tenantTicketsRef
         .where('stationId', isEqualTo: stationId)
         .where('status', isEqualTo: 'paye')
         .where('updatedAt',
@@ -307,7 +340,7 @@ class TicketRepository {
 
   Future<List<Ticket>> getTicketsByDateRange(
       String stationId, DateTime startDate, DateTime endDate) async {
-    final querySnapshot = await _ticketsRef
+    final querySnapshot = await _tenantTicketsRef
         .where('stationId', isEqualTo: stationId)
         .where('status', isEqualTo: 'paye')
         .where('updatedAt', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))

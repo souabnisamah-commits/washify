@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:washify/core/utils/json_utils.dart';
 
 part 'payroll.freezed.dart';
 part 'payroll.g.dart';
@@ -28,7 +29,7 @@ class PayrollTransaction with _$PayrollTransaction {
     required String id,
     required String payrollId,
     required String employeeId,
-    required String tenantId,
+    @JsonKey(readValue: readTenantId) required String tenantId,
     required PayrollTransactionType type, // salaire, prime, avance, cnss
     required double amount,
     required String description,
@@ -48,7 +49,7 @@ class Payroll with _$Payroll {
     required String id,
     required String employeeId,
     required String employeeName,
-    required String tenantId,
+    @JsonKey(readValue: readTenantId) required String tenantId,
     required double baseSalary,
     required double commissionTotal,
     required double bonuses,

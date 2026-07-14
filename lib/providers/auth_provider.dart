@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:washify/features/auth/models/app_user.dart';
 import 'package:washify/repositories/auth_repository.dart';
 import 'package:washify/core/utils/session_service.dart';
+import 'package:washify/core/utils/hash_util.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepository();
@@ -14,13 +15,18 @@ class CurrentUserNotifier extends StateNotifier<AppUser?> {
       : super(initialUser);
 
   Future<bool> login(String phone, String pin) async {
-    final user = await _authRepository.loginWithPhoneAndPin(phone, pin);
-    if (user != null) {
-      state = user;
-      await SessionService.instance.saveSession(user.id);
-      return true;
+    try {
+      final user = await _authRepository.loginWithPhoneAndPin(phone, pin);
+      if (user != null) {
+        state = user;
+        await SessionService.instance.saveSession(user.id);
+        return true;
+      }
+      return false;
+    } catch (e) {
+      print('Network or login error: $e');
+      return false;
     }
-    return false;
   }
 
   void logout() {
@@ -32,10 +38,24 @@ class CurrentUserNotifier extends StateNotifier<AppUser?> {
     state = user;
   }
 
-  Future<void> changePin(String newPin) async {
+  Future<bool> changePin(String oldPin, String newPin) async {
     if (state != null) {
-      await _authRepository.changePin(state!.id, newPin);
+      try {
+        final hashedOldPin = hashPin(oldPin);
+        if (state!.pinHash != hashedOldPin) {
+          return false; // Old PIN is incorrect
+        }
+        await _authRepository.changePin(state!.id, newPin);
+        
+        // Update local state with new pin hash
+        state = state!.copyWith(pinHash: hashPin(newPin));
+        return true;
+      } catch (e) {
+        print('Error changing pin: $e');
+        return false;
+      }
     }
+    return false;
   }
 }
 

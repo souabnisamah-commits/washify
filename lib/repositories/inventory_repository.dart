@@ -4,8 +4,9 @@ import 'package:washify/features/inventory/models/inventory.dart';
 
 class InventoryRepository {
   final FirebaseFirestore _firestore;
+  final String tenantId;
 
-  InventoryRepository({FirebaseFirestore? firestore})
+  InventoryRepository({FirebaseFirestore? firestore, this.tenantId = ''})
       : _firestore = firestore ?? FirebaseFirestore.instance;
 
   CollectionReference get _inventoriesRef =>
@@ -39,6 +40,7 @@ class InventoryRepository {
     map['stationId'] = inventory.tenantId;
     map['date'] = Timestamp.fromDate(inventory.date);
     map['createdAt'] = Timestamp.fromDate(inventory.createdAt);
+    map['items'] = inventory.items.map((i) => i.toJson()).toList();
     return map;
   }
 

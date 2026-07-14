@@ -1,9 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:washify/providers/auth_provider.dart';
 import 'package:washify/features/stock/models/stock.dart';
 import 'package:washify/repositories/stock_repository.dart';
 
 final stockRepositoryProvider = Provider<StockRepository>((ref) {
-  return StockRepository();
+  final user = ref.watch(currentUserProvider);
+  return StockRepository(tenantId: user?.tenantId ?? '');
 });
 
 final stockByStationProvider =

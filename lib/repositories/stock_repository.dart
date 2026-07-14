@@ -6,15 +6,16 @@ import 'package:washify/features/services/models/service_definition.dart';
 
 class StockRepository {
   final FirebaseFirestore _firestore;
+  final String tenantId;
 
-  StockRepository({FirebaseFirestore? firestore})
+  StockRepository({FirebaseFirestore? firestore, this.tenantId = ''})
       : _firestore = firestore ?? FirebaseFirestore.instance;
 
-  CollectionReference get _stockRef =>
-      _firestore.collection(AppConstants.stockCollection);
-
-  CollectionReference get _movementsRef =>
-      _firestore.collection('stock_movements');
+  CollectionReference get _stockRef => _firestore.collection(AppConstants.stockCollection);
+  CollectionReference get _movementsRef => _firestore.collection('stock_movements');
+  
+  Query get _tenantStockRef => tenantId.isEmpty ? _stockRef : _stockRef.where('stationId', isEqualTo: tenantId);
+  Query get _tenantMovementsRef => tenantId.isEmpty ? _movementsRef : _movementsRef.where('stationId', isEqualTo: tenantId);
 
   StockLevel _levelFromDoc(DocumentSnapshot doc) {
     final data = doc.data()! as Map<String, dynamic>;
@@ -67,7 +68,7 @@ class StockRepository {
   }
 
   Future<List<StockLevel>> getStockByStation(String stationId) async {
-    final querySnapshot = await _stockRef
+    final querySnapshot = await _tenantStockRef
         .where('stationId', isEqualTo: stationId)
         .orderBy('productName')
         .get();
@@ -75,7 +76,7 @@ class StockRepository {
   }
 
   Future<StockLevel?> getStockLevel(String stationId, String productId) async {
-    final querySnapshot = await _stockRef
+    final querySnapshot = await _tenantStockRef
         .where('stationId', isEqualTo: stationId)
         .where('productId', isEqualTo: productId)
         .limit(1)
@@ -85,7 +86,7 @@ class StockRepository {
   }
 
   Future<void> updateStockLevel(StockLevel stockLevel) async {
-    final querySnapshot = await _stockRef
+    final querySnapshot = await _tenantStockRef
         .where('stationId', isEqualTo: stockLevel.stationId)
         .where('productId', isEqualTo: stockLevel.productId)
         .limit(1)
@@ -104,7 +105,7 @@ class StockRepository {
 
   Future<List<StockMovement>> getStockMovements(String stationId,
       {String? productId, int limit = 50}) async {
-    Query query = _movementsRef
+    Query query = _tenantMovementsRef
         .where('stationId', isEqualTo: stationId)
         .orderBy('createdAt', descending: true)
         .limit(limit);
@@ -123,7 +124,7 @@ class StockRepository {
   }
 
   Stream<List<StockLevel>> watchStockByStation(String stationId) {
-    return _stockRef
+    return _tenantStockRef
         .where('stationId', isEqualTo: stationId)
         .orderBy('productName')
         .snapshots()

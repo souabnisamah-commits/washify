@@ -10,7 +10,7 @@ _$AppNotificationImpl _$$AppNotificationImplFromJson(
   Map<String, dynamic> json,
 ) => _$AppNotificationImpl(
   id: json['id'] as String,
-  tenantId: json['tenantId'] as String,
+  tenantId: readTenantId(json, 'tenantId') as String,
   userId: json['userId'] as String,
   title: json['title'] as String,
   body: json['body'] as String,

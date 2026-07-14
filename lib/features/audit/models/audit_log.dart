@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:washify/core/utils/json_utils.dart';
 
 part 'audit_log.freezed.dart';
 part 'audit_log.g.dart';
@@ -9,7 +10,7 @@ class AuditLog with _$AuditLog {
 
   const factory AuditLog({
     required String id,
-    required String tenantId,
+    @JsonKey(readValue: readTenantId) required String tenantId,
     required String userId,
     required String userName,
     required String action, // ticket_paye, ticket_rembourse, stock_modifie, wallet_ajuste, licence_modifiee

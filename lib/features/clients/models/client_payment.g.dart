@@ -10,7 +10,7 @@ _$ClientPaymentImpl _$$ClientPaymentImplFromJson(Map<String, dynamic> json) =>
     _$ClientPaymentImpl(
       id: json['id'] as String,
       clientId: json['clientId'] as String,
-      tenantId: json['tenantId'] as String,
+      tenantId: readTenantId(json, 'tenantId') as String,
       amount: (json['amount'] as num).toDouble(),
       paymentMethod: json['paymentMethod'] as String,
       reference: json['reference'] as String?,

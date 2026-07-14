@@ -1,9 +1,11 @@
+import 'package:washify/providers/auth_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:washify/features/inventory/models/inventory.dart';
 import 'package:washify/repositories/inventory_repository.dart';
 
 final inventoryRepositoryProvider = Provider<InventoryRepository>((ref) {
-  return InventoryRepository();
+  final user = ref.watch(currentUserProvider);
+  return InventoryRepository(tenantId: user?.tenantId ?? '');
 });
 
 final inventoriesProvider =

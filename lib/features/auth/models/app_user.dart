@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:washify/core/utils/json_utils.dart';
 import 'package:washify/core/constants/user_roles.dart';
 
 part 'app_user.freezed.dart';
@@ -10,7 +11,7 @@ class AppUser with _$AppUser {
 
   const factory AppUser({
     required String id,
-    required String tenantId, // stationId or tenantId
+    @JsonKey(readValue: readTenantId) required String tenantId, // stationId or tenantId
     required String phone,
     required String pinHash,  // PIN stored hashed
     required String name,

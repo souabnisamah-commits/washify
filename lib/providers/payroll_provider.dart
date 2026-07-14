@@ -1,9 +1,11 @@
+import 'package:washify/providers/auth_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:washify/features/payroll/models/payroll.dart';
 import 'package:washify/repositories/payroll_repository.dart';
 
 final payrollRepositoryProvider = Provider<PayrollRepository>((ref) {
-  return PayrollRepository();
+  final user = ref.watch(currentUserProvider);
+  return PayrollRepository(tenantId: user?.tenantId ?? '');
 });
 
 final payrollByStationProvider =

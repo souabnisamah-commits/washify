@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:washify/core/utils/json_utils.dart';
 
 part 'ticket.freezed.dart';
 part 'ticket.g.dart';
@@ -52,7 +53,7 @@ class Ticket with _$Ticket {
 
   const factory Ticket({
     required String id,                 // Firestore Document ID
-    required String tenantId,           // stationId
+    @JsonKey(readValue: readTenantId) required String tenantId,           // stationId
     required String ticketNumber,       // ST-{station}-{date}-{heure}-{random}
     required String createdBy,          // Creator (Worker or Cashier)
     String? paidBy,                     // Paid cashier

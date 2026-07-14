@@ -24,6 +24,7 @@ mixin _$PayrollTransaction {
   String get id => throw _privateConstructorUsedError;
   String get payrollId => throw _privateConstructorUsedError;
   String get employeeId => throw _privateConstructorUsedError;
+  @JsonKey(readValue: readTenantId)
   String get tenantId => throw _privateConstructorUsedError;
   PayrollTransactionType get type =>
       throw _privateConstructorUsedError; // salaire, prime, avance, cnss
@@ -52,7 +53,7 @@ abstract class $PayrollTransactionCopyWith<$Res> {
     String id,
     String payrollId,
     String employeeId,
-    String tenantId,
+    @JsonKey(readValue: readTenantId) String tenantId,
     PayrollTransactionType type,
     double amount,
     String description,
@@ -137,7 +138,7 @@ abstract class _$$PayrollTransactionImplCopyWith<$Res>
     String id,
     String payrollId,
     String employeeId,
-    String tenantId,
+    @JsonKey(readValue: readTenantId) String tenantId,
     PayrollTransactionType type,
     double amount,
     String description,
@@ -214,7 +215,7 @@ class _$PayrollTransactionImpl extends _PayrollTransaction {
     required this.id,
     required this.payrollId,
     required this.employeeId,
-    required this.tenantId,
+    @JsonKey(readValue: readTenantId) required this.tenantId,
     required this.type,
     required this.amount,
     required this.description,
@@ -231,6 +232,7 @@ class _$PayrollTransactionImpl extends _PayrollTransaction {
   @override
   final String employeeId;
   @override
+  @JsonKey(readValue: readTenantId)
   final String tenantId;
   @override
   final PayrollTransactionType type;
@@ -303,7 +305,7 @@ abstract class _PayrollTransaction extends PayrollTransaction {
     required final String id,
     required final String payrollId,
     required final String employeeId,
-    required final String tenantId,
+    @JsonKey(readValue: readTenantId) required final String tenantId,
     required final PayrollTransactionType type,
     required final double amount,
     required final String description,
@@ -321,6 +323,7 @@ abstract class _PayrollTransaction extends PayrollTransaction {
   @override
   String get employeeId;
   @override
+  @JsonKey(readValue: readTenantId)
   String get tenantId;
   @override
   PayrollTransactionType get type; // salaire, prime, avance, cnss
@@ -348,6 +351,7 @@ mixin _$Payroll {
   String get id => throw _privateConstructorUsedError;
   String get employeeId => throw _privateConstructorUsedError;
   String get employeeName => throw _privateConstructorUsedError;
+  @JsonKey(readValue: readTenantId)
   String get tenantId => throw _privateConstructorUsedError;
   double get baseSalary => throw _privateConstructorUsedError;
   double get commissionTotal => throw _privateConstructorUsedError;
@@ -380,7 +384,7 @@ abstract class $PayrollCopyWith<$Res> {
     String id,
     String employeeId,
     String employeeName,
-    String tenantId,
+    @JsonKey(readValue: readTenantId) String tenantId,
     double baseSalary,
     double commissionTotal,
     double bonuses,
@@ -506,7 +510,7 @@ abstract class _$$PayrollImplCopyWith<$Res> implements $PayrollCopyWith<$Res> {
     String id,
     String employeeId,
     String employeeName,
-    String tenantId,
+    @JsonKey(readValue: readTenantId) String tenantId,
     double baseSalary,
     double commissionTotal,
     double bonuses,
@@ -625,7 +629,7 @@ class _$PayrollImpl extends _Payroll {
     required this.id,
     required this.employeeId,
     required this.employeeName,
-    required this.tenantId,
+    @JsonKey(readValue: readTenantId) required this.tenantId,
     required this.baseSalary,
     required this.commissionTotal,
     required this.bonuses,
@@ -649,6 +653,7 @@ class _$PayrollImpl extends _Payroll {
   @override
   final String employeeName;
   @override
+  @JsonKey(readValue: readTenantId)
   final String tenantId;
   @override
   final double baseSalary;
@@ -752,7 +757,7 @@ abstract class _Payroll extends Payroll {
     required final String id,
     required final String employeeId,
     required final String employeeName,
-    required final String tenantId,
+    @JsonKey(readValue: readTenantId) required final String tenantId,
     required final double baseSalary,
     required final double commissionTotal,
     required final double bonuses,
@@ -776,6 +781,7 @@ abstract class _Payroll extends Payroll {
   @override
   String get employeeName;
   @override
+  @JsonKey(readValue: readTenantId)
   String get tenantId;
   @override
   double get baseSalary;

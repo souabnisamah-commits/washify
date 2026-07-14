@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:washify/core/localization/app_localizations.dart';
 
@@ -45,6 +46,7 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
   // To avoid redundant queries
   String _lastQueriedPlate = '';
   bool _isQueryingHistory = false;
+  Timer? _plateDebounce;
   
   String _clientName = '';
   String _clientPhone = '';
@@ -62,6 +64,7 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
 
   @override
   void dispose() {
+    _plateDebounce?.cancel();
     _notesController.dispose();
     _productSearchController.dispose();
     super.dispose();
@@ -221,43 +224,6 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
     }).toList();
   }
 
-  void _onSearchChanged(String val, List<Product> products) {
-    final query = val.trim();
-    setState(() {
-      _productSearchQuery = query.toLowerCase();
-    });
-
-    if (query.length == 5) {
-      final matchedProduct = products.firstWhere(
-        (p) => p.barcode == query,
-        orElse: () => Product(
-          id: '',
-          tenantId: '',
-          name: '',
-          description: '',
-          unit: '',
-          unitPrice: 0.0,
-          minStock: 0,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        ),
-      );
-      if (matchedProduct.id.isNotEmpty) {
-        _addProduct(matchedProduct);
-        _productSearchController.clear();
-        setState(() {
-          _productSearchQuery = '';
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${matchedProduct.name} ajouté via code-barres'),
-            duration: const Duration(seconds: 1),
-            backgroundColor: AppTheme.successGreen,
-          ),
-        );
-      }
-    }
-  }
 
   Future<void> _submitTicket(VehicleCategory? selectedCategory) async {
     if (_assignedWorker == null) {
@@ -490,7 +456,8 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
                   _vehiclePlate = plate;
                   _vehicleBrand = brand;
                   _vehicleModel = model;
-                  _checkVehicleHistory();
+                  if (_plateDebounce?.isActive ?? false) _plateDebounce!.cancel();
+                  _plateDebounce = Timer(const Duration(milliseconds: 300), _checkVehicleHistory);
                 },
               ),
               SizedBox(height: 16),
@@ -750,7 +717,7 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
                                   ),
                                 ),
                               );
-                            }).toList(),
+                            }),
                           ],
                         ),
                       ),
@@ -1462,14 +1429,14 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
 
   void _checkVehicleHistory() async {
     final plateUpper = _vehiclePlate.trim().toUpperCase();
-    if (plateUpper.length < 6 || _lastQueriedPlate == plateUpper || _isQueryingHistory) return;
+    if (plateUpper.length < 6 || _lastQueriedPlate == plateUpper) return;
 
     _lastQueriedPlate = plateUpper;
-    _isQueryingHistory = true;
+    if (mounted) setState(() { _isQueryingHistory = true; });
 
     try {
       final user = ref.read(currentUserProvider);
-      if (user == null || user.tenantId == null) return;
+      if (user == null) return;
       
       bool foundB2B = false;
       bool uiUpdated = false;
@@ -1502,7 +1469,17 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
                   }
                 });
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Véhicule B2B détecté pour le client: ${client.companyName}'.tr), backgroundColor: AppTheme.successGreen),
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        Icon(Icons.business, color: Colors.white),
+                        SizedBox(width: 8),
+                        Expanded(child: Text('Véhicule B2B : ${client.companyName}'.tr, style: TextStyle(fontWeight: FontWeight.bold))),
+                      ],
+                    ),
+                    backgroundColor: AppTheme.successGreen,
+                    duration: const Duration(seconds: 4),
+                  ),
                 );
               }
               break;

@@ -4,8 +4,9 @@ import 'package:washify/features/services/models/offer.dart';
 
 class OfferRepository {
   final FirebaseFirestore _firestore;
+  final String tenantId;
 
-  OfferRepository({FirebaseFirestore? firestore})
+  OfferRepository({FirebaseFirestore? firestore, this.tenantId = ''})
       : _firestore = firestore ?? FirebaseFirestore.instance;
 
   CollectionReference get _ref =>

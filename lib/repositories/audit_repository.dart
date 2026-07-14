@@ -4,8 +4,9 @@ import 'package:washify/features/audit/models/audit_log.dart';
 
 class AuditRepository {
   final FirebaseFirestore _firestore;
+  final String tenantId;
 
-  AuditRepository({FirebaseFirestore? firestore})
+  AuditRepository({FirebaseFirestore? firestore, this.tenantId = ''})
       : _firestore = firestore ?? FirebaseFirestore.instance;
 
   CollectionReference get _auditRef =>

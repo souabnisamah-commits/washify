@@ -13,13 +13,16 @@ class ChangePinDialog extends ConsumerStatefulWidget {
 }
 
 class _ChangePinDialogState extends ConsumerState<ChangePinDialog> {
+  final _oldPinController = TextEditingController();
   final _pinController = TextEditingController();
   final _confirmPinController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
+  String? _errorMessage;
 
   @override
   void dispose() {
+    _oldPinController.dispose();
     _pinController.dispose();
     _confirmPinController.dispose();
     super.dispose();
@@ -28,20 +31,34 @@ class _ChangePinDialogState extends ConsumerState<ChangePinDialog> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    
     try {
-      await ref.read(currentUserProvider.notifier).changePin(_pinController.text.trim());
+      final oldPin = _oldPinController.text.trim();
+      final newPin = _pinController.text.trim();
+      
+      final success = await ref.read(currentUserProvider.notifier).changePin(oldPin, newPin);
+      
       if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Code PIN modifié avec succès.'.tr)),
-        );
+        if (success) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Code PIN modifié avec succès.'.tr)),
+          );
+        } else {
+          setState(() {
+            _errorMessage = "L'ancien PIN est incorrect.".tr;
+          });
+        }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: $e'.tr)),
-        );
+        setState(() {
+          _errorMessage = "Erreur: $e";
+        });
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -57,22 +74,38 @@ class _ChangePinDialogState extends ConsumerState<ChangePinDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (_errorMessage != null) ...[
+              Text(
+                _errorMessage!,
+                style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+            ],
+            TextFormField(
+              controller: _oldPinController,
+              decoration: InputDecoration(labelText: 'Ancien code PIN'.tr),
+              keyboardType: TextInputType.number,
+              obscureText: true,
+              validator: (v) => v == null || v.isEmpty ? 'Requis'.tr : null,
+            ),
+            const SizedBox(height: 16),
             TextFormField(
               controller: _pinController,
               decoration: InputDecoration(labelText: 'Nouveau code PIN (4 chiffres)'.tr),
               keyboardType: TextInputType.number,
               obscureText: true,
-              validator: (v) => v == null || v.length < 4 ? 'PIN invalide' : null,
+              validator: (v) => v == null || v.length < 4 ? 'PIN invalide'.tr : null,
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             TextFormField(
               controller: _confirmPinController,
               decoration: InputDecoration(labelText: 'Confirmer le code PIN'.tr),
               keyboardType: TextInputType.number,
               obscureText: true,
               validator: (v) {
-                if (v == null || v.isEmpty) return 'Requis';
-                if (v != _pinController.text) return 'Les PINs ne correspondent pas';
+                if (v == null || v.isEmpty) return 'Requis'.tr;
+                if (v != _pinController.text) return 'Les PINs ne correspondent pas'.tr;
                 return null;
               },
             ),

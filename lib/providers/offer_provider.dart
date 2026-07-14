@@ -1,9 +1,11 @@
+import 'package:washify/providers/auth_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:washify/features/services/models/offer.dart';
 import 'package:washify/repositories/offer_repository.dart';
 
 final offerRepositoryProvider = Provider<OfferRepository>((ref) {
-  return OfferRepository();
+  final user = ref.watch(currentUserProvider);
+  return OfferRepository(tenantId: user?.tenantId ?? '');
 });
 
 final offersByStationProvider =

@@ -38,7 +38,7 @@ Map<String, dynamic> _$$TicketServiceImplToJson(_$TicketServiceImpl instance) =>
 
 _$TicketImpl _$$TicketImplFromJson(Map<String, dynamic> json) => _$TicketImpl(
   id: json['id'] as String,
-  tenantId: json['tenantId'] as String,
+  tenantId: readTenantId(json, 'tenantId') as String,
   ticketNumber: json['ticketNumber'] as String,
   createdBy: json['createdBy'] as String,
   paidBy: json['paidBy'] as String?,

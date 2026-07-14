@@ -1,9 +1,11 @@
+import 'package:washify/providers/auth_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:washify/features/audit/models/audit_log.dart';
 import 'package:washify/repositories/audit_repository.dart';
 
 final auditRepositoryProvider = Provider<AuditRepository>((ref) {
-  return AuditRepository();
+  final user = ref.watch(currentUserProvider);
+  return AuditRepository(tenantId: user?.tenantId ?? '');
 });
 
 final auditLogsProvider = FutureProvider.family<

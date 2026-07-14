@@ -2,9 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:washify/features/tickets/models/ticket.dart';
 import 'package:washify/repositories/ticket_repository.dart';
 
-final ticketRepositoryProvider = Provider<TicketRepository>((ref) {
-  return TicketRepository();
-});
+// ticketRepositoryProvider is defined in ticket_repository.dart with tenantId injection
+export 'package:washify/repositories/ticket_repository.dart' show ticketRepositoryProvider;
 
 final ticketsByStationProvider =
     FutureProvider.family<List<Ticket>, ({String stationId, String? status})>(

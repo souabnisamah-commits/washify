@@ -22,8 +22,8 @@ AppUser _$AppUserFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$AppUser {
   String get id => throw _privateConstructorUsedError;
-  String get tenantId =>
-      throw _privateConstructorUsedError; // stationId or tenantId
+  @JsonKey(readValue: readTenantId)
+  String get tenantId => throw _privateConstructorUsedError; // stationId or tenantId
   String get phone => throw _privateConstructorUsedError;
   String get pinHash => throw _privateConstructorUsedError; // PIN stored hashed
   String get name => throw _privateConstructorUsedError;
@@ -51,7 +51,7 @@ abstract class $AppUserCopyWith<$Res> {
   @useResult
   $Res call({
     String id,
-    String tenantId,
+    @JsonKey(readValue: readTenantId) String tenantId,
     String phone,
     String pinHash,
     String name,
@@ -153,7 +153,7 @@ abstract class _$$AppUserImplCopyWith<$Res> implements $AppUserCopyWith<$Res> {
   @useResult
   $Res call({
     String id,
-    String tenantId,
+    @JsonKey(readValue: readTenantId) String tenantId,
     String phone,
     String pinHash,
     String name,
@@ -248,7 +248,7 @@ class __$$AppUserImplCopyWithImpl<$Res>
 class _$AppUserImpl extends _AppUser {
   const _$AppUserImpl({
     required this.id,
-    required this.tenantId,
+    @JsonKey(readValue: readTenantId) required this.tenantId,
     required this.phone,
     required this.pinHash,
     required this.name,
@@ -267,6 +267,7 @@ class _$AppUserImpl extends _AppUser {
   @override
   final String id;
   @override
+  @JsonKey(readValue: readTenantId)
   final String tenantId;
   // stationId or tenantId
   @override
@@ -362,7 +363,7 @@ class _$AppUserImpl extends _AppUser {
 abstract class _AppUser extends AppUser {
   const factory _AppUser({
     required final String id,
-    required final String tenantId,
+    @JsonKey(readValue: readTenantId) required final String tenantId,
     required final String phone,
     required final String pinHash,
     required final String name,
@@ -380,6 +381,7 @@ abstract class _AppUser extends AppUser {
   @override
   String get id;
   @override
+  @JsonKey(readValue: readTenantId)
   String get tenantId; // stationId or tenantId
   @override
   String get phone;

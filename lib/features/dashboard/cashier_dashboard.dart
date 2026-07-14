@@ -17,20 +17,8 @@ import 'package:washify/core/localization/app_localizations.dart';
 import 'package:washify/features/auth/widgets/change_pin_dialog.dart';
 import 'package:washify/core/widgets/language_toggle_button.dart';
 
-import 'package:shimmer/shimmer.dart';
 import 'package:intl/intl.dart';
-import 'package:washify/providers/station_provider.dart';
-import 'package:washify/providers/employee_provider.dart';
-import 'package:washify/features/hr/providers/hr_provider.dart';
-import 'package:washify/features/hr/models/attendance.dart';
-import 'package:washify/features/hr/models/shift.dart';
 import 'package:washify/providers/theme_provider.dart';
-
-import 'package:washify/providers/station_provider.dart';
-import 'package:washify/providers/employee_provider.dart';
-import 'package:washify/features/hr/providers/hr_provider.dart';
-import 'package:washify/features/hr/models/attendance.dart';
-import 'package:washify/features/hr/models/shift.dart';
 
 
 class CashierDashboard extends ConsumerStatefulWidget {
@@ -183,27 +171,62 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
                               title: Text(ticket.vehiclePlate ?? 'Véhicule', style: TextStyle(fontWeight: FontWeight.bold)),
                               subtitle: Text('${ticket.serviceName} • $dateStr\nLaveur: ${ticket.assignedWorkerName ?? ticket.workerName ?? "Non assigné"}'),
                               trailing: ticket.status == TicketStatus.enAttente 
-                                  ? ElevatedButton(
-                                      onPressed: () async {
-                                        try {
-                                          final updated = ticket.copyWith(
-                                            status: TicketStatus.paye,
-                                            paidBy: ref.read(currentUserProvider)?.name,
-                                            updatedAt: DateTime.now(),
-                                          );
-                                          await ref.read(ticketRepositoryProvider).updateTicket(updated);
-                                          if (context.mounted) Navigator.pop(context);
-                                          if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Ticket validé'.tr)));
-                                        } catch (e) {
-                                          if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e'.tr)));
-                                        }
-                                      },
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: AppTheme.successGreen,
-                                        foregroundColor: Colors.white,
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                      ),
-                                      child: Text('Valider'.tr),
+                                  ? Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        IconButton(
+                                          icon: Icon(Icons.delete, color: AppTheme.errorRed),
+                                          onPressed: () async {
+                                            final confirm = await showDialog<bool>(
+                                              context: context,
+                                              builder: (ctx) => AlertDialog(
+                                                title: Text('Annuler le ticket ?'.tr),
+                                                content: Text('Voulez-vous vraiment supprimer ce ticket en attente ?'.tr),
+                                                actions: [
+                                                  TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Non'.tr)),
+                                                  ElevatedButton(
+                                                    style: ElevatedButton.styleFrom(backgroundColor: AppTheme.errorRed),
+                                                    onPressed: () => Navigator.pop(ctx, true),
+                                                    child: Text('Supprimer'.tr, style: TextStyle(color: Colors.white)),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+                                            if (confirm == true) {
+                                              try {
+                                                await ref.read(ticketRepositoryProvider).deleteTicket(ticket.id);
+                                                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Ticket annulé'.tr)));
+                                                if (context.mounted) Navigator.pop(context); // Fermer le bottom sheet pour rafraîchir
+                                              } catch (e) {
+                                                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e'.tr)));
+                                              }
+                                            }
+                                          },
+                                        ),
+                                        SizedBox(width: 8),
+                                        ElevatedButton(
+                                          onPressed: () async {
+                                            try {
+                                              final updated = ticket.copyWith(
+                                                status: TicketStatus.paye,
+                                                paidBy: ref.read(currentUserProvider)?.name,
+                                                updatedAt: DateTime.now(),
+                                              );
+                                              await ref.read(ticketRepositoryProvider).updateTicket(updated);
+                                              if (context.mounted) Navigator.pop(context);
+                                              if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Ticket validé'.tr)));
+                                            } catch (e) {
+                                              if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e'.tr)));
+                                            }
+                                          },
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: AppTheme.successGreen,
+                                            foregroundColor: Colors.white,
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                          ),
+                                          child: Text('Valider'.tr),
+                                        ),
+                                      ],
                                     )
                                   : Text('${ticket.totalAmount.toStringAsFixed(2)} DT', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                               isThreeLine: true,
@@ -235,7 +258,7 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
     return Scaffold(
       appBar: AppBar(
         title: ColorAnimatedTitle(
-          text: 'Bienvenue ${user.name},\ndans votre Espace ${_getStationName(ref, user.stationId ?? '')}'.tr,
+          text: '${'Bienvenue'.tr} ${user.name},\n${'dans votre Espace'.tr} ${_getStationName(ref, user.stationId ?? '')}',
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, height: 1.2),
         ),
         actions: [

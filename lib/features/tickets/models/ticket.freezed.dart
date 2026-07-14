@@ -448,6 +448,7 @@ Ticket _$TicketFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$Ticket {
   String get id => throw _privateConstructorUsedError; // Firestore Document ID
+  @JsonKey(readValue: readTenantId)
   String get tenantId => throw _privateConstructorUsedError; // stationId
   String get ticketNumber =>
       throw _privateConstructorUsedError; // ST-{station}-{date}-{heure}-{random}
@@ -504,7 +505,7 @@ abstract class $TicketCopyWith<$Res> {
   @useResult
   $Res call({
     String id,
-    String tenantId,
+    @JsonKey(readValue: readTenantId) String tenantId,
     String ticketNumber,
     String createdBy,
     String? paidBy,
@@ -708,7 +709,7 @@ abstract class _$$TicketImplCopyWith<$Res> implements $TicketCopyWith<$Res> {
   @useResult
   $Res call({
     String id,
-    String tenantId,
+    @JsonKey(readValue: readTenantId) String tenantId,
     String ticketNumber,
     String createdBy,
     String? paidBy,
@@ -905,7 +906,7 @@ class __$$TicketImplCopyWithImpl<$Res>
 class _$TicketImpl extends _Ticket {
   const _$TicketImpl({
     required this.id,
-    required this.tenantId,
+    @JsonKey(readValue: readTenantId) required this.tenantId,
     required this.ticketNumber,
     required this.createdBy,
     this.paidBy,
@@ -946,6 +947,7 @@ class _$TicketImpl extends _Ticket {
   final String id;
   // Firestore Document ID
   @override
+  @JsonKey(readValue: readTenantId)
   final String tenantId;
   // stationId
   @override
@@ -1177,7 +1179,7 @@ class _$TicketImpl extends _Ticket {
 abstract class _Ticket extends Ticket {
   const factory _Ticket({
     required final String id,
-    required final String tenantId,
+    @JsonKey(readValue: readTenantId) required final String tenantId,
     required final String ticketNumber,
     required final String createdBy,
     final String? paidBy,
@@ -1212,6 +1214,7 @@ abstract class _Ticket extends Ticket {
   @override
   String get id; // Firestore Document ID
   @override
+  @JsonKey(readValue: readTenantId)
   String get tenantId; // stationId
   @override
   String get ticketNumber; // ST-{station}-{date}-{heure}-{random}

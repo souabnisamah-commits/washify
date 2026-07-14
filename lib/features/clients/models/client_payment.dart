@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:washify/core/utils/json_utils.dart';
 
 part 'client_payment.freezed.dart';
 part 'client_payment.g.dart';
@@ -8,7 +9,7 @@ class ClientPayment with _$ClientPayment {
   const factory ClientPayment({
     required String id,
     required String clientId,
-    required String tenantId,
+    @JsonKey(readValue: readTenantId) required String tenantId,
     required double amount,
     required String paymentMethod, // Espèces, Chèque, Virement...
     String? reference, // Numéro de chèque, référence virement...

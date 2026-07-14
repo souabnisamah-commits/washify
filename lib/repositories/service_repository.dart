@@ -4,8 +4,9 @@ import 'package:washify/features/services/models/wash_service.dart';
 
 class ServiceRepository {
   final FirebaseFirestore _firestore;
+  final String tenantId;
 
-  ServiceRepository({FirebaseFirestore? firestore})
+  ServiceRepository({FirebaseFirestore? firestore, this.tenantId = ''})
       : _firestore = firestore ?? FirebaseFirestore.instance;
 
   CollectionReference get _servicesRef =>

@@ -22,6 +22,7 @@ Client _$ClientFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$Client {
   String get id => throw _privateConstructorUsedError;
+  @JsonKey(readValue: readTenantId)
   String get tenantId => throw _privateConstructorUsedError;
   String get companyName => throw _privateConstructorUsedError;
   String get contactName => throw _privateConstructorUsedError;
@@ -52,7 +53,7 @@ abstract class $ClientCopyWith<$Res> {
   @useResult
   $Res call({
     String id,
-    String tenantId,
+    @JsonKey(readValue: readTenantId) String tenantId,
     String companyName,
     String contactName,
     String taxId,
@@ -154,7 +155,7 @@ abstract class _$$ClientImplCopyWith<$Res> implements $ClientCopyWith<$Res> {
   @useResult
   $Res call({
     String id,
-    String tenantId,
+    @JsonKey(readValue: readTenantId) String tenantId,
     String companyName,
     String contactName,
     String taxId,
@@ -249,7 +250,7 @@ class __$$ClientImplCopyWithImpl<$Res>
 class _$ClientImpl implements _Client {
   const _$ClientImpl({
     required this.id,
-    required this.tenantId,
+    @JsonKey(readValue: readTenantId) required this.tenantId,
     required this.companyName,
     required this.contactName,
     required this.taxId,
@@ -267,6 +268,7 @@ class _$ClientImpl implements _Client {
   @override
   final String id;
   @override
+  @JsonKey(readValue: readTenantId)
   final String tenantId;
   @override
   final String companyName;
@@ -366,7 +368,7 @@ class _$ClientImpl implements _Client {
 abstract class _Client implements Client {
   const factory _Client({
     required final String id,
-    required final String tenantId,
+    @JsonKey(readValue: readTenantId) required final String tenantId,
     required final String companyName,
     required final String contactName,
     required final String taxId,
@@ -383,6 +385,7 @@ abstract class _Client implements Client {
   @override
   String get id;
   @override
+  @JsonKey(readValue: readTenantId)
   String get tenantId;
   @override
   String get companyName;

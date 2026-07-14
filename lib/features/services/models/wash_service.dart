@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:washify/core/utils/json_utils.dart';
 
 part 'wash_service.freezed.dart';
 part 'wash_service.g.dart';
@@ -9,7 +10,7 @@ class WashService with _$WashService {
 
   const factory WashService({
     required String id,
-    required String tenantId,
+    @JsonKey(readValue: readTenantId) required String tenantId,
     required String name,
     required String description,
     required double price,

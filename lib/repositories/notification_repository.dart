@@ -4,8 +4,9 @@ import 'package:washify/features/notifications/models/app_notification.dart';
 
 class NotificationRepository {
   final FirebaseFirestore _firestore;
+  final String tenantId;
 
-  NotificationRepository({FirebaseFirestore? firestore})
+  NotificationRepository({FirebaseFirestore? firestore, this.tenantId = ''})
       : _firestore = firestore ?? FirebaseFirestore.instance;
 
   CollectionReference get _notificationsRef =>

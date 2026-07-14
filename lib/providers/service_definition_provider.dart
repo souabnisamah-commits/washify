@@ -1,9 +1,11 @@
+import 'package:washify/providers/auth_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:washify/features/services/models/service_definition.dart';
 import 'package:washify/repositories/service_definition_repository.dart';
 
 final serviceDefinitionRepositoryProvider = Provider<ServiceDefinitionRepository>((ref) {
-  return ServiceDefinitionRepository();
+  final user = ref.watch(currentUserProvider);
+  return ServiceDefinitionRepository(tenantId: user?.tenantId ?? '');
 });
 
 final serviceDefinitionsByStationProvider =

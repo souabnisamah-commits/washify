@@ -9,7 +9,6 @@ import 'package:washify/core/theme/app_theme.dart';
 import 'package:washify/providers/auth_provider.dart';
 import 'package:washify/repositories/client_repository.dart';
 
-import 'client_details_screen.dart';
 
 class ClientsScreen extends ConsumerStatefulWidget {
   const ClientsScreen({super.key});
@@ -104,7 +103,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                   );
 
                   await ref.read(clientRepositoryProvider).createClient(newClient);
-                  if (mounted) Navigator.of(context).pop();
+                  if (context.mounted) Navigator.of(context).pop();
                 }
               },
               child: Text('Créer'.tr),

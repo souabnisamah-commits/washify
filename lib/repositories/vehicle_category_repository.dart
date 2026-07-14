@@ -4,8 +4,9 @@ import 'package:washify/features/services/models/vehicle_category.dart';
 
 class VehicleCategoryRepository {
   final FirebaseFirestore _firestore;
+  final String tenantId;
 
-  VehicleCategoryRepository({FirebaseFirestore? firestore})
+  VehicleCategoryRepository({FirebaseFirestore? firestore, this.tenantId = ''})
       : _firestore = firestore ?? FirebaseFirestore.instance;
 
   CollectionReference get _ref =>

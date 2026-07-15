@@ -4,12 +4,13 @@ service cloud.firestore {
   match /databases/{database}/documents {
     // Helper checks
     function isSignedIn() {
-      return request.auth != null || true; // Phone/PIN simulated auth
+      return request.auth != null;
     }
 
-    // App User collection rules
+    // Users collection - kept open for login migration
+    // (will be locked once all users have migrated to Firebase Auth)
     match /users/{userId} {
-      allow read, write: if isSignedIn();
+      allow read, write: if true;
     }
 
     // Stations collection rules

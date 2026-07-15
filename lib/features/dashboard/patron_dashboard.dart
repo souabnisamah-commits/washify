@@ -266,6 +266,99 @@ class _PatronDashboardState extends ConsumerState<PatronDashboard> {
     ref.read(currentUserProvider.notifier).logout();
   }
 
+  Widget _buildSubscriptionBanner() {
+    if (_currentStation == null || _currentStation!.expiryDate == null) {
+      return const SizedBox.shrink();
+    }
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final expiry = _currentStation!.expiryDate!;
+    final expiryDateOnly = DateTime(expiry.year, expiry.month, expiry.day);
+    
+    final daysUntilExpiry = expiryDateOnly.difference(today).inDays;
+    final gracePeriod = _currentStation!.gracePeriodDays;
+
+    if (daysUntilExpiry > 7) {
+      return const SizedBox.shrink();
+    }
+
+    String title;
+    String message;
+    Color color;
+    IconData icon;
+
+    if (daysUntilExpiry >= 0) {
+      // Cas 1 : Expiration proche
+      title = "Abonnement bientôt expiré".tr;
+      message = "${"Votre abonnement expire le".tr} ${DateFormat('dd/MM/yyyy').format(expiry)}. ${"Il vous reste".tr} $daysUntilExpiry ${"jour(s)".tr}.";
+      color = AppTheme.accentCyan; // Premium touch instead of simple orange
+      icon = Icons.warning_amber_rounded;
+    } else {
+      // Expiré
+      final remainingGrace = gracePeriod + daysUntilExpiry; // daysUntilExpiry est négatif
+      if (remainingGrace >= 0) {
+        // Cas 2 : Période de grâce
+        title = "Période de grâce".tr;
+        message = "${"Abonnement expiré le".tr} ${DateFormat('dd/MM/yyyy').format(expiry)}. ${"Il vous reste".tr} $remainingGrace ${"jour(s) de période de grâce".tr}.";
+        color = Colors.orangeAccent;
+        icon = Icons.error_outline_rounded;
+      } else {
+        // Cas 3 : Suspendu
+        title = "Abonnement Terminé".tr;
+        message = "Votre abonnement et la période de grâce sont terminés. Veuillez renouveler votre abonnement.".tr;
+        color = AppTheme.errorRed;
+        icon = Icons.block;
+      }
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
+        borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.1),
+            blurRadius: 10,
+            spreadRadius: 2,
+          )
+        ],
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 32),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  message,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(currentUserProvider);
@@ -360,6 +453,7 @@ class _PatronDashboardState extends ConsumerState<PatronDashboard> {
             SizedBox(height: 24),
 
             if (_currentStation != null) ...[
+              _buildSubscriptionBanner(),
               // Stats
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,

@@ -124,6 +124,7 @@ class _StationFormScreenState extends ConsumerState<StationFormScreen> {
         licence: _isActive ? LicenceStatus.active : LicenceStatus.suspended,
         subscriptionDate: _isEditing ? widget.station!.subscriptionDate : DateTime.now(),
         expiryDate: _expirationDate,
+        gracePeriodDays: int.tryParse(_gracePeriodController.text.trim()) ?? 7,
         address: _isEditing ? widget.station!.address : '',
         city: _isEditing ? widget.station!.city : '',
         isActive: true, // Always true unless deleted

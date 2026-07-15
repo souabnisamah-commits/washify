@@ -38,6 +38,7 @@ class Station with _$Station {
     required LicenceStatus licence,
     DateTime? subscriptionDate,
     DateTime? expiryDate,
+    @Default(7) int gracePeriodDays,
     @Default('') String address,
     @Default('') String city,
     @Default(true) bool isActive,

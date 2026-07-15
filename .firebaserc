@@ -1,5 +1,8 @@
 {
   "projects": {
-    "default": "washify-7638b"
-  }
+    "default": "washify-7638b",
+    "prod": "washify-souteqsa"
+  },
+  "targets": {},
+  "etags": {}
 }

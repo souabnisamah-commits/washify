@@ -35,6 +35,7 @@ mixin _$Station {
   LicenceStatus get licence => throw _privateConstructorUsedError;
   DateTime? get subscriptionDate => throw _privateConstructorUsedError;
   DateTime? get expiryDate => throw _privateConstructorUsedError;
+  int get gracePeriodDays => throw _privateConstructorUsedError;
   String get address => throw _privateConstructorUsedError;
   String get city => throw _privateConstructorUsedError;
   bool get isActive => throw _privateConstructorUsedError;
@@ -69,6 +70,7 @@ abstract class $StationCopyWith<$Res> {
     LicenceStatus licence,
     DateTime? subscriptionDate,
     DateTime? expiryDate,
+    int gracePeriodDays,
     String address,
     String city,
     bool isActive,
@@ -105,6 +107,7 @@ class _$StationCopyWithImpl<$Res, $Val extends Station>
     Object? licence = null,
     Object? subscriptionDate = freezed,
     Object? expiryDate = freezed,
+    Object? gracePeriodDays = null,
     Object? address = null,
     Object? city = null,
     Object? isActive = null,
@@ -165,6 +168,10 @@ class _$StationCopyWithImpl<$Res, $Val extends Station>
                 ? _value.expiryDate
                 : expiryDate // ignore: cast_nullable_to_non_nullable
                       as DateTime?,
+            gracePeriodDays: null == gracePeriodDays
+                ? _value.gracePeriodDays
+                : gracePeriodDays // ignore: cast_nullable_to_non_nullable
+                      as int,
             address: null == address
                 ? _value.address
                 : address // ignore: cast_nullable_to_non_nullable
@@ -213,6 +220,7 @@ abstract class _$$StationImplCopyWith<$Res> implements $StationCopyWith<$Res> {
     LicenceStatus licence,
     DateTime? subscriptionDate,
     DateTime? expiryDate,
+    int gracePeriodDays,
     String address,
     String city,
     bool isActive,
@@ -248,6 +256,7 @@ class __$$StationImplCopyWithImpl<$Res>
     Object? licence = null,
     Object? subscriptionDate = freezed,
     Object? expiryDate = freezed,
+    Object? gracePeriodDays = null,
     Object? address = null,
     Object? city = null,
     Object? isActive = null,
@@ -308,6 +317,10 @@ class __$$StationImplCopyWithImpl<$Res>
             ? _value.expiryDate
             : expiryDate // ignore: cast_nullable_to_non_nullable
                   as DateTime?,
+        gracePeriodDays: null == gracePeriodDays
+            ? _value.gracePeriodDays
+            : gracePeriodDays // ignore: cast_nullable_to_non_nullable
+                  as int,
         address: null == address
             ? _value.address
             : address // ignore: cast_nullable_to_non_nullable
@@ -350,6 +363,7 @@ class _$StationImpl extends _Station {
     required this.licence,
     this.subscriptionDate,
     this.expiryDate,
+    this.gracePeriodDays = 7,
     this.address = '',
     this.city = '',
     this.isActive = true,
@@ -389,6 +403,9 @@ class _$StationImpl extends _Station {
   final DateTime? expiryDate;
   @override
   @JsonKey()
+  final int gracePeriodDays;
+  @override
+  @JsonKey()
   final String address;
   @override
   @JsonKey()
@@ -403,7 +420,7 @@ class _$StationImpl extends _Station {
 
   @override
   String toString() {
-    return 'Station(id: $id, tenantId: $tenantId, name: $name, gerantName: $gerantName, phone: $phone, email: $email, matriculeFiscale: $matriculeFiscale, latitude: $latitude, longitude: $longitude, logoUrl: $logoUrl, licence: $licence, subscriptionDate: $subscriptionDate, expiryDate: $expiryDate, address: $address, city: $city, isActive: $isActive, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'Station(id: $id, tenantId: $tenantId, name: $name, gerantName: $gerantName, phone: $phone, email: $email, matriculeFiscale: $matriculeFiscale, latitude: $latitude, longitude: $longitude, logoUrl: $logoUrl, licence: $licence, subscriptionDate: $subscriptionDate, expiryDate: $expiryDate, gracePeriodDays: $gracePeriodDays, address: $address, city: $city, isActive: $isActive, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -431,6 +448,8 @@ class _$StationImpl extends _Station {
                 other.subscriptionDate == subscriptionDate) &&
             (identical(other.expiryDate, expiryDate) ||
                 other.expiryDate == expiryDate) &&
+            (identical(other.gracePeriodDays, gracePeriodDays) ||
+                other.gracePeriodDays == gracePeriodDays) &&
             (identical(other.address, address) || other.address == address) &&
             (identical(other.city, city) || other.city == city) &&
             (identical(other.isActive, isActive) ||
@@ -443,7 +462,7 @@ class _$StationImpl extends _Station {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     runtimeType,
     id,
     tenantId,
@@ -458,12 +477,13 @@ class _$StationImpl extends _Station {
     licence,
     subscriptionDate,
     expiryDate,
+    gracePeriodDays,
     address,
     city,
     isActive,
     createdAt,
     updatedAt,
-  );
+  ]);
 
   /// Create a copy of Station
   /// with the given fields replaced by the non-null parameter values.
@@ -494,6 +514,7 @@ abstract class _Station extends Station {
     required final LicenceStatus licence,
     final DateTime? subscriptionDate,
     final DateTime? expiryDate,
+    final int gracePeriodDays,
     final String address,
     final String city,
     final bool isActive,
@@ -531,6 +552,8 @@ abstract class _Station extends Station {
   DateTime? get subscriptionDate;
   @override
   DateTime? get expiryDate;
+  @override
+  int get gracePeriodDays;
   @override
   String get address;
   @override

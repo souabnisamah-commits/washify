@@ -25,6 +25,7 @@ _$StationImpl _$$StationImplFromJson(Map<String, dynamic> json) =>
       expiryDate: json['expiryDate'] == null
           ? null
           : DateTime.parse(json['expiryDate'] as String),
+      gracePeriodDays: (json['gracePeriodDays'] as num?)?.toInt() ?? 7,
       address: json['address'] as String? ?? '',
       city: json['city'] as String? ?? '',
       isActive: json['isActive'] as bool? ?? true,
@@ -47,6 +48,7 @@ Map<String, dynamic> _$$StationImplToJson(_$StationImpl instance) =>
       'licence': _$LicenceStatusEnumMap[instance.licence]!,
       'subscriptionDate': instance.subscriptionDate?.toIso8601String(),
       'expiryDate': instance.expiryDate?.toIso8601String(),
+      'gracePeriodDays': instance.gracePeriodDays,
       'address': instance.address,
       'city': instance.city,
       'isActive': instance.isActive,

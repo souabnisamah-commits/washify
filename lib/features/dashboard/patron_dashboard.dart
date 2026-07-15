@@ -670,6 +670,64 @@ class _PatronDashboardState extends ConsumerState<PatronDashboard> {
 
               SizedBox(height: 32),
 
+              // Section: Comptes Clients
+              _buildSectionTitle(
+                context,
+                'Comptes Clients',
+                Icons.people_alt,
+              ),
+              SizedBox(height: 16),
+              GridView.count(
+                crossAxisCount: MediaQuery.of(context).size.width > 800
+                    ? 3
+                    : (MediaQuery.of(context).size.width > 500 ? 2 : 1),
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: 2.5,
+                shrinkWrap: true,
+                physics: NeverScrollableScrollPhysics(),
+                children: [
+                  _buildGridItem(
+                    context,
+                    title: 'Comptes B2B',
+                    icon: Icons.business_center,
+                    color: AppTheme.successGreen,
+                    onTap: () => context.go('/patron/clients'),
+                  ),
+                ],
+              ),
+
+              SizedBox(height: 32),
+
+              // Section: Offres et Promotions
+              _buildSectionTitle(
+                context,
+                'Offres et Promotions',
+                Icons.campaign,
+              ),
+              SizedBox(height: 16),
+              GridView.count(
+                crossAxisCount: MediaQuery.of(context).size.width > 800
+                    ? 3
+                    : (MediaQuery.of(context).size.width > 500 ? 2 : 1),
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: 2.5,
+                shrinkWrap: true,
+                physics: NeverScrollableScrollPhysics(),
+                children: [
+                  _buildGridItem(
+                    context,
+                    title: 'Offres & Pack',
+                    icon: Icons.stars,
+                    color: Colors.blueAccent,
+                    onTap: () => context.go('/patron/offers'),
+                  ),
+                ],
+              ),
+
+              SizedBox(height: 32),
+
               // Section: Configuration & Catalogue
               _buildSectionTitle(
                 context,
@@ -679,8 +737,8 @@ class _PatronDashboardState extends ConsumerState<PatronDashboard> {
               SizedBox(height: 16),
               GridView.count(
                 crossAxisCount: MediaQuery.of(context).size.width > 800
-                    ? 4
-                    : (MediaQuery.of(context).size.width > 500 ? 3 : 2),
+                    ? 3
+                    : (MediaQuery.of(context).size.width > 500 ? 2 : 1),
                 crossAxisSpacing: 16,
                 mainAxisSpacing: 16,
                 childAspectRatio: 2.5,
@@ -707,20 +765,6 @@ class _PatronDashboardState extends ConsumerState<PatronDashboard> {
                     icon: Icons.inventory_2,
                     color: const Color(0xFF7C3AED),
                     onTap: () => context.go('/patron/products'),
-                  ),
-                  _buildGridItem(
-                    context,
-                    title: 'Offres & Pack',
-                    icon: Icons.stars,
-                    color: Colors.blueAccent,
-                    onTap: () => context.go('/patron/offers'),
-                  ),
-                  _buildGridItem(
-                    context,
-                    title: 'Comptes B2B',
-                    icon: Icons.business_center,
-                    color: AppTheme.successGreen,
-                    onTap: () => context.go('/patron/clients'),
                   ),
                 ],
               ),

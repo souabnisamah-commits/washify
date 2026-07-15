@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:washify/features/auth/models/app_user.dart';
 import 'package:washify/repositories/auth_repository.dart';
 import 'package:washify/core/utils/session_service.dart';
@@ -29,32 +30,63 @@ class CurrentUserNotifier extends StateNotifier<AppUser?> {
       try {
         await FirebaseAuth.instance.signInWithEmailAndPassword(
           email: email, password: password);
-      } on FirebaseAuthException catch (authError) {
-        // Step 2: Firebase Auth failed - try migration via Firestore
-        final verifiedUser = await _authRepository.loginWithPhoneAndPin(phone, pin);
-        if (verifiedUser == null) return false; // Wrong credentials
+      } on FirebaseAuthException {
+        // Step 2: Migration - verify PIN directly from users collection (open)
+        final usersSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .where('phone', isEqualTo: phone)
+          .where('isActive', isEqualTo: true)
+          .get();
 
-        // Step 3: PIN verified in Firestore, create Firebase Auth account
+        if (usersSnapshot.docs.isEmpty) return false;
+
+        bool pinMatched = false;
+        for (final doc in usersSnapshot.docs) {
+          final data = doc.data();
+          if (data['pinHash'] == password) {
+            pinMatched = true;
+            break;
+          }
+        }
+        if (!pinMatched) return false;
+
+        // Step 3: PIN verified, create Firebase Auth account
         try {
           await FirebaseAuth.instance.createUserWithEmailAndPassword(
             email: email, password: password);
         } catch (createError) {
           print('Migration: Could not create Firebase Auth account: $createError');
-          // If account exists with different password, try updating
           return false;
         }
       }
 
-      // Step 4: Now authenticated, load user data from Firestore
+      // Step 4: Now authenticated - load user data
       final user = await _authRepository.getUserByPhone(phone);
-      if (user != null && user.isActive) {
-        state = user;
-        await SessionService.instance.saveSession(user.id);
-        return true;
+      if (user == null || !user.isActive) {
+        await FirebaseAuth.instance.signOut();
+        return false;
       }
 
-      await FirebaseAuth.instance.signOut();
-      return false;
+      // Step 5: Check station suspension (now authenticated, can read stations)
+      if (user.tenantId.isNotEmpty && user.tenantId != 'admin_station') {
+        try {
+          final stationDoc = await FirebaseFirestore.instance
+            .collection('stations').doc(user.tenantId).get();
+          if (stationDoc.exists) {
+            final stationData = stationDoc.data()!;
+            if (stationData['licence'] == 'suspended') {
+              await FirebaseAuth.instance.signOut();
+              throw Exception('station_suspended');
+            }
+          }
+        } catch (e) {
+          if (e.toString().contains('station_suspended')) rethrow;
+        }
+      }
+
+      state = user;
+      await SessionService.instance.saveSession(user.id);
+      return true;
     } catch (e) {
       print('Network or login error: $e');
       return false;

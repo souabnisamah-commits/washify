@@ -166,4 +166,12 @@ class ClientRepository {
         .snapshots()
         .map((snapshot) => snapshot.docs.map((doc) => _paymentFromDoc(doc)).toList());
   }
+
+  Future<List<ClientPayment>> getClientPayments(String clientId) async {
+    final querySnapshot = await _tenantPaymentsRef
+        .where('clientId', isEqualTo: clientId)
+        .orderBy('paymentDate', descending: true)
+        .get();
+    return querySnapshot.docs.map((doc) => _paymentFromDoc(doc)).toList();
+  }
 }

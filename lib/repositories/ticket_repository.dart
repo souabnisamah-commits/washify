@@ -289,12 +289,21 @@ class TicketRepository {
   // WATCH UNPAID TICKETS FOR A CLIENT
   Stream<List<Ticket>> watchClientTickets(String stationId, String clientId) {
     return _tenantTicketsRef
-        .where('tenantId', isEqualTo: stationId)
+        .where('stationId', isEqualTo: stationId)
         .where('clientId', isEqualTo: clientId)
         // .where('status', isEqualTo: TicketStatus.enAttente.toString()) // if we only want unpaid. Wait, maybe we want all client tickets?
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs.map((doc) => _ticketFromDoc(doc)).toList());
+  }
+
+  Future<List<Ticket>> getClientTickets(String stationId, String clientId) async {
+    final querySnapshot = await _tenantTicketsRef
+        .where('stationId', isEqualTo: stationId)
+        .where('clientId', isEqualTo: clientId)
+        .orderBy('createdAt', descending: true)
+        .get();
+    return querySnapshot.docs.map((doc) => _ticketFromDoc(doc)).toList();
   }
 
   Stream<List<Ticket>> watchWorkerTickets(String workerId) {

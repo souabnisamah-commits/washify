@@ -12,9 +12,12 @@ import 'package:washify/features/clients/models/client_vehicle.dart';
 import 'package:washify/features/tickets/components/vehicle_info_input.dart';
 import 'package:washify/features/tickets/models/ticket.dart';
 import 'package:washify/providers/auth_provider.dart';
+import 'package:washify/providers/station_provider.dart';
 import 'package:washify/providers/vehicle_category_provider.dart';
 import 'package:washify/repositories/client_repository.dart';
 import 'package:washify/repositories/ticket_repository.dart';
+import 'package:printing/printing.dart';
+import 'package:washify/features/clients/utils/b2b_pdf_generator.dart';
 
 // Riverpod Provider for Client Tickets
 final clientTicketsProvider = StreamProvider.family<List<Ticket>, String>((ref, clientId) {
@@ -254,6 +257,102 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
     }
   }
 
+  Future<void> _exportUnpaidBalance() async {
+    showDialog(context: context, barrierDismissible: false, builder: (_) => Center(child: CircularProgressIndicator()));
+    try {
+      final user = ref.read(currentUserProvider);
+      if (user == null || user.stationId == null) throw Exception('Utilisateur non connecté');
+
+      final allTickets = await ref.read(ticketRepositoryProvider).getClientTickets(user.stationId!, _currentClient.id);
+      
+      // We take the validated tickets charged to the account, newest first (since they are sorted by date desc)
+      final accountTickets = allTickets.where((t) => t.paymentMethod == 'compte_client' && t.status == TicketStatus.paye).toList();
+      
+      final List<Ticket> unpaidTickets = [];
+      double remainingBalance = _currentClient.currentBalance;
+
+      // FIFO matching: The current balance is composed of the most recent unpaid tickets.
+      for (final ticket in accountTickets) {
+        if (remainingBalance <= 0.01) break; // using 0.01 to avoid floating point precision issues
+        unpaidTickets.add(ticket);
+        remainingBalance -= ticket.montant;
+      }
+
+      final station = ref.read(selectedStationProvider);
+      if (station == null) throw Exception('Station non trouvée');
+
+      final pdfBytes = await B2BPdfGenerator.generateUnpaidBalanceReport(
+        station: station,
+        client: _currentClient,
+        unpaidTickets: unpaidTickets,
+      );
+
+      if (context.mounted) Navigator.pop(context);
+      await Printing.sharePdf(bytes: pdfBytes, filename: 'releve_solde_${_currentClient.companyName.replaceAll(' ', '_')}.pdf');
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e')));
+      }
+    }
+  }
+
+  Future<void> _exportPaymentHistory() async {
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: AppTheme.primaryBlue,
+              onPrimary: Colors.white,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked == null) return;
+
+    showDialog(context: context, barrierDismissible: false, builder: (_) => Center(child: CircularProgressIndicator()));
+    try {
+      final user = ref.read(currentUserProvider);
+      if (user == null || user.stationId == null) throw Exception('Utilisateur non connecté');
+
+      final start = picked.start;
+      final end = DateTime(picked.end.year, picked.end.month, picked.end.day, 23, 59, 59);
+
+      final allPayments = await ref.read(clientRepositoryProvider).getClientPayments(_currentClient.id);
+      final filteredPayments = allPayments.where((p) => p.paymentDate.isAfter(start) && p.paymentDate.isBefore(end)).toList();
+
+      final allTickets = await ref.read(ticketRepositoryProvider).getClientTickets(user.stationId!, _currentClient.id);
+      final consumedTickets = allTickets.where((t) => t.createdAt.isAfter(start) && t.createdAt.isBefore(end)).toList();
+
+      final station = ref.read(selectedStationProvider);
+      if (station == null) throw Exception('Station non trouvée');
+
+      final pdfBytes = await B2BPdfGenerator.generatePaymentHistoryReport(
+        station: station,
+        client: _currentClient,
+        startDate: start,
+        endDate: end,
+        payments: filteredPayments,
+        consumedTickets: consumedTickets,
+      );
+
+      if (context.mounted) Navigator.pop(context);
+      await Printing.sharePdf(bytes: pdfBytes, filename: 'historique_${_currentClient.companyName.replaceAll(' ', '_')}.pdf');
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e')));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
@@ -306,13 +405,28 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
                       ),
                     ],
                   ),
-                  if (_currentClient.currentBalance > 0)
-                    ElevatedButton.icon(
-                      onPressed: _showPaymentDialog,
-                      icon: Icon(Icons.payment),
-                      label: Text('Régler'.tr),
-                      style: ElevatedButton.styleFrom(backgroundColor: AppTheme.successGreen),
-                    )
+                  Row(
+                    children: [
+                      if (_currentClient.currentBalance > 0)
+                        ElevatedButton.icon(
+                          onPressed: _showPaymentDialog,
+                          icon: Icon(Icons.payment),
+                          label: Text('Régler'.tr),
+                          style: ElevatedButton.styleFrom(backgroundColor: AppTheme.successGreen),
+                        ),
+                      SizedBox(width: 8),
+                      ElevatedButton.icon(
+                        onPressed: _exportUnpaidBalance,
+                        icon: Icon(Icons.picture_as_pdf),
+                        label: Text('Détail Solde'.tr),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: AppTheme.primaryBlue,
+                          side: BorderSide(color: AppTheme.primaryBlue),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -360,9 +474,27 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
     final user = ref.watch(currentUserProvider);
     final isPatron = user != null && user.roles.contains(UserRole.patron);
     final paymentsAsync = ref.watch(clientPaymentsStreamProvider(_currentClient.id));
-    return paymentsAsync.when(
-      data: (payments) {
-        if (payments.isEmpty) return Center(child: Text('Aucun paiement'.tr));
+    return Column(
+      children: [
+        if (isPatron)
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: _exportPaymentHistory,
+                  icon: Icon(Icons.picture_as_pdf),
+                  label: Text('Exporter Historique'.tr),
+                  style: ElevatedButton.styleFrom(backgroundColor: AppTheme.accentTeal),
+                ),
+              ],
+            ),
+          ),
+        Expanded(
+          child: paymentsAsync.when(
+            data: (payments) {
+              if (payments.isEmpty) return Center(child: Text('Aucun paiement'.tr));
         return ListView.builder(
           itemCount: payments.length,
           itemBuilder: (context, index) {
@@ -418,7 +550,7 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
       },
       loading: () => Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('Erreur: $e'.tr)),
-    );
+    ))]);
   }
 
   Widget _buildVehiclesTab(WidgetRef ref) {

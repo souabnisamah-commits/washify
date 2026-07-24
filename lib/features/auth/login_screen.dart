@@ -73,6 +73,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             child: Image.network(
               'https://lh3.googleusercontent.com/aida/AP1WRLtqWfN4pCMrX6oqUWpIK46fa_LE9EqOXCkNv-6dCGi5NRgaY_wuU_G164qYBOjoLytJpHKrVC9Yi140cZ2FsPJVJz9dhfsKowNR2OOm6xLRRN4A4cZ4-6eYEHWXIN11_Q7u2RP9YIOPXx6peTfnpZGrfEibn7wOs31_ayU8ibOJDUCukU72vGXgwv6KVRULsWFvSe1xP-YMIcBfZM00TDaisLtsFQTlsVHfL6ilylWUPyth1vwqzIza4w',
               fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [AppTheme.primaryBlue, AppTheme.surfaceDark],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                );
+              },
             ),
           ),
           

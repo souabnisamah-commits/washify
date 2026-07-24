@@ -7,20 +7,29 @@ import 'package:washify/repositories/client_repository.dart';
 
 import 'package:washify/providers/auth_provider.dart';
 
+import 'package:washify/repositories/audit_repository.dart';
+import 'package:washify/providers/audit_provider.dart';
+
 import 'package:washify/features/auth/models/app_user.dart';
 import 'package:washify/core/constants/user_roles.dart';
 
 final ticketRepositoryProvider = Provider<TicketRepository>((ref) {
   final user = ref.watch(currentUserProvider);
-  return TicketRepository(tenantId: user?.tenantId ?? '', currentUser: user);
+  final auditRepo = ref.watch(auditRepositoryProvider);
+  return TicketRepository(
+    tenantId: user?.tenantId ?? '', 
+    currentUser: user,
+    auditRepo: auditRepo,
+  );
 });
 
 class TicketRepository {
   final FirebaseFirestore _firestore;
   final String tenantId;
   final AppUser? currentUser;
+  final AuditRepository? auditRepo;
 
-  TicketRepository({FirebaseFirestore? firestore, this.tenantId = '', this.currentUser})
+  TicketRepository({FirebaseFirestore? firestore, this.tenantId = '', this.currentUser, this.auditRepo})
       : _firestore = firestore ?? FirebaseFirestore.instance;
 
   CollectionReference get _ticketsRef =>
@@ -165,11 +174,27 @@ class TicketRepository {
   }
 
   Future<String> createTicket(Ticket ticket) async {
-    final docRef = await _ticketsRef.add(_ticketToDoc(ticket));
-    if (ticket.status == TicketStatus.paye) {
-      final stockRepo = StockRepository(firestore: _firestore, tenantId: tenantId);
-      await stockRepo.deductStockForTicket(ticket.copyWith(id: docRef.id));
+    final docRef = _ticketsRef.doc();
+    final newTicket = ticket.copyWith(id: docRef.id);
+    await docRef.set(_ticketToDoc(newTicket));
+
+    if (currentUser != null) {
+      auditRepo?.log(
+        userId: currentUser!.id,
+        userName: currentUser!.name,
+        action: 'Création Ticket',
+        module: 'ticket',
+        description: 'A créé le ticket #${newTicket.ticketNumber} (Client: ${newTicket.clientName})',
+        stationId: newTicket.tenantId,
+        newData: {'ticketId': newTicket.id, 'ticketNumber': newTicket.ticketNumber, 'total': newTicket.totalAmount},
+      );
     }
+    
+    if (newTicket.status == TicketStatus.paye) {
+      final stockRepo = StockRepository(firestore: _firestore, tenantId: tenantId, currentUser: currentUser, auditRepo: auditRepo);
+      await stockRepo.deductStockForTicket(newTicket);
+    }
+
     return docRef.id;
   }
 
@@ -205,9 +230,45 @@ class TicketRepository {
 
     await _ticketsRef.doc(ticket.id).update(_ticketToDoc(ticket));
 
+    if (currentUser != null) {
+      final bool isValidation = oldStatus != 'paye' && ticket.status == TicketStatus.paye;
+      
+      String actorDescription = 'A mis à jour le ticket #${ticket.ticketNumber}';
+      if (isValidation) {
+        if (ticket.assignedWorkerId != null && ticket.assignedWorkerId != currentUser!.id) {
+           actorDescription = 'A validé le ticket #${ticket.ticketNumber} de ${ticket.assignedWorkerName ?? 'l\'ouvrier'}';
+        } else {
+           actorDescription = 'A validé le ticket #${ticket.ticketNumber}';
+        }
+      }
+
+      auditRepo?.log(
+        userId: currentUser!.id,
+        userName: currentUser!.name,
+        action: isValidation ? 'Validation Ticket' : 'Modification Ticket',
+        module: 'ticket',
+        description: actorDescription,
+        stationId: ticket.tenantId,
+        newData: {'ticketId': ticket.id, 'status': ticket.status.value},
+      );
+
+      // Log pour l'ouvrier si quelqu'un d'autre (le caissier) valide son ticket
+      if (isValidation && ticket.assignedWorkerId != null && ticket.assignedWorkerId != currentUser!.id) {
+        auditRepo?.log(
+          userId: ticket.assignedWorkerId!,
+          userName: ticket.assignedWorkerName ?? 'Ouvrier',
+          action: 'Ticket Validé par Caissier',
+          module: 'ticket',
+          description: 'Votre ticket #${ticket.ticketNumber} a été validé par ${currentUser!.name}',
+          stationId: ticket.tenantId,
+          newData: {'ticketId': ticket.id, 'status': ticket.status.value, 'validatedBy': currentUser!.id},
+        );
+      }
+    }
+
     // If it transitioned to paye, we deduct stock and update client balance
     if (oldStatus != 'paye' && ticket.status == TicketStatus.paye) {
-      final stockRepo = StockRepository(firestore: _firestore, tenantId: tenantId);
+      final stockRepo = StockRepository(firestore: _firestore, tenantId: tenantId, currentUser: currentUser, auditRepo: auditRepo);
       await stockRepo.deductStockForTicket(ticket);
 
       if (ticket.paymentMethod == 'compte_client' && ticket.clientId != null) {
@@ -234,10 +295,22 @@ class TicketRepository {
       'updatedAt': Timestamp.now(),
     });
 
+    if (currentUser != null) {
+      auditRepo?.log(
+        userId: currentUser!.id,
+        userName: currentUser!.name,
+        action: 'Modification Statut Ticket',
+        module: 'ticket',
+        description: 'A changé le statut du ticket en $mappedStatus',
+        stationId: currentUser!.tenantId,
+        newData: {'ticketId': ticketId, 'status': mappedStatus},
+      );
+    }
+
     if (mappedStatus == 'paye') {
       final ticket = await getTicketById(ticketId);
       if (ticket != null) {
-        final stockRepo = StockRepository(firestore: _firestore, tenantId: tenantId);
+        final stockRepo = StockRepository(firestore: _firestore, tenantId: tenantId, currentUser: currentUser, auditRepo: auditRepo);
         await stockRepo.deductStockForTicket(ticket);
 
         if (ticket.paymentMethod == 'compte_client' && ticket.clientId != null) {

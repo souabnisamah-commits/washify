@@ -81,7 +81,8 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
         updatedAt: now,
       );
 
-      await authRepo.createUser(newUser);
+      final currentUser = ref.read(currentUserProvider);
+      await authRepo.createUser(newUser, actor: currentUser);
 
       // Créer également le profil Employé si ce n'est pas un admin SaaS
       if (!_selectedRoles.contains(UserRole.admin)) {
@@ -372,7 +373,7 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
             SizedBox(height: 12),
             _buildMenuItem(
               context,
-              title: 'Journaux d\'Audit',
+              title: 'Audit Application',
               subtitle: 'Consulter l\'historique d\'activité de tous les utilisateurs',
               icon: Icons.history_edu,
               color: AppTheme.warningOrange,

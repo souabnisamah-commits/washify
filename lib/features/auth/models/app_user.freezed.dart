@@ -32,6 +32,9 @@ mixin _$AppUser {
   double get baseDailyWage => throw _privateConstructorUsedError;
   double get extraHourRate => throw _privateConstructorUsedError;
   bool get isActive => throw _privateConstructorUsedError;
+  bool get isOnline => throw _privateConstructorUsedError;
+  bool get forceLogout => throw _privateConstructorUsedError;
+  DateTime? get lastLoginAt => throw _privateConstructorUsedError;
   DateTime get createdAt => throw _privateConstructorUsedError;
   DateTime get updatedAt => throw _privateConstructorUsedError;
 
@@ -59,6 +62,9 @@ abstract class $AppUserCopyWith<$Res> {
     double baseDailyWage,
     double extraHourRate,
     bool isActive,
+    bool isOnline,
+    bool forceLogout,
+    DateTime? lastLoginAt,
     DateTime createdAt,
     DateTime updatedAt,
   });
@@ -88,6 +94,9 @@ class _$AppUserCopyWithImpl<$Res, $Val extends AppUser>
     Object? baseDailyWage = null,
     Object? extraHourRate = null,
     Object? isActive = null,
+    Object? isOnline = null,
+    Object? forceLogout = null,
+    Object? lastLoginAt = freezed,
     Object? createdAt = null,
     Object? updatedAt = null,
   }) {
@@ -129,6 +138,18 @@ class _$AppUserCopyWithImpl<$Res, $Val extends AppUser>
                 ? _value.isActive
                 : isActive // ignore: cast_nullable_to_non_nullable
                       as bool,
+            isOnline: null == isOnline
+                ? _value.isOnline
+                : isOnline // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            forceLogout: null == forceLogout
+                ? _value.forceLogout
+                : forceLogout // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            lastLoginAt: freezed == lastLoginAt
+                ? _value.lastLoginAt
+                : lastLoginAt // ignore: cast_nullable_to_non_nullable
+                      as DateTime?,
             createdAt: null == createdAt
                 ? _value.createdAt
                 : createdAt // ignore: cast_nullable_to_non_nullable
@@ -161,6 +182,9 @@ abstract class _$$AppUserImplCopyWith<$Res> implements $AppUserCopyWith<$Res> {
     double baseDailyWage,
     double extraHourRate,
     bool isActive,
+    bool isOnline,
+    bool forceLogout,
+    DateTime? lastLoginAt,
     DateTime createdAt,
     DateTime updatedAt,
   });
@@ -189,6 +213,9 @@ class __$$AppUserImplCopyWithImpl<$Res>
     Object? baseDailyWage = null,
     Object? extraHourRate = null,
     Object? isActive = null,
+    Object? isOnline = null,
+    Object? forceLogout = null,
+    Object? lastLoginAt = freezed,
     Object? createdAt = null,
     Object? updatedAt = null,
   }) {
@@ -230,6 +257,18 @@ class __$$AppUserImplCopyWithImpl<$Res>
             ? _value.isActive
             : isActive // ignore: cast_nullable_to_non_nullable
                   as bool,
+        isOnline: null == isOnline
+            ? _value.isOnline
+            : isOnline // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        forceLogout: null == forceLogout
+            ? _value.forceLogout
+            : forceLogout // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        lastLoginAt: freezed == lastLoginAt
+            ? _value.lastLoginAt
+            : lastLoginAt // ignore: cast_nullable_to_non_nullable
+                  as DateTime?,
         createdAt: null == createdAt
             ? _value.createdAt
             : createdAt // ignore: cast_nullable_to_non_nullable
@@ -256,6 +295,9 @@ class _$AppUserImpl extends _AppUser {
     this.baseDailyWage = 0.0,
     this.extraHourRate = 0.0,
     this.isActive = true,
+    this.isOnline = false,
+    this.forceLogout = false,
+    this.lastLoginAt,
     required this.createdAt,
     required this.updatedAt,
   }) : _roles = roles,
@@ -296,13 +338,21 @@ class _$AppUserImpl extends _AppUser {
   @JsonKey()
   final bool isActive;
   @override
+  @JsonKey()
+  final bool isOnline;
+  @override
+  @JsonKey()
+  final bool forceLogout;
+  @override
+  final DateTime? lastLoginAt;
+  @override
   final DateTime createdAt;
   @override
   final DateTime updatedAt;
 
   @override
   String toString() {
-    return 'AppUser(id: $id, tenantId: $tenantId, phone: $phone, pinHash: $pinHash, name: $name, roles: $roles, baseDailyWage: $baseDailyWage, extraHourRate: $extraHourRate, isActive: $isActive, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'AppUser(id: $id, tenantId: $tenantId, phone: $phone, pinHash: $pinHash, name: $name, roles: $roles, baseDailyWage: $baseDailyWage, extraHourRate: $extraHourRate, isActive: $isActive, isOnline: $isOnline, forceLogout: $forceLogout, lastLoginAt: $lastLoginAt, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -323,6 +373,12 @@ class _$AppUserImpl extends _AppUser {
                 other.extraHourRate == extraHourRate) &&
             (identical(other.isActive, isActive) ||
                 other.isActive == isActive) &&
+            (identical(other.isOnline, isOnline) ||
+                other.isOnline == isOnline) &&
+            (identical(other.forceLogout, forceLogout) ||
+                other.forceLogout == forceLogout) &&
+            (identical(other.lastLoginAt, lastLoginAt) ||
+                other.lastLoginAt == lastLoginAt) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
             (identical(other.updatedAt, updatedAt) ||
@@ -342,6 +398,9 @@ class _$AppUserImpl extends _AppUser {
     baseDailyWage,
     extraHourRate,
     isActive,
+    isOnline,
+    forceLogout,
+    lastLoginAt,
     createdAt,
     updatedAt,
   );
@@ -371,6 +430,9 @@ abstract class _AppUser extends AppUser {
     final double baseDailyWage,
     final double extraHourRate,
     final bool isActive,
+    final bool isOnline,
+    final bool forceLogout,
+    final DateTime? lastLoginAt,
     required final DateTime createdAt,
     required final DateTime updatedAt,
   }) = _$AppUserImpl;
@@ -397,6 +459,12 @@ abstract class _AppUser extends AppUser {
   double get extraHourRate;
   @override
   bool get isActive;
+  @override
+  bool get isOnline;
+  @override
+  bool get forceLogout;
+  @override
+  DateTime? get lastLoginAt;
   @override
   DateTime get createdAt;
   @override

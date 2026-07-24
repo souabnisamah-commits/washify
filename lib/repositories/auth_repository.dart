@@ -3,6 +3,7 @@ import 'package:washify/core/constants/app_constants.dart';
 import 'package:washify/core/constants/user_roles.dart';
 import 'package:washify/features/auth/models/app_user.dart';
 import 'package:washify/core/utils/hash_util.dart';
+import 'package:washify/repositories/audit_repository.dart';
 
 class AuthRepository {
   final FirebaseFirestore _firestore;
@@ -23,6 +24,9 @@ class AuthRepository {
     }
     if (data['updatedAt'] is Timestamp) {
       data['updatedAt'] = (data['updatedAt'] as Timestamp).toDate().toIso8601String();
+    }
+    if (data['lastLoginAt'] is Timestamp) {
+      data['lastLoginAt'] = (data['lastLoginAt'] as Timestamp).toDate().toIso8601String();
     }
     
     // Backward compatibility mappings
@@ -53,6 +57,26 @@ class AuthRepository {
     map['createdAt'] = Timestamp.fromDate(user.createdAt);
     map['updatedAt'] = Timestamp.fromDate(user.updatedAt);
     return map;
+  }
+
+  Future<void> updateOnlineStatus(String userId, bool isOnline) async {
+    final updates = <String, dynamic>{
+      'isOnline': isOnline,
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+    if (isOnline) {
+      updates['lastLoginAt'] = FieldValue.serverTimestamp();
+      updates['forceLogout'] = false; // Reset force logout on new login
+    }
+    await _usersRef.doc(userId).update(updates);
+  }
+
+  Future<void> forceLogoutUser(String userId) async {
+    await _usersRef.doc(userId).update({
+      'forceLogout': true,
+      'isOnline': false,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
   }
 
   Future<AppUser?> loginWithPhoneAndPin(String phone, String pin) async {
@@ -101,12 +125,36 @@ class AuthRepository {
     return _appUserFromDoc(querySnapshot.docs.first);
   }
 
-  Future<void> createUser(AppUser user) async {
+  Future<void> createUser(AppUser user, {AppUser? actor}) async {
     await _usersRef.doc(user.id).set(_appUserToDoc(user));
+    
+    if (actor != null) {
+      AuditRepository(tenantId: actor.tenantId).log(
+        userId: actor.id,
+        userName: actor.name,
+        action: 'Création Employé',
+        module: 'users',
+        description: 'A créé le compte ${user.name} (${user.roles.first.name})',
+        stationId: actor.tenantId,
+        newData: {'userId': user.id, 'name': user.name, 'phone': user.phone},
+      );
+    }
   }
 
-  Future<void> updateUser(AppUser user) async {
+  Future<void> updateUser(AppUser user, {AppUser? actor}) async {
     await _usersRef.doc(user.id).update(_appUserToDoc(user));
+
+    if (actor != null) {
+      AuditRepository(tenantId: actor.tenantId).log(
+        userId: actor.id,
+        userName: actor.name,
+        action: 'Modification Employé',
+        module: 'users',
+        description: 'A modifié le compte ${user.name}',
+        stationId: actor.tenantId,
+        newData: {'userId': user.id, 'name': user.name, 'isActive': user.isActive},
+      );
+    }
   }
 
   Future<void> ensureAdminExists() async {
@@ -160,6 +208,23 @@ class AuthRepository {
   Future<List<AppUser>> getUsersByStationId(String stationId) async {
     final querySnapshot = await _usersRef
         .where('tenantId', isEqualTo: stationId)
+        .where('isActive', isEqualTo: true)
+        .orderBy('createdAt', descending: true)
+        .get();
+    return querySnapshot.docs.map((doc) => _appUserFromDoc(doc)).toList();
+  }
+
+  Stream<AppUser?> userStream(String userId) {
+    return _usersRef.doc(userId).snapshots().map((doc) {
+      if (!doc.exists) return null;
+      return _appUserFromDoc(doc);
+    });
+  }
+
+  Future<List<AppUser>> getOnlineUsers(String stationId) async {
+    final querySnapshot = await _usersRef
+        .where('tenantId', isEqualTo: stationId)
+        .where('isOnline', isEqualTo: true)
         .where('isActive', isEqualTo: true)
         .get();
     return querySnapshot.docs.map((doc) => _appUserFromDoc(doc)).toList();

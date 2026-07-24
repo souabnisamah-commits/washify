@@ -31,6 +31,9 @@ mixin _$AuditLog {
   String get module =>
       throw _privateConstructorUsedError; // tickets, stock, wallet, admin
   String get description => throw _privateConstructorUsedError;
+  String get severity =>
+      throw _privateConstructorUsedError; // info, warning, critical
+  Map<String, dynamic>? get deviceInfo => throw _privateConstructorUsedError;
   Map<String, dynamic>? get previousData => throw _privateConstructorUsedError;
   Map<String, dynamic>? get newData => throw _privateConstructorUsedError;
   DateTime get createdAt => throw _privateConstructorUsedError;
@@ -58,6 +61,8 @@ abstract class $AuditLogCopyWith<$Res> {
     String action,
     String module,
     String description,
+    String severity,
+    Map<String, dynamic>? deviceInfo,
     Map<String, dynamic>? previousData,
     Map<String, dynamic>? newData,
     DateTime createdAt,
@@ -86,6 +91,8 @@ class _$AuditLogCopyWithImpl<$Res, $Val extends AuditLog>
     Object? action = null,
     Object? module = null,
     Object? description = null,
+    Object? severity = null,
+    Object? deviceInfo = freezed,
     Object? previousData = freezed,
     Object? newData = freezed,
     Object? createdAt = null,
@@ -120,6 +127,14 @@ class _$AuditLogCopyWithImpl<$Res, $Val extends AuditLog>
                 ? _value.description
                 : description // ignore: cast_nullable_to_non_nullable
                       as String,
+            severity: null == severity
+                ? _value.severity
+                : severity // ignore: cast_nullable_to_non_nullable
+                      as String,
+            deviceInfo: freezed == deviceInfo
+                ? _value.deviceInfo
+                : deviceInfo // ignore: cast_nullable_to_non_nullable
+                      as Map<String, dynamic>?,
             previousData: freezed == previousData
                 ? _value.previousData
                 : previousData // ignore: cast_nullable_to_non_nullable
@@ -155,6 +170,8 @@ abstract class _$$AuditLogImplCopyWith<$Res>
     String action,
     String module,
     String description,
+    String severity,
+    Map<String, dynamic>? deviceInfo,
     Map<String, dynamic>? previousData,
     Map<String, dynamic>? newData,
     DateTime createdAt,
@@ -182,6 +199,8 @@ class __$$AuditLogImplCopyWithImpl<$Res>
     Object? action = null,
     Object? module = null,
     Object? description = null,
+    Object? severity = null,
+    Object? deviceInfo = freezed,
     Object? previousData = freezed,
     Object? newData = freezed,
     Object? createdAt = null,
@@ -216,6 +235,14 @@ class __$$AuditLogImplCopyWithImpl<$Res>
             ? _value.description
             : description // ignore: cast_nullable_to_non_nullable
                   as String,
+        severity: null == severity
+            ? _value.severity
+            : severity // ignore: cast_nullable_to_non_nullable
+                  as String,
+        deviceInfo: freezed == deviceInfo
+            ? _value._deviceInfo
+            : deviceInfo // ignore: cast_nullable_to_non_nullable
+                  as Map<String, dynamic>?,
         previousData: freezed == previousData
             ? _value._previousData
             : previousData // ignore: cast_nullable_to_non_nullable
@@ -244,10 +271,13 @@ class _$AuditLogImpl extends _AuditLog {
     required this.action,
     required this.module,
     required this.description,
+    this.severity = 'info',
+    final Map<String, dynamic>? deviceInfo,
     final Map<String, dynamic>? previousData,
     final Map<String, dynamic>? newData,
     required this.createdAt,
-  }) : _previousData = previousData,
+  }) : _deviceInfo = deviceInfo,
+       _previousData = previousData,
        _newData = newData,
        super._();
 
@@ -271,6 +301,21 @@ class _$AuditLogImpl extends _AuditLog {
   // tickets, stock, wallet, admin
   @override
   final String description;
+  @override
+  @JsonKey()
+  final String severity;
+  // info, warning, critical
+  final Map<String, dynamic>? _deviceInfo;
+  // info, warning, critical
+  @override
+  Map<String, dynamic>? get deviceInfo {
+    final value = _deviceInfo;
+    if (value == null) return null;
+    if (_deviceInfo is EqualUnmodifiableMapView) return _deviceInfo;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(value);
+  }
+
   final Map<String, dynamic>? _previousData;
   @override
   Map<String, dynamic>? get previousData {
@@ -296,7 +341,7 @@ class _$AuditLogImpl extends _AuditLog {
 
   @override
   String toString() {
-    return 'AuditLog(id: $id, tenantId: $tenantId, userId: $userId, userName: $userName, action: $action, module: $module, description: $description, previousData: $previousData, newData: $newData, createdAt: $createdAt)';
+    return 'AuditLog(id: $id, tenantId: $tenantId, userId: $userId, userName: $userName, action: $action, module: $module, description: $description, severity: $severity, deviceInfo: $deviceInfo, previousData: $previousData, newData: $newData, createdAt: $createdAt)';
   }
 
   @override
@@ -314,6 +359,12 @@ class _$AuditLogImpl extends _AuditLog {
             (identical(other.module, module) || other.module == module) &&
             (identical(other.description, description) ||
                 other.description == description) &&
+            (identical(other.severity, severity) ||
+                other.severity == severity) &&
+            const DeepCollectionEquality().equals(
+              other._deviceInfo,
+              _deviceInfo,
+            ) &&
             const DeepCollectionEquality().equals(
               other._previousData,
               _previousData,
@@ -334,6 +385,8 @@ class _$AuditLogImpl extends _AuditLog {
     action,
     module,
     description,
+    severity,
+    const DeepCollectionEquality().hash(_deviceInfo),
     const DeepCollectionEquality().hash(_previousData),
     const DeepCollectionEquality().hash(_newData),
     createdAt,
@@ -362,6 +415,8 @@ abstract class _AuditLog extends AuditLog {
     required final String action,
     required final String module,
     required final String description,
+    final String severity,
+    final Map<String, dynamic>? deviceInfo,
     final Map<String, dynamic>? previousData,
     final Map<String, dynamic>? newData,
     required final DateTime createdAt,
@@ -386,6 +441,10 @@ abstract class _AuditLog extends AuditLog {
   String get module; // tickets, stock, wallet, admin
   @override
   String get description;
+  @override
+  String get severity; // info, warning, critical
+  @override
+  Map<String, dynamic>? get deviceInfo;
   @override
   Map<String, dynamic>? get previousData;
   @override

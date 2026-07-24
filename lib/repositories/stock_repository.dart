@@ -4,11 +4,16 @@ import 'package:washify/features/stock/models/stock.dart';
 import 'package:washify/features/tickets/models/ticket.dart';
 import 'package:washify/features/services/models/service_definition.dart';
 
+import 'package:washify/features/auth/models/app_user.dart';
+import 'package:washify/repositories/audit_repository.dart';
+
 class StockRepository {
   final FirebaseFirestore _firestore;
   final String tenantId;
+  final AppUser? currentUser;
+  final AuditRepository? auditRepo;
 
-  StockRepository({FirebaseFirestore? firestore, this.tenantId = ''})
+  StockRepository({FirebaseFirestore? firestore, this.tenantId = '', this.currentUser, this.auditRepo})
       : _firestore = firestore ?? FirebaseFirestore.instance;
 
   CollectionReference get _stockRef => _firestore.collection(AppConstants.stockCollection);
@@ -100,7 +105,21 @@ class StockRepository {
   }
 
   Future<void> addStockMovement(StockMovement movement) async {
-    await _movementsRef.add(_movementToDoc(movement));
+    final docRef = _movementsRef.doc();
+    final newMovement = movement.copyWith(id: docRef.id);
+    await docRef.set(_movementToDoc(newMovement));
+    
+    if (currentUser != null) {
+      auditRepo?.log(
+        userId: currentUser!.id,
+        userName: currentUser!.name,
+        action: 'Mouvement Stock',
+        module: 'stock',
+        description: 'A effectué un mouvement de stock (${newMovement.type}) pour le produit ${newMovement.productName} (Qte: ${newMovement.quantity})',
+        stationId: newMovement.tenantId,
+        newData: {'movementId': newMovement.id, 'productId': newMovement.productId, 'quantity': newMovement.quantity, 'type': newMovement.type},
+      );
+    }
   }
 
   Future<List<StockMovement>> getStockMovements(String stationId,

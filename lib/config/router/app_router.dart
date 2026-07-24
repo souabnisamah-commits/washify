@@ -2,6 +2,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:washify/core/constants/user_roles.dart';
 import 'package:washify/providers/auth_provider.dart';
+import 'package:washify/core/observers/audit_navigator_observer.dart';
 
 // Screens
 import 'package:washify/features/auth/login_screen.dart';
@@ -9,6 +10,7 @@ import 'package:washify/features/dashboard/admin_dashboard.dart';
 import 'package:washify/features/dashboard/patron_dashboard.dart';
 import 'package:washify/features/dashboard/cashier_dashboard.dart';
 import 'package:washify/features/dashboard/worker_dashboard.dart';
+import 'package:washify/features/audit/screens/audit_application_screen.dart';
 import 'package:washify/features/employees/employees_screen.dart';
 import 'package:washify/features/clients/clients_screen.dart';
 
@@ -28,7 +30,7 @@ import 'package:washify/features/tickets/tickets_screen.dart';
 import 'package:washify/features/tickets/new_ticket_screen.dart';
 import 'package:washify/features/wallet/wallet_screen.dart';
 import 'package:washify/features/payroll/payroll_screen.dart';
-import 'package:washify/features/audit/audit_screen.dart';
+
 import 'package:washify/features/inventory/inventory_history_screen.dart';
 import 'package:washify/features/inventory/inventory_form_screen.dart';
 import 'package:washify/features/inventory/inventory_report_screen.dart';
@@ -40,6 +42,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   return GoRouter(
     initialLocation: '/login',
+    observers: [AuditNavigatorObserver(ref)],
     redirect: (context, state) {
       final isLoggedIn = userState != null;
       final isLoggingIn = state.matchedLocation == '/login';
@@ -130,7 +133,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: 'audit',
-            builder: (context, state) => const AuditScreen(),
+            builder: (context, state) => const AuditApplicationScreen(),
           ),
         ],
       ),

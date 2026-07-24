@@ -19,6 +19,11 @@ _$AppUserImpl _$$AppUserImplFromJson(Map<String, dynamic> json) =>
       baseDailyWage: (json['baseDailyWage'] as num?)?.toDouble() ?? 0.0,
       extraHourRate: (json['extraHourRate'] as num?)?.toDouble() ?? 0.0,
       isActive: json['isActive'] as bool? ?? true,
+      isOnline: json['isOnline'] as bool? ?? false,
+      forceLogout: json['forceLogout'] as bool? ?? false,
+      lastLoginAt: json['lastLoginAt'] == null
+          ? null
+          : DateTime.parse(json['lastLoginAt'] as String),
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
     );
@@ -34,6 +39,9 @@ Map<String, dynamic> _$$AppUserImplToJson(_$AppUserImpl instance) =>
       'baseDailyWage': instance.baseDailyWage,
       'extraHourRate': instance.extraHourRate,
       'isActive': instance.isActive,
+      'isOnline': instance.isOnline,
+      'forceLogout': instance.forceLogout,
+      'lastLoginAt': instance.lastLoginAt?.toIso8601String(),
       'createdAt': instance.createdAt.toIso8601String(),
       'updatedAt': instance.updatedAt.toIso8601String(),
     };

@@ -31,3 +31,10 @@ final auditLogsStreamProvider =
   final repo = ref.watch(auditRepositoryProvider);
   return repo.watchAuditLogs(stationId: arg.stationId, limit: arg.limit);
 });
+
+final userAuditLogsStreamProvider =
+    StreamProvider.family<List<AuditLog>, ({String userId, int limit})>(
+        (ref, arg) {
+  final repo = ref.watch(auditRepositoryProvider);
+  return repo.watchUserAuditLogs(userId: arg.userId, limit: arg.limit);
+});

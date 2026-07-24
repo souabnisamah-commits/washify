@@ -25,6 +25,7 @@ import 'package:washify/core/constants/user_roles.dart';
 import 'package:washify/features/hr/providers/hr_provider.dart';
 import 'package:washify/features/hr/models/attendance.dart';
 import 'package:washify/features/hr/models/shift.dart';
+import 'package:washify/core/widgets/barcode_scan_button.dart';
 
 class NewTicketScreen extends ConsumerStatefulWidget {
   const NewTicketScreen({super.key});
@@ -957,8 +958,11 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
                           labelText: 'Rechercher un produit/article (Nom ou Code-barres)'.tr,
                           prefixIcon: Icon(Icons.search, color: AppTheme.accentCyan),
                           hintText: 'Saisir le nom ou scanner le code-barres...'.tr,
-                          suffixIcon: _productSearchQuery.isNotEmpty
-                              ? IconButton(
+                          suffixIcon: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (_productSearchQuery.isNotEmpty)
+                                IconButton(
                                   icon: Icon(Icons.clear),
                                   onPressed: () {
                                     setState(() {
@@ -966,8 +970,36 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
                                       _productSearchQuery = '';
                                     });
                                   },
-                                )
-                              : null,
+                                ),
+                              BarcodeScanIcon(
+                                onScanned: (barcode) {
+                                  final matchedProduct = products
+                                      .where((p) => p.family == ProductFamily.revente)
+                                      .where((p) => p.barcode.toLowerCase() == barcode.toLowerCase())
+                                      .toList();
+                                  if (matchedProduct.isNotEmpty) {
+                                    _addProduct(matchedProduct.first);
+                                    _productSearchController.clear();
+                                    setState(() => _productSearchQuery = '');
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('${matchedProduct.first.name} ajouté'),
+                                        duration: const Duration(seconds: 1),
+                                        backgroundColor: AppTheme.successGreen,
+                                      ),
+                                    );
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Aucun produit trouvé pour ce code-barres'),
+                                        backgroundColor: AppTheme.errorRed,
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
                         ),
                         onChanged: (val) {
                           setState(() {

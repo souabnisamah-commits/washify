@@ -251,8 +251,9 @@ class _EmployeesScreenState extends ConsumerState<EmployeesScreen> {
         updatedAt: now,
       );
 
-      await authRepo.createUser(newUser);
-
+      final currentUser = ref.read(currentUserProvider);
+      await authRepo.createUser(newUser, actor: currentUser);
+      
       final employeeRepo = ref.read(employeeRepositoryProvider);
       final parts = newUser.name.trim().split(' ');
       final prenom = parts.isNotEmpty ? parts.first : '';

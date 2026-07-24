@@ -16,6 +16,8 @@ class AuditLog with _$AuditLog {
     required String action, // ticket_paye, ticket_rembourse, stock_modifie, wallet_ajuste, licence_modifiee
     required String module, // tickets, stock, wallet, admin
     required String description,
+    @Default('info') String severity, // info, warning, critical
+    Map<String, dynamic>? deviceInfo,
     Map<String, dynamic>? previousData,
     Map<String, dynamic>? newData,
     required DateTime createdAt,

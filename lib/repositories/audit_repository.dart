@@ -43,23 +43,31 @@ class AuditRepository {
     required String action,
     required String module,
     required String description,
+    String severity = 'info',
+    Map<String, dynamic>? deviceInfo,
     Map<String, dynamic>? previousData,
     Map<String, dynamic>? newData,
     String? stationId,
   }) async {
-    final auditLog = AuditLog(
-      id: '',
-      userId: userId,
-      userName: userName,
-      action: action,
-      module: module,
-      description: description,
-      previousData: previousData,
-      newData: newData,
-      tenantId: stationId ?? '',
-      createdAt: DateTime.now(),
-    );
-    await _auditRef.add(_auditToDoc(auditLog));
+    try {
+      final auditLog = AuditLog(
+        id: '',
+        userId: userId,
+        userName: userName,
+        action: action,
+        module: module,
+        description: description,
+        severity: severity,
+        deviceInfo: deviceInfo,
+        previousData: previousData,
+        newData: newData,
+        tenantId: stationId ?? '',
+        createdAt: DateTime.now(),
+      );
+      await _auditRef.add(_auditToDoc(auditLog));
+    } catch (e) {
+      print('AuditRepository log silently failed: $e');
+    }
   }
 
   Future<List<AuditLog>> getAuditLogs({
@@ -93,7 +101,19 @@ class AuditRepository {
       query = query.where('stationId', isEqualTo: stationId);
     }
 
-    return query.snapshots().map((snapshot) =>
-        snapshot.docs.map((doc) => _auditFromDoc(doc)).toList());
+    return query.snapshots().map((snapshot) {
+      return snapshot.docs.map((doc) => _auditFromDoc(doc)).toList();
+    });
+  }
+
+  Stream<List<AuditLog>> watchUserAuditLogs({required String userId, int limit = 100}) {
+    Query query = _auditRef
+        .where('userId', isEqualTo: userId)
+        .orderBy('createdAt', descending: true)
+        .limit(limit);
+
+    return query.snapshots().map((snapshot) {
+      return snapshot.docs.map((doc) => _auditFromDoc(doc)).toList();
+    });
   }
 }

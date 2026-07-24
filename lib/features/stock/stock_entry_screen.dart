@@ -11,6 +11,7 @@ import 'package:washify/providers/stock_provider.dart';
 import 'package:washify/providers/station_provider.dart';
 import 'package:washify/features/stock/models/stock.dart';
 import 'package:washify/features/products/models/product.dart';
+import 'package:washify/core/widgets/barcode_scan_button.dart';
 
 class StockEntryScreen extends ConsumerStatefulWidget {
   const StockEntryScreen({super.key});
@@ -494,15 +495,39 @@ class _ProductSearchSheetState extends State<_ProductSearchSheet> {
             decoration: InputDecoration(
               labelText: 'Rechercher (Nom ou Catégorie)'.tr,
               prefixIcon: Icon(Icons.search),
-              suffixIcon: _searchQuery.isNotEmpty 
-                ? IconButton(
-                    icon: Icon(Icons.clear), 
-                    onPressed: () {
-                      _searchController.clear();
-                      setState(() => _searchQuery = '');
-                    }
-                  )
-                : null,
+              suffixIcon: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_searchQuery.isNotEmpty)
+                    IconButton(
+                      icon: Icon(Icons.clear), 
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() => _searchQuery = '');
+                      }
+                    ),
+                  BarcodeScanIcon(
+                    onScanned: (barcode) {
+                      final matched = widget.products
+                          .where((p) => p.barcode.toLowerCase() == barcode.toLowerCase())
+                          .toList();
+                      if (matched.isNotEmpty) {
+                        widget.onSelected(matched.first);
+                        Navigator.of(context).pop();
+                      } else {
+                        _searchController.text = barcode;
+                        setState(() => _searchQuery = barcode);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Aucun produit trouvé pour ce code-barres'),
+                            backgroundColor: Colors.orange,
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ],
+              ),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             ),
             onChanged: (val) {

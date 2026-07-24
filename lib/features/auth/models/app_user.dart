@@ -19,6 +19,9 @@ class AppUser with _$AppUser {
     @Default(0.0) double baseDailyWage,
     @Default(0.0) double extraHourRate,
     @Default(true) bool isActive,
+    @Default(false) bool isOnline,
+    @Default(false) bool forceLogout,
+    DateTime? lastLoginAt,
     required DateTime createdAt,
     required DateTime updatedAt,
   }) = _AppUser;

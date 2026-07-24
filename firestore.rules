@@ -74,7 +74,8 @@ service cloud.firestore {
 
     // Audit logs rules
     match /audit_logs/{logId} {
-      allow read, write: if isSignedIn();
+      allow read: if isSignedIn();
+      allow write: if true;
     }
 
     // Notifications rules

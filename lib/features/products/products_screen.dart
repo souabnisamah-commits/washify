@@ -6,6 +6,7 @@ import 'package:washify/core/theme/app_theme.dart';
 import 'package:washify/providers/product_provider.dart';
 import 'package:washify/providers/station_provider.dart';
 import 'package:washify/features/products/models/product.dart';
+import 'package:washify/core/widgets/barcode_scan_button.dart';
 
 class ProductsScreen extends ConsumerStatefulWidget {
   const ProductsScreen({super.key});
@@ -100,7 +101,15 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen>
                         if (dialogType == ProductFamily.revente) ...[
                           TextFormField(
                             controller: barcodeController,
-                            decoration: InputDecoration(labelText: 'Code-barres'.tr, prefixIcon: Icon(Icons.qr_code)),
+                            decoration: InputDecoration(
+                              labelText: 'Code-barres'.tr,
+                              prefixIcon: Icon(Icons.qr_code),
+                              suffixIcon: BarcodeScanIcon(
+                                onScanned: (barcode) {
+                                  barcodeController.text = barcode;
+                                },
+                              ),
+                            ),
                           ),
                           SizedBox(height: 12),
                           TextFormField(

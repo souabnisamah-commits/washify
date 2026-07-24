@@ -5,6 +5,7 @@ import 'package:washify/features/auth/models/app_user.dart';
 import 'package:washify/repositories/auth_repository.dart';
 import 'package:washify/core/utils/session_service.dart';
 import 'package:washify/core/utils/hash_util.dart';
+import 'package:washify/repositories/audit_repository.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepository();
@@ -86,6 +87,24 @@ class CurrentUserNotifier extends StateNotifier<AppUser?> {
 
       state = user;
       await SessionService.instance.saveSession(user.id);
+      
+      try {
+        // Update online status in Firestore
+        await _authRepository.updateOnlineStatus(user.id, true);
+        
+        // Log connection
+        AuditRepository().log(
+          userId: user.id,
+          userName: user.name,
+          action: 'login',
+          module: 'auth',
+          description: 'Connexion réussie',
+          stationId: user.tenantId,
+        );
+      } catch (logError) {
+        print('Error updating online status or audit log: $logError');
+      }
+
       return true;
     } catch (e) {
       print('Network or login error: $e');
@@ -94,6 +113,22 @@ class CurrentUserNotifier extends StateNotifier<AppUser?> {
   }
 
   Future<void> logout() async {
+    if (state != null) {
+      try {
+        await _authRepository.updateOnlineStatus(state!.id, false);
+        
+        await AuditRepository().log(
+          userId: state!.id,
+          userName: state!.name,
+          action: 'logout',
+          module: 'auth',
+          description: 'Déconnexion',
+          stationId: state!.tenantId,
+        );
+      } catch (e) {
+        print('Audit/Status logout failed: $e');
+      }
+    }
     state = null;
     await SessionService.instance.clearSession();
     await FirebaseAuth.instance.signOut();
@@ -190,6 +225,15 @@ final currentUserProvider = StateNotifierProvider<CurrentUserNotifier, AppUser?>
 final stationUsersProvider = FutureProvider.family<List<AppUser>, String>((ref, stationId) async {
   final repo = ref.watch(authRepositoryProvider);
   return repo.getUsersByStationId(stationId);
+});
+
+/// Streams the real-time document of the currently logged in user
+final userRealtimeProvider = StreamProvider<AppUser?>((ref) {
+  final currentUser = ref.watch(currentUserProvider);
+  if (currentUser == null) return const Stream.empty();
+  
+  final repo = ref.watch(authRepositoryProvider);
+  return repo.userStream(currentUser.id);
 });
 
 

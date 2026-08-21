@@ -197,6 +197,7 @@ class _ServiceDefinitionsScreenState extends ConsumerState<ServiceDefinitionsScr
                             SizedBox(height: 8),
 
                             // Dropdown to link a product
+                            // Button to open 3-tab Product Link Modal
                             productsAsync.when(
                               data: (products) {
                                 final availableProducts = products.where(
@@ -204,39 +205,65 @@ class _ServiceDefinitionsScreenState extends ConsumerState<ServiceDefinitionsScr
                                 ).toList();
 
                                 if (availableProducts.isEmpty) {
-                                  return SizedBox.shrink();
+                                  return Text(
+                                    'Tous les produits configurés sont déjà liés.'.tr,
+                                    style: const TextStyle(color: AppTheme.textHint, fontSize: 12, fontStyle: FontStyle.italic),
+                                  );
                                 }
 
-                                return DropdownButtonFormField<Product>(
-                                  decoration: InputDecoration(
-                                    labelText: 'Lier un produit'.tr,
-                                    prefixIcon: Icon(Icons.add_link, color: AppTheme.accentCyan),
-                                  ),
-                                  items: availableProducts.map((p) => DropdownMenuItem(
-                                    value: p,
-                                    child: Text('${p.name} (${p.unit})'),
-                                  )).toList(),
-                                  onChanged: (prod) {
-                                    if (prod != null) {
-                                      setDialogState(() {
-                                        final double defaultDose = 1.0;
-                                        selectedLinks.add(ServiceProductLink(
-                                          productId: prod.id,
-                                          productName: prod.name,
-                                          consumptionPerUse: defaultDose,
-                                        ));
-                                        consumptionControllers[prod.id] = TextEditingController(
-                                          text: defaultDose.toString(),
-                                        );
-                                      });
-                                    }
+                                return InkWell(
+                                  onTap: () {
+                                    showModalBottomSheet(
+                                      context: dialogContext,
+                                      isScrollControlled: true,
+                                      backgroundColor: Colors.transparent,
+                                      builder: (ctx) => FractionallySizedBox(
+                                        heightFactor: 0.85,
+                                        child: _LinkProductModalSheet(
+                                          availableProducts: availableProducts,
+                                          onProductSelected: (prod) {
+                                            setDialogState(() {
+                                              final double defaultDose = 1.0;
+                                              selectedLinks.add(ServiceProductLink(
+                                                productId: prod.id,
+                                                productName: prod.name,
+                                                consumptionPerUse: defaultDose,
+                                              ));
+                                              consumptionControllers['${prod.id}_default'] = TextEditingController(
+                                                text: defaultDose.toString(),
+                                              );
+                                            });
+                                          },
+                                        ),
+                                      ),
+                                    );
                                   },
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.accentCyan.withValues(alpha: 0.08),
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(color: AppTheme.accentCyan.withValues(alpha: 0.3)),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        const Icon(Icons.add_link, color: AppTheme.accentCyan),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          '+ Lier un produit de stock (Boutique, Extra, Standard)'.tr,
+                                          style: const TextStyle(color: AppTheme.accentCyan, fontWeight: FontWeight.bold, fontSize: 13),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 );
                               },
-                              loading: () => Center(child: CircularProgressIndicator()),
+                              loading: () => const Center(child: CircularProgressIndicator()),
                               error: (e, _) => Text('Erreur produits: $e'.tr),
                             ),
-                            SizedBox(height: 12),
+                            const SizedBox(height: 12),
 
                             // List of linked products with editable doses
                             if (selectedLinks.isNotEmpty) ...[
@@ -931,6 +958,280 @@ class _CarpetServiceConfigTabState extends ConsumerState<CarpetServiceConfigTab>
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, s) => Center(child: Text('Erreur: $e'.tr)),
+    );
+  }
+}
+
+class _LinkProductModalSheet extends ConsumerStatefulWidget {
+  final List<Product> availableProducts;
+  final Function(Product) onProductSelected;
+
+  const _LinkProductModalSheet({
+    required this.availableProducts,
+    required this.onProductSelected,
+  });
+
+  @override
+  ConsumerState<_LinkProductModalSheet> createState() => _LinkProductModalSheetState();
+}
+
+class _LinkProductModalSheetState extends ConsumerState<_LinkProductModalSheet> {
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 3,
+      child: Container(
+        padding: const EdgeInsets.only(top: 16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.accentCyan.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.add_link, color: AppTheme.accentCyan, size: 22),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Lier un Produit de Stock'.tr,
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // TabBar
+            TabBar(
+              indicatorColor: AppTheme.accentCyan,
+              labelColor: AppTheme.accentCyan,
+              unselectedLabelColor: AppTheme.textHint,
+              tabs: const [
+                Tab(icon: Icon(Icons.shopping_bag_outlined, size: 18), text: 'Boutique (Revente)'),
+                Tab(icon: Icon(Icons.auto_awesome_outlined, size: 18), text: 'Consommable Premium'),
+                Tab(icon: Icon(Icons.opacity_outlined, size: 18), text: 'Consommable Standard'),
+              ],
+            ),
+
+            // TabBarView
+            Expanded(
+              child: TabBarView(
+                children: [
+                  _LinkProductCategoryTabView(
+                    family: ProductFamily.revente,
+                    products: widget.availableProducts,
+                    onSelected: (p) => widget.onProductSelected(p),
+                  ),
+                  _LinkProductCategoryTabView(
+                    family: ProductFamily.extra,
+                    products: widget.availableProducts,
+                    onSelected: (p) => widget.onProductSelected(p),
+                  ),
+                  _LinkProductCategoryTabView(
+                    family: ProductFamily.standard,
+                    products: widget.availableProducts,
+                    onSelected: (p) => widget.onProductSelected(p),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LinkProductCategoryTabView extends StatefulWidget {
+  final ProductFamily family;
+  final List<Product> products;
+  final Function(Product) onSelected;
+
+  const _LinkProductCategoryTabView({
+    required this.family,
+    required this.products,
+    required this.onSelected,
+  });
+
+  @override
+  State<_LinkProductCategoryTabView> createState() => _LinkProductCategoryTabViewState();
+}
+
+class _LinkProductCategoryTabViewState extends State<_LinkProductCategoryTabView> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isBoutique = widget.family == ProductFamily.revente;
+
+    final filtered = widget.products.where((p) {
+      if (p.family != widget.family) return false;
+
+      if (_searchQuery.trim().isNotEmpty) {
+        final q = _searchQuery.trim().toLowerCase();
+        final nameMatch = p.name.toLowerCase().contains(q);
+        final barcodeMatch = p.barcode.toLowerCase().contains(q);
+        final unitMatch = p.unit.toLowerCase().contains(q);
+        return nameMatch || barcodeMatch || unitMatch;
+      }
+
+      return true;
+    }).toList();
+
+    return Column(
+      children: [
+        // Intelligent Search Bar
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          child: TextField(
+            controller: _searchController,
+            onChanged: (val) => setState(() => _searchQuery = val),
+            decoration: InputDecoration(
+              hintText: isBoutique
+                  ? 'Rechercher par nom ou code-barres...'.tr
+                  : 'Rechercher un produit...'.tr,
+              prefixIcon: const Icon(Icons.search, color: AppTheme.accentCyan),
+              suffixIcon: _searchQuery.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, size: 18),
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() => _searchQuery = '');
+                      },
+                    )
+                  : (isBoutique ? const Icon(Icons.qr_code_scanner, color: AppTheme.accentCyan, size: 20) : null),
+              filled: true,
+              fillColor: Theme.of(context).colorScheme.surface,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: AppTheme.accentCyan.withValues(alpha: 0.3)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: AppTheme.accentCyan.withValues(alpha: 0.3)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppTheme.accentCyan, width: 2),
+              ),
+            ),
+          ),
+        ),
+
+        // Count banner
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 2),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${filtered.length} produit(s) disponible(s)',
+                style: const TextStyle(fontSize: 12, color: AppTheme.textHint, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 6),
+
+        // Product items list
+        Expanded(
+          child: filtered.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(isBoutique ? Icons.shopping_bag_outlined : Icons.inventory_2_outlined, size: 48, color: AppTheme.textHint.withValues(alpha: 0.5)),
+                      const SizedBox(height: 12),
+                      Text(
+                        _searchQuery.isNotEmpty
+                            ? 'Aucun produit ne correspond à la recherche.'.tr
+                            : 'Aucun produit disponible dans cette catégorie.'.tr,
+                        style: const TextStyle(color: AppTheme.textHint),
+                      ),
+                    ],
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: filtered.length,
+                  itemBuilder: (context, index) {
+                    final prod = filtered[index];
+                    final barcodeStr = (isBoutique && prod.barcode.isNotEmpty) ? prod.barcode : '';
+
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      child: ListTile(
+                        onTap: () => widget.onSelected(prod),
+                        leading: CircleAvatar(
+                          backgroundColor: AppTheme.primaryBlue.withValues(alpha: 0.15),
+                          child: Icon(
+                            isBoutique ? Icons.shopping_bag : Icons.opacity,
+                            color: AppTheme.accentCyan,
+                          ),
+                        ),
+                        title: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                prod.name,
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            if (barcodeStr.isNotEmpty)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.accentCyan.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(color: AppTheme.accentCyan.withValues(alpha: 0.3)),
+                                ),
+                                child: Text(
+                                  'Code: $barcodeStr',
+                                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.accentCyan),
+                                ),
+                              ),
+                          ],
+                        ),
+                        subtitle: Text(
+                          'Unité: ${prod.unit}${prod.capacityMl > 0 ? " (${prod.capacityMl.toInt()} ml)" : ""}',
+                          style: const TextStyle(fontSize: 12, color: AppTheme.textHint),
+                        ),
+                        trailing: const Icon(Icons.add_link, color: AppTheme.accentCyan),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
     );
   }
 }

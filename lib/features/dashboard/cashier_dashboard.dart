@@ -19,6 +19,7 @@ import 'package:washify/core/widgets/language_toggle_button.dart';
 
 import 'package:intl/intl.dart';
 import 'package:washify/providers/theme_provider.dart';
+import 'package:washify/providers/caisse_provider.dart';
 
 
 class CashierDashboard extends ConsumerStatefulWidget {
@@ -156,6 +157,8 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
                               statusColor = AppTheme.warningOrange;
                               break;
                             case TicketStatus.rembourse:
+                            case TicketStatus.annule:
+                            case TicketStatus.efface:
                               statusColor = AppTheme.errorRed;
                               break;
                           }
@@ -174,6 +177,13 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
                                   ? Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
+                                        IconButton(
+                                          icon: Icon(Icons.edit, color: AppTheme.primaryBlue),
+                                          onPressed: () {
+                                            context.push('/cashier/tickets/new', extra: ticket);
+                                          },
+                                        ),
+                                        SizedBox(width: 8),
                                         IconButton(
                                           icon: Icon(Icons.delete, color: AppTheme.errorRed),
                                           onPressed: () async {
@@ -253,6 +263,7 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
     // Provide wallet for the cashier too, as requested
     final employeeAsync = ref.watch(employeeByUserIdProvider(user.id));
     final walletStream = ref.watch(walletStreamProvider(employeeAsync.value?.id ?? user.id));
+    final activeSessionAsync = ref.watch(activeSessionProvider);
 
 
     return Scaffold(
@@ -287,6 +298,89 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            activeSessionAsync.when(
+              data: (session) {
+                if (session == null) {
+                  return Card(
+                    color: AppTheme.errorRed.withValues(alpha: 0.1),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    margin: const EdgeInsets.only(bottom: 20),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.lock_outline, color: AppTheme.errorRed, size: 28),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Attention : La caisse est fermée par le patron.'.tr,
+                              style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.errorRed, fontSize: 13),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                final double calculatedCash = session.initialBalance + session.totalCashIn - session.totalCashOut;
+                return Card(
+                  elevation: 3,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    side: BorderSide(color: Colors.grey.withValues(alpha: 0.1)),
+                  ),
+                  margin: const EdgeInsets.only(bottom: 20),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      gradient: LinearGradient(
+                        colors: [Colors.grey.shade900, Colors.grey.shade800],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.lock_open, color: AppTheme.successGreen, size: 20),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Caisse Active'.tr,
+                                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 14),
+                                ),
+                              ],
+                            ),
+                            Text(
+                              '${'Solde :'.tr} ${calculatedCash.toStringAsFixed(2)} DT',
+                              style: const TextStyle(fontWeight: FontWeight.w900, color: AppTheme.successGreen, fontSize: 16),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            _buildMiniStat('Fond initial'.tr, session.initialBalance),
+                            _buildMiniStat('Total Entrées'.tr, session.totalCashIn, color: AppTheme.successGreen),
+                            _buildMiniStat('Total Sorties'.tr, session.totalCashOut, color: AppTheme.errorRed),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+              loading: () => const SizedBox(),
+              error: (e, s) => const SizedBox(),
+            ),
+
             // 1. Nouveau Ticket (Bouton principal)
             InkWell(
               onTap: () => context.push('/cashier/tickets/new'),
@@ -383,7 +477,9 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
               data: (tickets) {
                 double total = 0;
                 for (var t in tickets) {
-                  total += t.totalAmount;
+                  if (t.status == TicketStatus.paye) {
+                    total += t.totalAmount;
+                  }
                 }
                 return _buildActionCard(
                   context,
@@ -470,6 +566,24 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildMiniStat(String label, double value, {Color? color}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(color: Colors.white60, fontSize: 11)),
+        const SizedBox(height: 4),
+        Text(
+          '${value.toStringAsFixed(1)} DT',
+          style: TextStyle(
+            color: color ?? Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 13,
+          ),
+        ),
+      ],
     );
   }
 }

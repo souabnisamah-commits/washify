@@ -62,17 +62,52 @@ class TicketsScreen extends ConsumerWidget {
                 case TicketStatus.rembourse:
                   statusColor = AppTheme.errorRed;
                   break;
+                case TicketStatus.annule:
+                  statusColor = AppTheme.textHint;
+                  break;
+                case TicketStatus.efface:
+                  statusColor = AppTheme.errorRed;
+                  break;
               }
+
+              final isDeleted = ticket.status == TicketStatus.efface;
 
               return Card(
                 margin: EdgeInsets.only(bottom: 12),
                 child: ListTile(
                   leading: Icon(Icons.receipt_long, color: statusColor),
-                  title: Text(ticket.vehiclePlate ?? '', style: TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text('${ticket.serviceName} (${ticket.vehicleType})\nLaveur: ${ticket.workerName ?? "non assigné"} - $dateStr'),
+                  title: Text(
+                    "${ticket.ticketNumber} - ${ticket.vehiclePlate ?? ''}",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      decoration: isDeleted ? TextDecoration.lineThrough : null,
+                    ),
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${ticket.serviceName} (${ticket.vehicleType ?? "Véhicule"})\nLaveur: ${ticket.assignedWorkerName ?? "non assigné"} - $dateStr',
+                        style: TextStyle(decoration: isDeleted ? TextDecoration.lineThrough : null),
+                      ),
+                      if (isDeleted)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4.0),
+                          child: Text(
+                            "Effacé par: ${ticket.deletedBy} (Motif: ${ticket.deleteReason})",
+                            style: TextStyle(color: AppTheme.errorRed, fontSize: 11, fontStyle: FontStyle.italic),
+                          ),
+                        ),
+                    ],
+                  ),
                   trailing: Text(
                     '${ticket.totalAmount.toStringAsFixed(2)} DT',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: isDeleted ? AppTheme.errorRed : Colors.white,
+                      decoration: isDeleted ? TextDecoration.lineThrough : null,
+                    ),
                   ),
                   isThreeLine: true,
                 ),

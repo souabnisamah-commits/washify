@@ -24,51 +24,40 @@ class CurrentUserNotifier extends StateNotifier<AppUser?> {
 
   Future<bool> login(String phone, String pin) async {
     try {
-      final email = _phoneToEmail(phone);
+      final sanitizedPhone = phone.replaceAll(RegExp(r'[^0-9]'), '');
       final password = hashPin(pin);
 
-      // Step 1: Try Firebase Auth sign-in
+      // Step 1: ALWAYS query Firestore first to get the active user
+      final user = await _authRepository.getUserByPhone(sanitizedPhone);
+      
+      if (user == null || !user.isActive) {
+        return false;
+      }
+
+      // Step 2: Verify PIN
+      if (user.pinHash != password) {
+        return false;
+      }
+
+      // Step 3: Use the user ID to create a unique Firebase Auth email
+      final email = '${user.id}@washify.app';
+
+      // Step 4: Try Firebase Auth sign-in
       try {
         await FirebaseAuth.instance.signInWithEmailAndPassword(
           email: email, password: password);
       } on FirebaseAuthException {
-        // Step 2: Migration - verify PIN directly from users collection (open)
-        final usersSnapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .where('phone', isEqualTo: phone)
-          .where('isActive', isEqualTo: true)
-          .get();
-
-        if (usersSnapshot.docs.isEmpty) return false;
-
-        bool pinMatched = false;
-        for (final doc in usersSnapshot.docs) {
-          final data = doc.data();
-          if (data['pinHash'] == password) {
-            pinMatched = true;
-            break;
-          }
-        }
-        if (!pinMatched) return false;
-
-        // Step 3: PIN verified, create Firebase Auth account
+        // Step 5: If it fails (e.g. first time logging in with this ID, or migrating from old phone-based email), create the account
         try {
           await FirebaseAuth.instance.createUserWithEmailAndPassword(
             email: email, password: password);
         } catch (createError) {
-          print('Migration: Could not create Firebase Auth account: $createError');
+          print('Could not create Firebase Auth account: $createError');
           return false;
         }
       }
 
-      // Step 4: Now authenticated - load user data
-      final user = await _authRepository.getUserByPhone(phone);
-      if (user == null || !user.isActive) {
-        await FirebaseAuth.instance.signOut();
-        return false;
-      }
-
-      // Step 5: Check station suspension (now authenticated, can read stations)
+      // Step 6: Check station suspension (now authenticated, can read stations)
       if (user.tenantId.isNotEmpty && user.tenantId != 'admin_station') {
         try {
           final stationDoc = await FirebaseFirestore.instance

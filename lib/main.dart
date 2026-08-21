@@ -8,6 +8,7 @@ import 'package:washify/providers/auth_provider.dart';
 import 'package:washify/firebase_options.dart';
 import 'package:washify/core/utils/session_service.dart';
 import 'package:washify/repositories/audit_repository.dart';
+import 'package:washify/core/observers/audit_provider_observer.dart';
 import 'package:washify/core/theme/app_theme.dart';
 
 void main() async {
@@ -105,8 +106,9 @@ void main() async {
 
   print('TRACE: Calling runApp');
   runApp(
-    const ProviderScope(
-      child: WashifyInitializer(),
+    ProviderScope(
+      observers: [AuditProviderObserver(auditRepo)],
+      child: const WashifyInitializer(),
     ),
   );
 }

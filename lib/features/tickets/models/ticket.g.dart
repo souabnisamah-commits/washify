@@ -81,6 +81,16 @@ _$TicketImpl _$$TicketImplFromJson(Map<String, dynamic> json) => _$TicketImpl(
       const [],
   createdAt: DateTime.parse(json['createdAt'] as String),
   updatedAt: DateTime.parse(json['updatedAt'] as String),
+  operationType: json['operationType'] as String? ?? 'vehicule',
+  carpetMeters: (json['carpetMeters'] as num?)?.toDouble(),
+  carpetUnitPrice: (json['carpetUnitPrice'] as num?)?.toDouble(),
+  discountAmount: (json['discountAmount'] as num?)?.toDouble(),
+  discountReason: json['discountReason'] as String?,
+  deletedBy: json['deletedBy'] as String?,
+  deletedAt: json['deletedAt'] == null
+      ? null
+      : DateTime.parse(json['deletedAt'] as String),
+  deleteReason: json['deleteReason'] as String?,
 );
 
 Map<String, dynamic> _$$TicketImplToJson(_$TicketImpl instance) =>
@@ -113,10 +123,20 @@ Map<String, dynamic> _$$TicketImplToJson(_$TicketImpl instance) =>
       'productsUsed': instance.productsUsed,
       'createdAt': instance.createdAt.toIso8601String(),
       'updatedAt': instance.updatedAt.toIso8601String(),
+      'operationType': instance.operationType,
+      'carpetMeters': instance.carpetMeters,
+      'carpetUnitPrice': instance.carpetUnitPrice,
+      'discountAmount': instance.discountAmount,
+      'discountReason': instance.discountReason,
+      'deletedBy': instance.deletedBy,
+      'deletedAt': instance.deletedAt?.toIso8601String(),
+      'deleteReason': instance.deleteReason,
     };
 
 const _$TicketStatusEnumMap = {
-  TicketStatus.enAttente: 'enAttente',
+  TicketStatus.enAttente: 'en_attente',
   TicketStatus.paye: 'paye',
+  TicketStatus.annule: 'annule',
+  TicketStatus.efface: 'efface',
   TicketStatus.rembourse: 'rembourse',
 };

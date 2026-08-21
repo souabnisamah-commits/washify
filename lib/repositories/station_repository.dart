@@ -43,6 +43,7 @@ class StationRepository {
     if (data['longitude'] == null) data['longitude'] = 0.0;
     if (data['logoUrl'] == null) data['logoUrl'] = '';
     if (data['licence'] == null) data['licence'] = 'suspended';
+    if (data['ticketResetHour'] == null) data['ticketResetHour'] = 21;
 
     return Station.fromJson(data);
   }
@@ -59,6 +60,7 @@ class StationRepository {
     if (station.expiryDate != null) {
       map['expiryDate'] = Timestamp.fromDate(station.expiryDate!);
     }
+    map['carpetLinkedProducts'] = station.carpetLinkedProducts.map((l) => l.toJson()).toList();
     return map;
   }
 

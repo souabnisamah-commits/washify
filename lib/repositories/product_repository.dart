@@ -67,6 +67,18 @@ class ProductRepository {
     return _productFromDoc(doc);
   }
 
+  Future<Product?> getProductByBarcode(String stationId, String barcode) async {
+    if (barcode.isEmpty) return null;
+    final querySnapshot = await _productsRef
+        .where('stationId', isEqualTo: stationId)
+        .where('barcode', isEqualTo: barcode)
+        .where('isActive', isEqualTo: true)
+        .limit(1)
+        .get();
+    if (querySnapshot.docs.isEmpty) return null;
+    return _productFromDoc(querySnapshot.docs.first);
+  }
+
   Future<String> createProduct(Product product) async {
     final docRef = await _productsRef.add(_productToDoc(product));
     return docRef.id;

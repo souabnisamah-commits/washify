@@ -36,6 +36,7 @@ class ClientRepository {
   Map<String, dynamic> _clientToDoc(Client client) {
     final map = client.toJson();
     map.remove('id');
+    map['vehicles'] = client.vehicles.map((v) => v.toJson()).toList();
     map['createdAt'] = Timestamp.fromDate(client.createdAt);
     map['updatedAt'] = Timestamp.fromDate(client.updatedAt);
     return map;

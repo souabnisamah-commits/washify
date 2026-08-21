@@ -5,8 +5,15 @@ part 'ticket.freezed.dart';
 part 'ticket.g.dart';
 
 enum TicketStatus {
+  @JsonValue('en_attente')
   enAttente('en_attente'),
+  @JsonValue('paye')
   paye('paye'),
+  @JsonValue('annule')
+  annule('annule'),
+  @JsonValue('efface')
+  efface('efface'),
+  @JsonValue('rembourse')
   rembourse('rembourse');
 
   const TicketStatus(this.value);
@@ -54,11 +61,11 @@ class Ticket with _$Ticket {
   const factory Ticket({
     required String id,                 // Firestore Document ID
     @JsonKey(readValue: readTenantId) required String tenantId,           // stationId
-    required String ticketNumber,       // ST-{station}-{date}-{heure}-{random}
+    required String ticketNumber,       // N°:XXX-DDMMYY-HH:MM (e.g. ST-station-XXX-DDMMYY-HH:MM) or as requested N°:XXX-DDMMYY-HH:MM
     required String createdBy,          // Creator (Worker or Cashier)
     String? paidBy,                     // Paid cashier
     String? approvedBy,                 // Approver
-    required TicketStatus status,       // en_attente, paye, rembourse
+    required TicketStatus status,       // en_attente, paye, rembourse, annule, efface
     required double montant,            // Total ticket amount
     required Map<String, dynamic> snapshotPrice, // Anti-fraud snapshot of service prices
     @Default([]) List<String> photosAvant, // Photos before wash
@@ -80,6 +87,16 @@ class Ticket with _$Ticket {
     @Default([]) List<TicketProduct> productsUsed,
     required DateTime createdAt,
     required DateTime updatedAt,
+
+    // New fields for Moquettes & Soft Delete
+    @Default('vehicule') String operationType, // 'vehicule' or 'moquette'
+    double? carpetMeters,
+    double? carpetUnitPrice,
+    double? discountAmount,
+    String? discountReason,
+    String? deletedBy,
+    DateTime? deletedAt,
+    String? deleteReason,
   }) = _Ticket;
 
   factory Ticket.fromJson(Map<String, dynamic> json) => _$TicketFromJson(json);

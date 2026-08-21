@@ -10,6 +10,10 @@ import 'package:washify/features/services/models/service_definition.dart';
 import 'package:washify/providers/product_provider.dart';
 import 'package:washify/features/products/models/product.dart';
 
+import 'package:washify/providers/station_provider.dart';
+import 'package:washify/features/station/models/station.dart';
+import 'package:washify/repositories/station_repository.dart';
+
 class ServiceDefinitionsScreen extends ConsumerStatefulWidget {
   const ServiceDefinitionsScreen({super.key});
 
@@ -24,7 +28,7 @@ class _ServiceDefinitionsScreenState extends ConsumerState<ServiceDefinitionsScr
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -535,7 +539,7 @@ class _ServiceDefinitionsScreenState extends ConsumerState<ServiceDefinitionsScr
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(currentUserProvider);
-    if (user == null) return Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (user == null) return const Scaffold(body: Center(child: CircularProgressIndicator()));
 
     final servicesAsync = ref.watch(serviceDefinitionsStreamProvider(user.tenantId));
 
@@ -545,20 +549,27 @@ class _ServiceDefinitionsScreenState extends ConsumerState<ServiceDefinitionsScr
         bottom: TabBar(
           controller: _tabController,
           tabs: [
-            Tab(text: 'Lavage', icon: Icon(Icons.local_car_wash, size: 18)),
-            Tab(text: 'Suppléments', icon: Icon(Icons.auto_awesome, size: 18)),
-            Tab(text: 'Spéciaux', icon: Icon(Icons.build_circle_outlined, size: 18)),
+            Tab(text: 'Lavage'.tr, icon: const Icon(Icons.local_car_wash, size: 18)),
+            Tab(text: 'Suppléments'.tr, icon: const Icon(Icons.auto_awesome, size: 18)),
+            Tab(text: 'Spéciaux'.tr, icon: const Icon(Icons.build_circle_outlined, size: 18)),
+            Tab(text: 'Moquettes'.tr, icon: const Icon(Icons.grid_view, size: 18)),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          final type = ServiceType.values[_tabController.index];
-          _showServiceDialog(type: type);
+      floatingActionButton: ListenableBuilder(
+        listenable: _tabController,
+        builder: (context, _) {
+          if (_tabController.index == 3) return const SizedBox.shrink();
+          return FloatingActionButton.extended(
+            onPressed: () {
+              final type = ServiceType.values[_tabController.index];
+              _showServiceDialog(type: type);
+            },
+            backgroundColor: AppTheme.primaryBlue,
+            icon: const Icon(Icons.add, color: Colors.white),
+            label: Text('Nouveau Service'.tr, style: const TextStyle(color: Colors.white)),
+          );
         },
-        backgroundColor: AppTheme.primaryBlue,
-        icon: Icon(Icons.add, color: Colors.white),
-        label: Text('Nouveau Service', style: TextStyle(color: Colors.white)),
       ),
       body: servicesAsync.when(
         data: (services) => TabBarView(
@@ -567,11 +578,359 @@ class _ServiceDefinitionsScreenState extends ConsumerState<ServiceDefinitionsScr
             _buildServicesList(services, ServiceType.lavage),
             _buildServicesList(services, ServiceType.supplement),
             _buildServicesList(services, ServiceType.special),
+            CarpetServiceConfigTab(stationId: user.tenantId),
           ],
         ),
-        loading: () => Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, s) => Center(child: Text('Erreur: $e'.tr)),
       ),
+    );
+  }
+}
+
+class CarpetServiceConfigTab extends ConsumerStatefulWidget {
+  final String stationId;
+  const CarpetServiceConfigTab({super.key, required this.stationId});
+
+  @override
+  ConsumerState<CarpetServiceConfigTab> createState() => _CarpetServiceConfigTabState();
+}
+
+class _CarpetServiceConfigTabState extends ConsumerState<CarpetServiceConfigTab> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _carpetPriceController;
+  bool _initialized = false;
+  bool _isSaving = false;
+  Station? _station;
+
+  final List<ServiceProductLink> _carpetLinks = [];
+  final Map<String, TextEditingController> _consumptionControllers = {};
+
+  @override
+  void dispose() {
+    if (_initialized) {
+      _carpetPriceController.dispose();
+      for (final ctrl in _consumptionControllers.values) {
+        ctrl.dispose();
+      }
+    }
+    super.dispose();
+  }
+
+  void _initFields(Station station) {
+    if (_initialized) return;
+    _station = station;
+    _carpetPriceController = TextEditingController(text: station.carpetPricePerMeter.toString());
+    _carpetLinks.clear();
+    _carpetLinks.addAll(station.carpetLinkedProducts);
+    for (final link in _carpetLinks) {
+      _consumptionControllers[link.productId] = TextEditingController(
+        text: link.consumptionPerUse.toString(),
+      );
+    }
+    _initialized = true;
+  }
+
+  Future<void> _saveSettings() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_station == null) return;
+
+    setState(() => _isSaving = true);
+
+    try {
+      final repo = ref.read(stationRepositoryProvider);
+      final List<ServiceProductLink> finalLinks = [];
+      for (final link in _carpetLinks) {
+        final ctrl = _consumptionControllers[link.productId];
+        final val = double.tryParse(ctrl?.text ?? '0') ?? 0.0;
+        finalLinks.add(link.copyWith(consumptionPerUse: val));
+      }
+
+      final updatedStation = _station!.copyWith(
+        carpetPricePerMeter: double.tryParse(_carpetPriceController.text.trim()) ?? 0.0,
+        carpetLinkedProducts: finalLinks,
+        updatedAt: DateTime.now(),
+      );
+
+      await repo.updateStation(updatedStation);
+      ref.invalidate(stationByIdProvider(_station!.id));
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Configuration Moquette enregistrée avec succès'.tr),
+            backgroundColor: AppTheme.successGreen,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur: $e'.tr)),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  void _showAddProductDialog(AsyncValue<List<Product>> productsAsync) {
+    productsAsync.whenData((products) {
+      final availableProducts = products.where(
+        (p) => !_carpetLinks.any((l) => l.productId == p.id),
+      ).toList();
+
+      if (availableProducts.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Tous les produits sont déjà liés.'.tr)),
+        );
+        return;
+      }
+
+      Product? selectedProd = availableProducts.first;
+      final doseCtrl = TextEditingController(text: '50');
+
+      showDialog(
+        context: context,
+        builder: (dialogCtx) => StatefulBuilder(
+          builder: (dialogCtx, setDState) => AlertDialog(
+            title: Text('Lier un Produit Consommable'.tr),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<Product>(
+                  value: selectedProd,
+                  decoration: InputDecoration(labelText: 'Produit'.tr),
+                  items: availableProducts.map((p) => DropdownMenuItem(
+                    value: p,
+                    child: Text('${p.name} (${p.unit})'),
+                  )).toList(),
+                  onChanged: (val) => setDState(() => selectedProd = val),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: doseCtrl,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(
+                    labelText: 'Dose consommée par m² (ml ou g)'.tr,
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogCtx),
+                child: Text('Annuler'.tr),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  if (selectedProd != null) {
+                    final dose = double.tryParse(doseCtrl.text) ?? 50.0;
+                    setState(() {
+                      _carpetLinks.add(ServiceProductLink(
+                        productId: selectedProd!.id,
+                        productName: selectedProd!.name,
+                        consumptionPerUse: dose,
+                      ));
+                      _consumptionControllers[selectedProd!.id] = TextEditingController(text: dose.toString());
+                    });
+                    Navigator.pop(dialogCtx);
+                  }
+                },
+                child: Text('Ajouter'.tr),
+              ),
+            ],
+          ),
+        ),
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final stationAsync = ref.watch(stationByIdProvider(widget.stationId));
+    final productsAsync = ref.watch(productsStreamProvider(widget.stationId));
+
+    return stationAsync.when(
+      data: (station) {
+        if (station == null) return Center(child: Text('Station introuvable'.tr));
+        _initFields(station);
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  color: AppTheme.surfaceCard,
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: AppTheme.accentCyan.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(Icons.grid_view, color: AppTheme.accentCyan),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Tarif & Consommables Moquette'.tr,
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Configurez le tarif de lavage au m² et affectez les produits consommables nécessaires par m² de moquette.'.tr,
+                          style: TextStyle(color: AppTheme.textHint, fontSize: 13),
+                        ),
+                        const SizedBox(height: 20),
+                        TextFormField(
+                          controller: _carpetPriceController,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          decoration: InputDecoration(
+                            labelText: 'Prix de lavage par m² (DT) *'.tr,
+                            prefixIcon: const Icon(Icons.monetization_on_outlined, color: AppTheme.successGreen),
+                          ),
+                          validator: (v) {
+                            if (v == null || v.isEmpty) return 'Requis'.tr;
+                            if (double.tryParse(v) == null) return 'Nombre invalide'.tr;
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 24),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Produits Consommables Liés'.tr,
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                            ),
+                            TextButton.icon(
+                              onPressed: () => _showAddProductDialog(productsAsync),
+                              icon: const Icon(Icons.add),
+                              label: Text('Ajouter Produit'.tr),
+                            ),
+                          ],
+                        ),
+                        const Divider(),
+                        if (_carpetLinks.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 24.0),
+                            child: Center(
+                              child: Text(
+                                'Aucun produit consommable lié à la moquette.'.tr,
+                                style: TextStyle(color: AppTheme.textHint, fontStyle: FontStyle.italic),
+                              ),
+                            ),
+                          )
+                        else
+                          ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: _carpetLinks.length,
+                            itemBuilder: (context, index) {
+                              final link = _carpetLinks[index];
+                              final ctrl = _consumptionControllers[link.productId] ??= TextEditingController(
+                                text: link.consumptionPerUse.toString(),
+                              );
+
+                              return Card(
+                                margin: const EdgeInsets.only(bottom: 10.0),
+                                color: AppTheme.surfaceCard,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(12.0),
+                                  child: Column(
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              link.productName,
+                                              style: const TextStyle(fontWeight: FontWeight.bold),
+                                            ),
+                                          ),
+                                          IconButton(
+                                            icon: const Icon(Icons.delete_outline, color: AppTheme.errorRed, size: 20),
+                                            onPressed: () {
+                                              setState(() {
+                                                _carpetLinks.removeAt(index);
+                                                _consumptionControllers.remove(link.productId);
+                                              });
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text('Consommation par m² (ml/g):'.tr, style: const TextStyle(fontSize: 13)),
+                                          ),
+                                          SizedBox(
+                                            width: 110,
+                                            child: TextFormField(
+                                              controller: ctrl,
+                                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                              decoration: const InputDecoration(
+                                                isDense: true,
+                                                contentPadding: EdgeInsets.all(8),
+                                              ),
+                                              validator: (v) => v == null || double.tryParse(v) == null ? 'Requis'.tr : null,
+                                              onChanged: (val) {
+                                                final d = double.tryParse(val);
+                                                if (d != null) {
+                                                  _carpetLinks[index] = link.copyWith(consumptionPerUse: d);
+                                                }
+                                              },
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: _isSaving ? null : _saveSettings,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    backgroundColor: AppTheme.primaryBlue,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  icon: _isSaving ? const SizedBox.shrink() : const Icon(Icons.save),
+                  label: _isSaving
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : Text('Enregistrer la Configuration Moquette'.tr, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, s) => Center(child: Text('Erreur: $e'.tr)),
     );
   }
 }

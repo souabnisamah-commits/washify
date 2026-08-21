@@ -155,6 +155,102 @@ class StockRepository {
     final stationId = ticket.tenantId;
     final now = DateTime.now();
 
+    if (ticket.operationType == 'moquette') {
+      // Deduct linked products based on station configuration for moquettes
+      final stationDoc = await _firestore
+          .collection(AppConstants.stationsCollection)
+          .doc(stationId)
+          .get();
+
+      if (stationDoc.exists) {
+        final stationData = stationDoc.data()!;
+        final linkedProductsRaw = stationData['carpetLinkedProducts'] as List?;
+        if (linkedProductsRaw != null) {
+          final double carpetMeters = ticket.carpetMeters ?? 0.0;
+          for (final raw in linkedProductsRaw) {
+            final link = ServiceProductLink.fromJson(raw as Map<String, dynamic>);
+            
+            final bool isAlreadyInProductsUsed = ticket.productsUsed.any((p) => p.productId == link.productId);
+            if (isAlreadyInProductsUsed) {
+              continue; 
+            }
+
+            final currentStock = await getStockLevel(stationId, link.productId);
+            if (currentStock != null) {
+              final double previousQty = currentStock.currentQuantity;
+              final double quantityToDeduct = link.consumptionPerUse * carpetMeters;
+              final double newQty = previousQty - quantityToDeduct;
+
+              await updateStockLevel(currentStock.copyWith(
+                currentQuantity: newQty,
+                updatedAt: now,
+              ));
+
+              await addStockMovement(StockMovement(
+                id: '',
+                tenantId: stationId,
+                productId: link.productId,
+                productName: link.productName,
+                type: AppConstants.stockMovementOut,
+                quantity: quantityToDeduct,
+                previousQuantity: previousQty,
+                newQuantity: newQty,
+                reason: 'Consommation Moquettes (${carpetMeters.toStringAsFixed(1)} m²) Ticket ${ticket.ticketNumber}',
+                performedBy: ticket.createdBy,
+                createdAt: now,
+              ));
+            }
+          }
+        }
+      }
+      
+      // Deduct manual products (boutique / extra manually added) for moquette too
+      for (final tp in ticket.productsUsed) {
+        final currentStock = await getStockLevel(stationId, tp.productId);
+        if (currentStock != null) {
+          final double previousQty = currentStock.currentQuantity;
+          
+          double multiplier = 1.0;
+          final productDoc = await _firestore
+              .collection(AppConstants.productsCollection)
+              .doc(tp.productId)
+              .get();
+          if (productDoc.exists) {
+            final pData = productDoc.data()!;
+            final doseMl = (pData['doseMl'] as num?)?.toDouble() ?? 0.0;
+            if (doseMl > 0) {
+              multiplier = doseMl;
+            }
+          }
+
+          final double quantityToDeduct = tp.quantity * multiplier;
+          final double newQty = previousQty - quantityToDeduct;
+
+          await updateStockLevel(currentStock.copyWith(
+            currentQuantity: newQty,
+            updatedAt: now,
+          ));
+
+          await addStockMovement(StockMovement(
+            id: '',
+            tenantId: stationId,
+            productId: tp.productId,
+            productName: tp.productName,
+            type: AppConstants.stockMovementOut,
+            quantity: quantityToDeduct,
+            previousQuantity: previousQty,
+            newQuantity: newQty,
+            reason: multiplier > 1.0 
+                ? 'Consommation Extra (${tp.quantity} dose(s) de ${multiplier.toStringAsFixed(0)}ml) Ticket ${ticket.ticketNumber}'
+                : 'Vente Directe / Boutique Ticket ${ticket.ticketNumber}',
+            performedBy: ticket.createdBy,
+            createdAt: now,
+          ));
+        }
+      }
+      return;
+    }
+
     // 1. Deduct manual products (boutique / extra manually added)
     for (final tp in ticket.productsUsed) {
       final currentStock = await getStockLevel(stationId, tp.productId);
@@ -246,6 +342,203 @@ class StockRepository {
                   newQuantity: newQty,
                   reason: 'Consommation Auto Service (${srv.serviceName}) Ticket ${ticket.ticketNumber}',
                   performedBy: ticket.createdBy,
+                  createdAt: now,
+                ));
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  Future<void> restoreStockForTicket(Ticket ticket) async {
+    final stationId = ticket.tenantId;
+    final now = DateTime.now();
+
+    if (ticket.operationType == 'moquette') {
+      // Restore linked products based on station configuration for moquettes
+      final stationDoc = await _firestore
+          .collection(AppConstants.stationsCollection)
+          .doc(stationId)
+          .get();
+
+      if (stationDoc.exists) {
+        final stationData = stationDoc.data()!;
+        final linkedProductsRaw = stationData['carpetLinkedProducts'] as List?;
+        if (linkedProductsRaw != null) {
+          final double carpetMeters = ticket.carpetMeters ?? 0.0;
+          for (final raw in linkedProductsRaw) {
+            final link = ServiceProductLink.fromJson(raw as Map<String, dynamic>);
+            
+            final bool isAlreadyInProductsUsed = ticket.productsUsed.any((p) => p.productId == link.productId);
+            if (isAlreadyInProductsUsed) {
+              continue; 
+            }
+
+            final currentStock = await getStockLevel(stationId, link.productId);
+            if (currentStock != null) {
+              final double previousQty = currentStock.currentQuantity;
+              final double quantityToRestore = link.consumptionPerUse * carpetMeters;
+              final double newQty = previousQty + quantityToRestore;
+
+              await updateStockLevel(currentStock.copyWith(
+                currentQuantity: newQty,
+                updatedAt: now,
+              ));
+
+              await addStockMovement(StockMovement(
+                id: '',
+                tenantId: stationId,
+                productId: link.productId,
+                productName: link.productName,
+                type: AppConstants.stockMovementIn,
+                quantity: quantityToRestore,
+                previousQuantity: previousQty,
+                newQuantity: newQty,
+                reason: 'Restauration Moquettes (${carpetMeters.toStringAsFixed(1)} m²) Effacement/Modification Ticket ${ticket.ticketNumber}',
+                performedBy: currentUser?.name ?? 'Patron',
+                createdAt: now,
+              ));
+            }
+          }
+        }
+      }
+      
+      // Restore manual products (boutique / extra manually added) for moquette too
+      for (final tp in ticket.productsUsed) {
+        final currentStock = await getStockLevel(stationId, tp.productId);
+        if (currentStock != null) {
+          final double previousQty = currentStock.currentQuantity;
+          
+          double multiplier = 1.0;
+          final productDoc = await _firestore
+              .collection(AppConstants.productsCollection)
+              .doc(tp.productId)
+              .get();
+          if (productDoc.exists) {
+            final pData = productDoc.data()!;
+            final doseMl = (pData['doseMl'] as num?)?.toDouble() ?? 0.0;
+            if (doseMl > 0) {
+              multiplier = doseMl;
+            }
+          }
+
+          final double quantityToRestore = tp.quantity * multiplier;
+          final double newQty = previousQty + quantityToRestore;
+
+          await updateStockLevel(currentStock.copyWith(
+            currentQuantity: newQty,
+            updatedAt: now,
+          ));
+
+          await addStockMovement(StockMovement(
+            id: '',
+            tenantId: stationId,
+            productId: tp.productId,
+            productName: tp.productName,
+            type: AppConstants.stockMovementIn,
+            quantity: quantityToRestore,
+            previousQuantity: previousQty,
+            newQuantity: newQty,
+            reason: 'Restauration Extra (Effacement/Modification Ticket ${ticket.ticketNumber})',
+            performedBy: currentUser?.name ?? 'Patron',
+            createdAt: now,
+          ));
+        }
+      }
+      return;
+    }
+
+    // 1. Restore manual products (boutique / extra manually added)
+    for (final tp in ticket.productsUsed) {
+      final currentStock = await getStockLevel(stationId, tp.productId);
+      if (currentStock != null) {
+        final double previousQty = currentStock.currentQuantity;
+        
+        // Fetch product definition to check if it has a fluid doseMl
+        double multiplier = 1.0;
+        final productDoc = await _firestore
+            .collection(AppConstants.productsCollection)
+            .doc(tp.productId)
+            .get();
+        if (productDoc.exists) {
+          final pData = productDoc.data()!;
+          final doseMl = (pData['doseMl'] as num?)?.toDouble() ?? 0.0;
+          if (doseMl > 0) {
+            multiplier = doseMl;
+          }
+        }
+
+        final double quantityToRestore = tp.quantity * multiplier;
+        final double newQty = previousQty + quantityToRestore;
+
+        await updateStockLevel(currentStock.copyWith(
+          currentQuantity: newQty,
+          updatedAt: now,
+        ));
+
+        await addStockMovement(StockMovement(
+          id: '',
+          tenantId: stationId,
+          productId: tp.productId,
+          productName: tp.productName,
+          type: AppConstants.stockMovementIn,
+          quantity: quantityToRestore,
+          previousQuantity: previousQty,
+          newQuantity: newQty,
+          reason: 'Restauration Extra (Effacement/Modification Ticket ${ticket.ticketNumber})',
+          performedBy: currentUser?.name ?? 'Patron',
+          createdAt: now,
+        ));
+      }
+    }
+
+    // 2. Restore linked products from all selected services
+    for (final srv in ticket.allServices) {
+      if (srv.serviceId.isNotEmpty) {
+        final serviceDoc = await _firestore
+            .collection(AppConstants.serviceDefinitionsCollection)
+            .doc(srv.serviceId)
+            .get();
+
+        if (serviceDoc.exists) {
+          final serviceData = serviceDoc.data()!;
+          final linkedProductsRaw = serviceData['linkedProducts'] as List?;
+          if (linkedProductsRaw != null) {
+            for (final raw in linkedProductsRaw) {
+              final link = ServiceProductLink.fromJson(raw as Map<String, dynamic>);
+              
+              // Check if this linked product is already accounted for in productsUsed (Boutique/Revente logic)
+              final bool isAlreadyInProductsUsed = ticket.productsUsed.any((p) => p.productId == link.productId);
+              if (isAlreadyInProductsUsed) {
+                continue; 
+              }
+
+              final currentStock = await getStockLevel(stationId, link.productId);
+              if (currentStock != null) {
+                final double previousQty = currentStock.currentQuantity;
+                final double quantityToRestore = (ticket.vehicleCategoryId != null && link.consumptionByCategory.containsKey(ticket.vehicleCategoryId))
+                    ? link.consumptionByCategory[ticket.vehicleCategoryId]!
+                    : link.consumptionPerUse;
+                final double newQty = previousQty + quantityToRestore;
+
+                await updateStockLevel(currentStock.copyWith(
+                  currentQuantity: newQty,
+                  updatedAt: now,
+                ));
+
+                await addStockMovement(StockMovement(
+                  id: '',
+                  tenantId: stationId,
+                  productId: link.productId,
+                  productName: link.productName,
+                  type: AppConstants.stockMovementIn,
+                  quantity: quantityToRestore,
+                  previousQuantity: previousQty,
+                  newQuantity: newQty,
+                  reason: 'Restauration Auto Service (${srv.serviceName}) Effacement/Modification Ticket ${ticket.ticketNumber}',
+                  performedBy: currentUser?.name ?? 'Patron',
                   createdAt: now,
                 ));
               }

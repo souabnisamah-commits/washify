@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:collection/collection.dart';
 import 'package:washify/core/localization/app_localizations.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -26,9 +27,11 @@ import 'package:washify/features/hr/providers/hr_provider.dart';
 import 'package:washify/features/hr/models/attendance.dart';
 import 'package:washify/features/hr/models/shift.dart';
 import 'package:washify/core/widgets/barcode_scan_button.dart';
+import 'package:washify/providers/station_provider.dart';
 
 class NewTicketScreen extends ConsumerStatefulWidget {
-  const NewTicketScreen({super.key});
+  final Ticket? editTicket;
+  const NewTicketScreen({super.key, this.editTicket});
 
   @override
   ConsumerState<NewTicketScreen> createState() => _NewTicketScreenState();
@@ -62,12 +65,21 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
   final List<TicketProduct> _selectedProducts = [];
   String _productSearchQuery = '';
   bool _isSaving = false;
+  bool _initialized = false;
+  
+  String _operationType = 'vehicule'; // 'vehicule' or 'moquette'
+  final _carpetMetersController = TextEditingController();
+  final _discountAmountController = TextEditingController();
+  final _discountReasonController = TextEditingController();
 
   @override
   void dispose() {
     _plateDebounce?.cancel();
     _notesController.dispose();
     _productSearchController.dispose();
+    _carpetMetersController.dispose();
+    _discountAmountController.dispose();
+    _discountReasonController.dispose();
     super.dispose();
   }
 
@@ -210,7 +222,9 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
         total += srv.getPriceForCategory(selectedCategory.id);
       }
       for (final p in _selectedProducts) {
-        total += p.total;
+        final double freeQuota = _operationType == 'vehicule' ? _getFreeQuota(p.productId) : 0.0;
+        final double billedQty = (p.quantity - freeQuota).clamp(0.0, double.infinity);
+        total += billedQty * p.unitPrice;
       }
     }
     return total;
@@ -227,32 +241,52 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
 
 
   Future<void> _submitTicket(VehicleCategory? selectedCategory) async {
+    if (_isSaving) return;
     if (_assignedWorker == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Veuillez sélectionner un ouvrier pour laver le véhicule'.tr)),
+        SnackBar(content: Text('Veuillez sélectionner un ouvrier'.tr)),
       );
       return;
     }
 
-    if (_vehiclePlate.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Veuillez saisir la plaque d\'immatriculation')),
-      );
-      return;
-    }
+    if (_operationType == 'vehicule') {
+      if (_vehiclePlate.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Veuillez saisir la plaque d\'immatriculation'.tr)),
+        );
+        return;
+      }
 
-    if (!_formKey.currentState!.validate() || _selectedServices.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Veuillez sélectionner au moins un service de lavage'.tr)),
-      );
-      return;
-    }
+      if (!_formKey.currentState!.validate() || _selectedServices.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Veuillez sélectionner au moins un service de lavage'.tr)),
+        );
+        return;
+      }
 
-    if (selectedCategory == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Veuillez sélectionner une catégorie de véhicule'.tr)),
-      );
-      return;
+      if (selectedCategory == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Veuillez sélectionner une catégorie de véhicule'.tr)),
+        );
+        return;
+      }
+    } else {
+      // Moquette validation
+      final meters = double.tryParse(_carpetMetersController.text.trim());
+      if (meters == null || meters <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Veuillez saisir une surface valide en m²'.tr)),
+        );
+        return;
+      }
+
+      final discount = double.tryParse(_discountAmountController.text.trim()) ?? 0.0;
+      if (discount > 0 && _discountReasonController.text.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Veuillez spécifier le motif de la remise'.tr)),
+        );
+        return;
+      }
     }
 
     final user = ref.read(currentUserProvider);
@@ -264,50 +298,67 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
 
     try {
       final repo = ref.read(ticketRepositoryProvider);
+      final stationAsync = ref.read(stationByIdProvider(user.stationId!));
+      final double pricePerMeter = stationAsync.value?.carpetPricePerMeter ?? 0.0;
 
-      final now = DateTime.now();
-      final dateStr = "${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}";
-      final timeStr = "${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}";
-      final randomStr = (1000 + (DateTime.now().millisecond % 9000)).toString();
-      final ticketNum = "ST-${user.stationId}-$dateStr-$timeStr-$randomStr";
+      final ticketNum = await repo.getProvisionalTicketNumber(user.stationId!);
 
       final Map<String, dynamic> servicePrices = {};
       final List<TicketService> ticketServices = [];
 
-      if (_selectedOffer != null) {
-        final pricePerService = _selectedOffer!.offerPrice / _selectedServices.length;
-        servicePrices['offerId'] = _selectedOffer!.id;
-        servicePrices['offerName'] = _selectedOffer!.name;
-        servicePrices['offerPrice'] = _selectedOffer!.offerPrice;
-        
-        for (final srv in _selectedServices) {
-          servicePrices[srv.id] = pricePerService;
-          ticketServices.add(TicketService(
-            serviceId: srv.id,
-            serviceName: srv.name,
-            price: pricePerService,
-          ));
-        }
-      } else {
-        for (final srv in _selectedServices) {
-          final price = srv.getPriceForCategory(selectedCategory.id);
-          servicePrices[srv.id] = price;
-          ticketServices.add(TicketService(
-            serviceId: srv.id,
-            serviceName: srv.name,
-            price: price,
-          ));
-        }
-      }
+      double totalMontant = 0.0;
+      String joinedNames = "";
+      String firstServiceId = "";
 
-      final joinedNames = _selectedOffer != null 
-          ? "${_selectedOffer!.name} (${_selectedServices.map((s) => s.name).join(' + ')})"
-          : _selectedServices.map((s) => s.name).join(" + ");
-      final firstServiceId = _selectedServices.isNotEmpty ? _selectedServices.first.id : "";
+      if (_operationType == 'vehicule') {
+        totalMontant = _calculateTotalAmount(selectedCategory);
+        if (_selectedOffer != null) {
+          final pricePerService = _selectedOffer!.offerPrice / _selectedServices.length;
+          servicePrices['offerId'] = _selectedOffer!.id;
+          servicePrices['offerName'] = _selectedOffer!.name;
+          servicePrices['offerPrice'] = _selectedOffer!.offerPrice;
+          
+          for (final srv in _selectedServices) {
+            servicePrices[srv.id] = pricePerService;
+            ticketServices.add(TicketService(
+              serviceId: srv.id,
+              serviceName: srv.name,
+              price: pricePerService,
+            ));
+          }
+        } else {
+          for (final srv in _selectedServices) {
+            final price = srv.getPriceForCategory(selectedCategory!.id);
+            servicePrices[srv.id] = price;
+            ticketServices.add(TicketService(
+              serviceId: srv.id,
+              serviceName: srv.name,
+              price: price,
+            ));
+          }
+        }
+        joinedNames = _selectedOffer != null 
+            ? "${_selectedOffer!.name} (${_selectedServices.map((s) => s.name).join(' + ')})"
+            : _selectedServices.map((s) => s.name).join(" + ");
+        firstServiceId = _selectedServices.isNotEmpty ? _selectedServices.first.id : "";
+      } else {
+        // Moquette calculations
+        final meters = double.tryParse(_carpetMetersController.text.trim()) ?? 0.0;
+        final discount = double.tryParse(_discountAmountController.text.trim()) ?? 0.0;
+        totalMontant = (meters * pricePerMeter) - discount;
+
+        joinedNames = 'Lavage Moquette (${meters.toStringAsFixed(1)} m²)'.tr;
+        firstServiceId = 'carpet_wash';
+        ticketServices.add(TicketService(
+          serviceId: 'carpet_wash',
+          serviceName: 'Lavage Moquette'.tr,
+          price: meters * pricePerMeter,
+        ));
+      }
 
       final List<TicketProduct> finalProducts = [];
       for (final tp in _selectedProducts) {
-        final double freeQuota = _getFreeQuota(tp.productId);
+        final double freeQuota = _operationType == 'vehicule' ? _getFreeQuota(tp.productId) : 0.0;
         final double billedQty = (tp.quantity - freeQuota).clamp(0.0, double.infinity);
         final double includedQty = tp.quantity - billedQty;
 
@@ -330,19 +381,19 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
       }
 
       final newTicket = Ticket(
-        id: '',
+        id: widget.editTicket?.id ?? '',
         tenantId: user.stationId!,
-        ticketNumber: ticketNum,
-        createdBy: user.name,
-        paidBy: user.name,
-        status: TicketStatus.enAttente,
-        montant: _calculateTotalAmount(selectedCategory),
+        ticketNumber: widget.editTicket?.ticketNumber ?? ticketNum,
+        createdBy: widget.editTicket?.createdBy ?? user.name,
+        paidBy: widget.editTicket?.paidBy ?? user.name,
+        status: widget.editTicket?.status ?? TicketStatus.enAttente,
+        montant: totalMontant,
         snapshotPrice: servicePrices,
-        vehiclePlate: _vehiclePlate.toUpperCase(),
-        vehicleCategoryId: selectedCategory.id,
-        vehicleType: selectedCategory.name,
-        vehicleBrand: _vehicleBrand,
-        vehicleModel: _vehicleModel,
+        vehiclePlate: _operationType == 'vehicule' ? _vehiclePlate.toUpperCase() : 'MOQUETTE',
+        vehicleCategoryId: _operationType == 'vehicule' ? selectedCategory!.id : null,
+        vehicleType: _operationType == 'vehicule' ? selectedCategory!.name : 'Moquette'.tr,
+        vehicleBrand: _operationType == 'vehicule' ? _vehicleBrand : '',
+        vehicleModel: _operationType == 'vehicule' ? _vehicleModel : '',
         clientId: _selectedClient?.id,
         clientName: _selectedClient != null ? _selectedClient!.companyName : (_clientName.isEmpty ? null : _clientName),
         clientPhone: _selectedClient != null ? _selectedClient!.phone : (_clientPhone.isEmpty ? null : _clientPhone),
@@ -353,12 +404,19 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
         serviceName: joinedNames,
         servicesSelected: ticketServices,
         productsUsed: finalProducts,
-        createdAt: DateTime.now(),
+        createdAt: widget.editTicket?.createdAt ?? DateTime.now(),
         updatedAt: DateTime.now(),
+        
+        // Moquette fields
+        operationType: _operationType,
+        carpetMeters: _operationType == 'moquette' ? double.tryParse(_carpetMetersController.text.trim()) : null,
+        carpetUnitPrice: _operationType == 'moquette' ? pricePerMeter : null,
+        discountAmount: _operationType == 'moquette' && double.tryParse(_discountAmountController.text.trim()) != null ? double.tryParse(_discountAmountController.text.trim()) : null,
+        discountReason: _operationType == 'moquette' && _discountReasonController.text.trim().isNotEmpty ? _discountReasonController.text.trim() : null,
       );
 
-      // Auto-learning: add or update vehicle in B2B client's list
-      if (_selectedPaymentMethod == 'compte_client' && _selectedClient != null) {
+      // Auto-learning: add or update vehicle in B2B client's list (only for vehicle operations)
+      if (_operationType == 'vehicule' && _selectedPaymentMethod == 'compte_client' && _selectedClient != null) {
         bool needsClientUpdate = false;
         final clientVehicles = List<ClientVehicle>.from(_selectedClient!.vehicles);
         final plateUpper = _vehiclePlate.toUpperCase();
@@ -370,7 +428,7 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
             plate: plateUpper, 
             brand: _vehicleBrand, 
             model: _vehicleModel,
-            categoryId: selectedCategory.id,
+            categoryId: selectedCategory!.id,
           ));
           needsClientUpdate = true;
         } else {
@@ -380,12 +438,12 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
               (existing.model.isEmpty && _vehicleModel.isNotEmpty) ||
               (existing.brand != _vehicleBrand && _vehicleBrand.isNotEmpty) ||
               (existing.model != _vehicleModel && _vehicleModel.isNotEmpty) ||
-              (existing.categoryId != selectedCategory.id)) {
+              (existing.categoryId != selectedCategory!.id)) {
             clientVehicles[idx] = ClientVehicle(
               plate: existing.plate,
               brand: _vehicleBrand.isNotEmpty ? _vehicleBrand : existing.brand,
               model: _vehicleModel.isNotEmpty ? _vehicleModel : existing.model,
-              categoryId: selectedCategory.id,
+              categoryId: selectedCategory!.id,
             );
             needsClientUpdate = true;
           }
@@ -400,12 +458,16 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
         }
       }
 
-      await repo.createTicket(newTicket);
+      if (widget.editTicket != null) {
+        await repo.updateTicket(newTicket);
+      } else {
+        await repo.createTicket(newTicket);
+      }
       ref.invalidate(todayTicketsStreamProvider(user.stationId!));
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ticket créé avec succès'.tr)),
+        SnackBar(content: Text(widget.editTicket != null ? 'Ticket mis à jour avec succès'.tr : 'Ticket créé avec succès'.tr)),
       );
       Navigator.of(context).pop();
     } catch (e) {
@@ -438,10 +500,96 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
     final now = DateTime.now();
     final attendancesAsync = ref.watch(attendancesStreamProvider((stationId: user.tenantId, date: DateTime(now.year, now.month, now.day))));
     final shiftsAsync = ref.watch(shiftsStreamProvider(user.tenantId));
+    final stationAsync = ref.watch(stationByIdProvider(user.stationId!));
+    final double pricePerMeter = stationAsync.valueOrNull?.carpetPricePerMeter ?? 0.0;
+
+    if (widget.editTicket != null && !_initialized &&
+        categoriesAsync.value != null &&
+        serviceDefsAsync.value != null &&
+        productsAsync.value != null &&
+        offersAsync.value != null &&
+        employeesAsync.value != null &&
+        clientsAsync.value != null) {
+      
+      final ticket = widget.editTicket!;
+      _initialized = true;
+      
+      _vehiclePlate = ticket.vehiclePlate ?? '';
+      _vehicleBrand = ticket.vehicleBrand ?? '';
+      _vehicleModel = ticket.vehicleModel ?? '';
+      _selectedPaymentMethod = ticket.paymentMethod ?? 'cash';
+      _clientName = ticket.clientName ?? '';
+      _clientPhone = ticket.clientPhone ?? '';
+      _operationType = ticket.operationType;
+      _carpetMetersController.text = ticket.carpetMeters?.toString() ?? '';
+      _discountAmountController.text = ticket.discountAmount?.toString() ?? '';
+      _discountReasonController.text = ticket.discountReason ?? '';
+      
+      if (ticket.vehicleCategoryId != null) {
+        _selectedVehicleCategory = categoriesAsync.value!.firstWhere(
+          (c) => c.id == ticket.vehicleCategoryId,
+          orElse: () => categoriesAsync.value!.first,
+        );
+      }
+      
+      if (ticket.clientId != null) {
+        _selectedClient = clientsAsync.value!.firstWhereOrNull(
+          (c) => c.id == ticket.clientId,
+        );
+      }
+      
+      if (ticket.assignedWorkerId != null) {
+        _assignedWorker = employeesAsync.value!.firstWhereOrNull(
+          (e) => e.id == ticket.assignedWorkerId,
+        );
+      }
+      
+      _selectedServices.clear();
+      for (final ts in ticket.servicesSelected) {
+        final serviceDef = serviceDefsAsync.value!.firstWhereOrNull(
+          (s) => s.id == ts.serviceId,
+        );
+        if (serviceDef != null) {
+          _selectedServices.add(serviceDef);
+        }
+      }
+      
+      _selectedProducts.clear();
+      for (final tp in ticket.productsUsed) {
+        _selectedProducts.add(TicketProduct(
+          productId: tp.productId,
+          productName: tp.productName,
+          quantity: tp.quantity,
+          unitPrice: tp.unitPrice,
+        ));
+      }
+      
+      final offerId = ticket.snapshotPrice['offerId'] as String?;
+      if (offerId != null) {
+        _selectedOffer = offersAsync.value!.firstWhereOrNull(
+          (o) => o.id == offerId,
+        );
+      }
+    }
+
+    double _getTotalAmount(VehicleCategory? selectedCategory, double carpetPricePerMeter) {
+      if (_operationType == 'moquette') {
+        final double meters = double.tryParse(_carpetMetersController.text.trim()) ?? 0.0;
+        final double discount = double.tryParse(_discountAmountController.text.trim()) ?? 0.0;
+        double total = (meters * carpetPricePerMeter) - discount;
+        
+        for (final tp in _selectedProducts) {
+          total += tp.quantity * tp.unitPrice;
+        }
+        return total.clamp(0.0, double.infinity);
+      } else {
+        return _calculateTotalAmount(selectedCategory);
+      }
+    }
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Nouveau Ticket'.tr),
+        title: Text(widget.editTicket != null ? 'Modifier le Ticket'.tr : 'Nouveau Ticket'.tr),
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(16.0),
@@ -450,9 +598,120 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Operation Type Selector
+              Padding(
+                padding: const EdgeInsets.only(bottom: 20.0),
+                child: SegmentedButton<String>(
+                  segments: [
+                    ButtonSegment<String>(
+                      value: 'vehicule',
+                      label: Text('Lavage Véhicule'.tr),
+                      icon: const Icon(Icons.directions_car),
+                    ),
+                    ButtonSegment<String>(
+                      value: 'moquette',
+                      label: Text('Lavage Moquettes'.tr),
+                      icon: const Icon(Icons.grid_view),
+                    ),
+                  ],
+                  selected: {_operationType},
+                  onSelectionChanged: (Set<String> newSelection) {
+                    setState(() {
+                      _operationType = newSelection.first;
+                    });
+                  },
+                ),
+              ),
+
+              if (_operationType == 'moquette') ...[
+                // Carpet specific inputs
+                Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Saisie Moquette'.tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                        const SizedBox(height: 16),
+                        stationAsync.when(
+                          data: (station) {
+                            final pricePerMeter = station?.carpetPricePerMeter ?? 0.0;
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${'Prix unitaire fixe de lavage :'.tr} ${pricePerMeter.toStringAsFixed(1)} DT / m²',
+                                  style: const TextStyle(fontWeight: FontWeight.w600, color: AppTheme.primaryBlue),
+                                ),
+                                const SizedBox(height: 16),
+                              ],
+                            );
+                          },
+                          loading: () => const SizedBox(),
+                          error: (e, s) => const SizedBox(),
+                        ),
+                        TextFormField(
+                          controller: _carpetMetersController,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          decoration: InputDecoration(
+                            labelText: 'Surface totale (m²) *'.tr,
+                            prefixIcon: const Icon(Icons.square_foot),
+                          ),
+                          validator: (v) {
+                            if (_operationType != 'moquette') return null;
+                            if (v == null || v.isEmpty) return 'Requis'.tr;
+                            if (double.tryParse(v) == null) return 'Nombre invalide'.tr;
+                            return null;
+                          },
+                          onChanged: (_) => setState(() {}),
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _discountAmountController,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          decoration: InputDecoration(
+                            labelText: 'Remise (DT)'.tr,
+                            prefixIcon: const Icon(Icons.price_change),
+                          ),
+                          validator: (v) {
+                            if (_operationType != 'moquette') return null;
+                            if (v != null && v.isNotEmpty && double.tryParse(v) == null) {
+                              return 'Nombre invalide'.tr;
+                            }
+                            return null;
+                          },
+                          onChanged: (_) => setState(() {}),
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _discountReasonController,
+                          decoration: InputDecoration(
+                            labelText: 'Motif de la remise'.tr,
+                            prefixIcon: const Icon(Icons.rate_review),
+                          ),
+                          validator: (v) {
+                            if (_operationType != 'moquette') return null;
+                            final discount = double.tryParse(_discountAmountController.text.trim()) ?? 0.0;
+                            if (discount > 0 && (v == null || v.isEmpty)) {
+                              return 'Le motif de la remise est requis'.tr;
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ] else ...[
 // Vehicle Info
               VehicleInfoInput(
                 key: _vehicleInfoKey,
+                initialPlate: widget.editTicket?.vehiclePlate,
+                initialBrand: widget.editTicket?.vehicleBrand,
+                initialModel: widget.editTicket?.vehicleModel,
                 onChanged: (plate, brand, model) {
                   _vehiclePlate = plate;
                   _vehicleBrand = brand;
@@ -977,7 +1236,7 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
                                       .where((p) => p.family == ProductFamily.revente)
                                       .where((p) => p.barcode.toLowerCase() == barcode.toLowerCase())
                                       .toList();
-                                  if (matchedProduct.isNotEmpty) {
+                                  if (matchedProduct.length == 1) {
                                     _addProduct(matchedProduct.first);
                                     _productSearchController.clear();
                                     setState(() => _productSearchQuery = '');
@@ -986,6 +1245,33 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
                                         content: Text('${matchedProduct.first.name} ajouté'),
                                         duration: const Duration(seconds: 1),
                                         backgroundColor: AppTheme.successGreen,
+                                      ),
+                                    );
+                                  } else if (matchedProduct.length > 1) {
+                                    showDialog(
+                                      context: context,
+                                      builder: (dialogContext) => AlertDialog(
+                                        title: Text('Sélectionner le produit'.tr),
+                                        content: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: matchedProduct.map((p) => ListTile(
+                                            title: Text(p.name),
+                                            subtitle: Text('${p.unitPrice} DT'),
+                                            onTap: () {
+                                              _addProduct(p);
+                                              Navigator.of(dialogContext).pop();
+                                              _productSearchController.clear();
+                                              setState(() => _productSearchQuery = '');
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                SnackBar(
+                                                  content: Text('${p.name} ajouté'),
+                                                  duration: const Duration(seconds: 1),
+                                                  backgroundColor: AppTheme.successGreen,
+                                                ),
+                                              );
+                                            },
+                                          )).toList(),
+                                        ),
                                       ),
                                     );
                                   } else {
@@ -1153,6 +1439,7 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
                 ),
                 SizedBox(height: 16),
               ],
+            ],
 
 // Worker Assignment
               employeesAsync.when(
@@ -1386,14 +1673,16 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
           ],
         ),
         child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              categoriesAsync.when(
-                data: (categories) {
-                  final selectedCategory = _selectedVehicleCategory ?? (categories.isNotEmpty ? categories.first : null);
-                  final total = _calculateTotalAmount(selectedCategory);
-                  return Row(
+          child: Builder(
+            builder: (context) {
+              final categories = categoriesAsync.valueOrNull ?? [];
+              final selectedCategory = _selectedVehicleCategory ?? (categories.isNotEmpty ? categories.first : null);
+              final total = _getTotalAmount(selectedCategory, pricePerMeter);
+
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
@@ -1405,16 +1694,9 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
                         style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: AppTheme.successGreen),
                       ),
                     ],
-                  );
-                },
-                loading: () => SizedBox(),
-                error: (e, s) => SizedBox(),
-              ),
-              SizedBox(height: 16),
-              categoriesAsync.when(
-                data: (categories) {
-                  final selectedCategory = _selectedVehicleCategory ?? (categories.isNotEmpty ? categories.first : null);
-                  return SizedBox(
+                  ),
+                  SizedBox(height: 16),
+                  SizedBox(
                     width: double.infinity,
                     height: 60,
                     child: ElevatedButton(
@@ -1439,20 +1721,10 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
                               ],
                             ),
                     ),
-                  );
-                },
-                loading: () => SizedBox(
-                  width: double.infinity,
-                  height: 60,
-                  child: ElevatedButton(onPressed: null, child: Text('Chargement...'.tr)),
-                ),
-                error: (e, s) => SizedBox(
-                  width: double.infinity,
-                  height: 60,
-                  child: ElevatedButton(onPressed: null, child: Text('Erreur'.tr)),
-                ),
-              ),
-            ],
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),

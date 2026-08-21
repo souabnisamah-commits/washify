@@ -116,8 +116,10 @@ class AuthRepository {
   }
 
   Future<AppUser?> getUserByPhone(String phone) async {
+    final sanitizedPhone = phone.replaceAll(RegExp(r'[^0-9]'), '');
     final querySnapshot = await _usersRef
-        .where('phone', isEqualTo: phone)
+        .where('phone', isEqualTo: sanitizedPhone)
+        .where('isActive', isEqualTo: true)
         .limit(1)
         .get();
 

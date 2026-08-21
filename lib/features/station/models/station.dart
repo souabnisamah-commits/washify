@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:washify/core/utils/json_utils.dart';
+import 'package:washify/features/services/models/service_definition.dart';
 
 part 'station.freezed.dart';
 part 'station.g.dart';
@@ -44,6 +45,13 @@ class Station with _$Station {
     @Default(true) bool isActive,
     required DateTime createdAt,
     required DateTime updatedAt,
+    
+    // Moquette pricing and consumption links
+    @Default(0.0) double carpetPricePerMeter,
+    @Default([]) List<ServiceProductLink> carpetLinkedProducts,
+
+    // Ticket reset configuration
+    @Default(21) int ticketResetHour,
   }) = _Station;
 
   factory Station.fromJson(Map<String, dynamic> json) => _$StationFromJson(json);

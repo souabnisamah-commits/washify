@@ -22,8 +22,14 @@ class _PayrollManagementScreenState extends ConsumerState<PayrollManagementScree
   Future<void> _processTransaction(Employee emp, String type) async {
     final formKey = GlobalKey<FormState>();
     final amountController = TextEditingController();
-    
-    final title = type == 'payout' ? 'Paiement (Salaire)' : 'Avance';
+    final reasonController = TextEditingController();
+
+    String title = 'Avance';
+    if (type == 'payout') {
+      title = 'Payer Solde (Paiement)';
+    } else if (type == 'bonus') {
+      title = 'Prime / Gratification';
+    }
 
     final result = await showDialog<bool>(
       context: context,
@@ -31,22 +37,50 @@ class _PayrollManagementScreenState extends ConsumerState<PayrollManagementScree
         title: Text('$title - ${emp.name}'),
         content: Form(
           key: formKey,
-          child: TextFormField(
-            controller: amountController,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(labelText: 'Montant (DT)'.tr, border: OutlineInputBorder()),
-            validator: (v) => v == null || v.isEmpty ? 'Requis' : null,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: amountController,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  labelText: 'Montant (DT) *'.tr,
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.monetization_on_outlined),
+                ),
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'Requis'.tr;
+                  if (double.tryParse(v) == null || double.parse(v) <= 0) return 'Montant invalide'.tr;
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: reasonController,
+                decoration: InputDecoration(
+                  labelText: type == 'bonus' ? 'Motif (Optionnel)'.tr : 'Motif / Description'.tr,
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.description_outlined),
+                ),
+              ),
+            ],
           ),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(c, false), child: Text('Annuler'.tr)),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: type == 'bonus'
+                  ? Colors.purple
+                  : (type == 'payout' ? AppTheme.successGreen : AppTheme.primaryBlue),
+              foregroundColor: Colors.white,
+            ),
             onPressed: () {
               if (formKey.currentState!.validate()) {
                 Navigator.pop(c, true);
               }
-            }, 
-            child: Text('Valider'.tr)
+            },
+            child: Text('Valider'.tr),
           ),
         ],
       ),
@@ -58,13 +92,24 @@ class _PayrollManagementScreenState extends ConsumerState<PayrollManagementScree
 
       final user = ref.read(currentUserProvider);
       if (user == null) return;
-      
+
       final repo = ref.read(walletRepositoryProvider);
-      
+
       try {
-        final tType = WalletTransactionType.retrait;
-        final desc = type == 'payout' ? 'Paiement Salaire' : 'Avance sur salaire';
-        
+        final WalletTransactionType tType = type == 'bonus'
+            ? WalletTransactionType.bonus
+            : WalletTransactionType.retrait;
+
+        final reasonText = reasonController.text.trim();
+        String desc = '';
+        if (type == 'bonus') {
+          desc = reasonText.isNotEmpty ? 'Prime : $reasonText' : 'Prime octroyée';
+        } else if (type == 'payout') {
+          desc = reasonText.isNotEmpty ? 'Paiement Salaire : $reasonText' : 'Paiement Salaire';
+        } else {
+          desc = reasonText.isNotEmpty ? 'Avance : $reasonText' : 'Avance sur salaire';
+        }
+
         await repo.addTransaction(
           WalletTransaction(
             id: '',
@@ -72,20 +117,24 @@ class _PayrollManagementScreenState extends ConsumerState<PayrollManagementScree
             userId: emp.id,
             tenantId: user.tenantId,
             type: tType,
-            amount: amount, // Amount is positive for withdrawal in WalletTransaction if the repo handles isCredit logic. Wait, let's look at wallet_repo.
+            amount: amount,
             balanceBefore: 0,
             balanceAfter: 0,
             description: desc,
             createdAt: DateTime.now(),
-          )
+          ),
         );
-        
+
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$title enregistré avec succès')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('$title enregistré avec succès'.tr)),
+          );
         }
-      } catch(e) {
+      } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e'.tr)));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Erreur: $e'.tr)),
+          );
         }
       }
     }
@@ -259,25 +308,35 @@ class _PayrollManagementScreenState extends ConsumerState<PayrollManagementScree
                             Row(
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
-                                OutlinedButton.icon(
-                                  onPressed: () => _processTransaction(emp, 'advance'),
-                                  icon: Icon(Icons.money_off, size: 18),
-                                  label: Text('Avance'.tr),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: AppTheme.primaryBlue,
-                                    side: const BorderSide(color: AppTheme.primaryBlue),
-                                  ),
-                                ),
-                                SizedBox(width: 12),
-                                ElevatedButton.icon(
-                                  onPressed: () => _processTransaction(emp, 'payout'),
-                                  icon: Icon(Icons.payments, size: 18),
-                                  label: Text('Payer Solde'.tr),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppTheme.successGreen,
-                                    foregroundColor: Colors.white,
-                                  ),
-                                ),
+                                 OutlinedButton.icon(
+                                   onPressed: () => _processTransaction(emp, 'advance'),
+                                   icon: const Icon(Icons.money_off, size: 16),
+                                   label: Text('Avance'.tr),
+                                   style: OutlinedButton.styleFrom(
+                                     foregroundColor: AppTheme.primaryBlue,
+                                     side: const BorderSide(color: AppTheme.primaryBlue),
+                                   ),
+                                 ),
+                                 const SizedBox(width: 8),
+                                 OutlinedButton.icon(
+                                   onPressed: () => _processTransaction(emp, 'bonus'),
+                                   icon: const Icon(Icons.card_giftcard, size: 16),
+                                   label: Text('Prime'.tr),
+                                   style: OutlinedButton.styleFrom(
+                                     foregroundColor: Colors.purple,
+                                     side: const BorderSide(color: Colors.purple),
+                                   ),
+                                 ),
+                                 const SizedBox(width: 8),
+                                 ElevatedButton.icon(
+                                   onPressed: () => _processTransaction(emp, 'payout'),
+                                   icon: const Icon(Icons.payments, size: 16),
+                                   label: Text('Payer Solde'.tr),
+                                   style: ElevatedButton.styleFrom(
+                                     backgroundColor: AppTheme.successGreen,
+                                     foregroundColor: Colors.white,
+                                   ),
+                                 ),
                               ],
                             ),
                           ],

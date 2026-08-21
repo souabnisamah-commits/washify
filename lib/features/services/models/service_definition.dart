@@ -17,6 +17,20 @@ class ServiceProductLink {
     this.consumptionByCategory = const {},
   });
 
+  ServiceProductLink copyWith({
+    String? productId,
+    String? productName,
+    double? consumptionPerUse,
+    Map<String, double>? consumptionByCategory,
+  }) {
+    return ServiceProductLink(
+      productId: productId ?? this.productId,
+      productName: productName ?? this.productName,
+      consumptionPerUse: consumptionPerUse ?? this.consumptionPerUse,
+      consumptionByCategory: consumptionByCategory ?? this.consumptionByCategory,
+    );
+  }
+
   Map<String, dynamic> toJson() => {
     'productId': productId,
     'productName': productName,

@@ -28,6 +28,8 @@ class AppConstants {
   static const String vehicleCategoriesCollection = 'vehicleCategories';
   static const String serviceDefinitionsCollection = 'serviceDefinitions';
   static const String offersCollection = 'offers';
+  static const String cashSessionsCollection = 'cash_sessions';
+  static const String cashMovementsCollection = 'cash_movements';
 
   // Pagination
   static const int defaultPageSize = 20;

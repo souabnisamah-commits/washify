@@ -110,5 +110,21 @@ service cloud.firestore {
     match /client_payments/{paymentId} {
       allow read, write: if isSignedIn();
     }
+
+    // Cash Sessions & Movements rules
+    match /cash_sessions/{sessionId} {
+      allow read, write: if isSignedIn();
+    }
+    match /cash_movements/{movementId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // Ticket counters rules
+    match /ticket_counters/{counterId} {
+      allow read, write: if isSignedIn();
+    }
+    match /counters/{counterId} {
+      allow read, write: if isSignedIn();
+    }
   }
 }

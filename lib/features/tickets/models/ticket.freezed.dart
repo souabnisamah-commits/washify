@@ -451,13 +451,13 @@ mixin _$Ticket {
   @JsonKey(readValue: readTenantId)
   String get tenantId => throw _privateConstructorUsedError; // stationId
   String get ticketNumber =>
-      throw _privateConstructorUsedError; // ST-{station}-{date}-{heure}-{random}
+      throw _privateConstructorUsedError; // N°:XXX-DDMMYY-HH:MM (e.g. ST-station-XXX-DDMMYY-HH:MM) or as requested N°:XXX-DDMMYY-HH:MM
   String get createdBy =>
       throw _privateConstructorUsedError; // Creator (Worker or Cashier)
   String? get paidBy => throw _privateConstructorUsedError; // Paid cashier
   String? get approvedBy => throw _privateConstructorUsedError; // Approver
   TicketStatus get status =>
-      throw _privateConstructorUsedError; // en_attente, paye, rembourse
+      throw _privateConstructorUsedError; // en_attente, paye, rembourse, annule, efface
   double get montant =>
       throw _privateConstructorUsedError; // Total ticket amount
   Map<String, dynamic> get snapshotPrice =>
@@ -487,7 +487,17 @@ mixin _$Ticket {
       throw _privateConstructorUsedError;
   List<TicketProduct> get productsUsed => throw _privateConstructorUsedError;
   DateTime get createdAt => throw _privateConstructorUsedError;
-  DateTime get updatedAt => throw _privateConstructorUsedError;
+  DateTime get updatedAt =>
+      throw _privateConstructorUsedError; // New fields for Moquettes & Soft Delete
+  String get operationType =>
+      throw _privateConstructorUsedError; // 'vehicule' or 'moquette'
+  double? get carpetMeters => throw _privateConstructorUsedError;
+  double? get carpetUnitPrice => throw _privateConstructorUsedError;
+  double? get discountAmount => throw _privateConstructorUsedError;
+  String? get discountReason => throw _privateConstructorUsedError;
+  String? get deletedBy => throw _privateConstructorUsedError;
+  DateTime? get deletedAt => throw _privateConstructorUsedError;
+  String? get deleteReason => throw _privateConstructorUsedError;
 
   /// Serializes this Ticket to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -532,6 +542,14 @@ abstract class $TicketCopyWith<$Res> {
     List<TicketProduct> productsUsed,
     DateTime createdAt,
     DateTime updatedAt,
+    String operationType,
+    double? carpetMeters,
+    double? carpetUnitPrice,
+    double? discountAmount,
+    String? discountReason,
+    String? deletedBy,
+    DateTime? deletedAt,
+    String? deleteReason,
   });
 }
 
@@ -578,6 +596,14 @@ class _$TicketCopyWithImpl<$Res, $Val extends Ticket>
     Object? productsUsed = null,
     Object? createdAt = null,
     Object? updatedAt = null,
+    Object? operationType = null,
+    Object? carpetMeters = freezed,
+    Object? carpetUnitPrice = freezed,
+    Object? discountAmount = freezed,
+    Object? discountReason = freezed,
+    Object? deletedBy = freezed,
+    Object? deletedAt = freezed,
+    Object? deleteReason = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -693,6 +719,38 @@ class _$TicketCopyWithImpl<$Res, $Val extends Ticket>
                 ? _value.updatedAt
                 : updatedAt // ignore: cast_nullable_to_non_nullable
                       as DateTime,
+            operationType: null == operationType
+                ? _value.operationType
+                : operationType // ignore: cast_nullable_to_non_nullable
+                      as String,
+            carpetMeters: freezed == carpetMeters
+                ? _value.carpetMeters
+                : carpetMeters // ignore: cast_nullable_to_non_nullable
+                      as double?,
+            carpetUnitPrice: freezed == carpetUnitPrice
+                ? _value.carpetUnitPrice
+                : carpetUnitPrice // ignore: cast_nullable_to_non_nullable
+                      as double?,
+            discountAmount: freezed == discountAmount
+                ? _value.discountAmount
+                : discountAmount // ignore: cast_nullable_to_non_nullable
+                      as double?,
+            discountReason: freezed == discountReason
+                ? _value.discountReason
+                : discountReason // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            deletedBy: freezed == deletedBy
+                ? _value.deletedBy
+                : deletedBy // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            deletedAt: freezed == deletedAt
+                ? _value.deletedAt
+                : deletedAt // ignore: cast_nullable_to_non_nullable
+                      as DateTime?,
+            deleteReason: freezed == deleteReason
+                ? _value.deleteReason
+                : deleteReason // ignore: cast_nullable_to_non_nullable
+                      as String?,
           )
           as $Val,
     );
@@ -736,6 +794,14 @@ abstract class _$$TicketImplCopyWith<$Res> implements $TicketCopyWith<$Res> {
     List<TicketProduct> productsUsed,
     DateTime createdAt,
     DateTime updatedAt,
+    String operationType,
+    double? carpetMeters,
+    double? carpetUnitPrice,
+    double? discountAmount,
+    String? discountReason,
+    String? deletedBy,
+    DateTime? deletedAt,
+    String? deleteReason,
   });
 }
 
@@ -781,6 +847,14 @@ class __$$TicketImplCopyWithImpl<$Res>
     Object? productsUsed = null,
     Object? createdAt = null,
     Object? updatedAt = null,
+    Object? operationType = null,
+    Object? carpetMeters = freezed,
+    Object? carpetUnitPrice = freezed,
+    Object? discountAmount = freezed,
+    Object? discountReason = freezed,
+    Object? deletedBy = freezed,
+    Object? deletedAt = freezed,
+    Object? deleteReason = freezed,
   }) {
     return _then(
       _$TicketImpl(
@@ -896,6 +970,38 @@ class __$$TicketImplCopyWithImpl<$Res>
             ? _value.updatedAt
             : updatedAt // ignore: cast_nullable_to_non_nullable
                   as DateTime,
+        operationType: null == operationType
+            ? _value.operationType
+            : operationType // ignore: cast_nullable_to_non_nullable
+                  as String,
+        carpetMeters: freezed == carpetMeters
+            ? _value.carpetMeters
+            : carpetMeters // ignore: cast_nullable_to_non_nullable
+                  as double?,
+        carpetUnitPrice: freezed == carpetUnitPrice
+            ? _value.carpetUnitPrice
+            : carpetUnitPrice // ignore: cast_nullable_to_non_nullable
+                  as double?,
+        discountAmount: freezed == discountAmount
+            ? _value.discountAmount
+            : discountAmount // ignore: cast_nullable_to_non_nullable
+                  as double?,
+        discountReason: freezed == discountReason
+            ? _value.discountReason
+            : discountReason // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        deletedBy: freezed == deletedBy
+            ? _value.deletedBy
+            : deletedBy // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        deletedAt: freezed == deletedAt
+            ? _value.deletedAt
+            : deletedAt // ignore: cast_nullable_to_non_nullable
+                  as DateTime?,
+        deleteReason: freezed == deleteReason
+            ? _value.deleteReason
+            : deleteReason // ignore: cast_nullable_to_non_nullable
+                  as String?,
       ),
     );
   }
@@ -933,6 +1039,14 @@ class _$TicketImpl extends _Ticket {
     final List<TicketProduct> productsUsed = const [],
     required this.createdAt,
     required this.updatedAt,
+    this.operationType = 'vehicule',
+    this.carpetMeters,
+    this.carpetUnitPrice,
+    this.discountAmount,
+    this.discountReason,
+    this.deletedBy,
+    this.deletedAt,
+    this.deleteReason,
   }) : _snapshotPrice = snapshotPrice,
        _photosAvant = photosAvant,
        _photosApres = photosApres,
@@ -952,7 +1066,7 @@ class _$TicketImpl extends _Ticket {
   // stationId
   @override
   final String ticketNumber;
-  // ST-{station}-{date}-{heure}-{random}
+  // N°:XXX-DDMMYY-HH:MM (e.g. ST-station-XXX-DDMMYY-HH:MM) or as requested N°:XXX-DDMMYY-HH:MM
   @override
   final String createdBy;
   // Creator (Worker or Cashier)
@@ -964,7 +1078,7 @@ class _$TicketImpl extends _Ticket {
   // Approver
   @override
   final TicketStatus status;
-  // en_attente, paye, rembourse
+  // en_attente, paye, rembourse, annule, efface
   @override
   final double montant;
   // Total ticket amount
@@ -1053,10 +1167,29 @@ class _$TicketImpl extends _Ticket {
   final DateTime createdAt;
   @override
   final DateTime updatedAt;
+  // New fields for Moquettes & Soft Delete
+  @override
+  @JsonKey()
+  final String operationType;
+  // 'vehicule' or 'moquette'
+  @override
+  final double? carpetMeters;
+  @override
+  final double? carpetUnitPrice;
+  @override
+  final double? discountAmount;
+  @override
+  final String? discountReason;
+  @override
+  final String? deletedBy;
+  @override
+  final DateTime? deletedAt;
+  @override
+  final String? deleteReason;
 
   @override
   String toString() {
-    return 'Ticket(id: $id, tenantId: $tenantId, ticketNumber: $ticketNumber, createdBy: $createdBy, paidBy: $paidBy, approvedBy: $approvedBy, status: $status, montant: $montant, snapshotPrice: $snapshotPrice, photosAvant: $photosAvant, photosApres: $photosApres, vehiclePlate: $vehiclePlate, vehicleCategoryId: $vehicleCategoryId, vehicleType: $vehicleType, vehicleBrand: $vehicleBrand, vehicleModel: $vehicleModel, clientId: $clientId, clientName: $clientName, clientPhone: $clientPhone, paymentMethod: $paymentMethod, assignedWorkerId: $assignedWorkerId, assignedWorkerName: $assignedWorkerName, serviceId: $serviceId, serviceName: $serviceName, servicesSelected: $servicesSelected, productsUsed: $productsUsed, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'Ticket(id: $id, tenantId: $tenantId, ticketNumber: $ticketNumber, createdBy: $createdBy, paidBy: $paidBy, approvedBy: $approvedBy, status: $status, montant: $montant, snapshotPrice: $snapshotPrice, photosAvant: $photosAvant, photosApres: $photosApres, vehiclePlate: $vehiclePlate, vehicleCategoryId: $vehicleCategoryId, vehicleType: $vehicleType, vehicleBrand: $vehicleBrand, vehicleModel: $vehicleModel, clientId: $clientId, clientName: $clientName, clientPhone: $clientPhone, paymentMethod: $paymentMethod, assignedWorkerId: $assignedWorkerId, assignedWorkerName: $assignedWorkerName, serviceId: $serviceId, serviceName: $serviceName, servicesSelected: $servicesSelected, productsUsed: $productsUsed, createdAt: $createdAt, updatedAt: $updatedAt, operationType: $operationType, carpetMeters: $carpetMeters, carpetUnitPrice: $carpetUnitPrice, discountAmount: $discountAmount, discountReason: $discountReason, deletedBy: $deletedBy, deletedAt: $deletedAt, deleteReason: $deleteReason)';
   }
 
   @override
@@ -1125,7 +1258,23 @@ class _$TicketImpl extends _Ticket {
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
             (identical(other.updatedAt, updatedAt) ||
-                other.updatedAt == updatedAt));
+                other.updatedAt == updatedAt) &&
+            (identical(other.operationType, operationType) ||
+                other.operationType == operationType) &&
+            (identical(other.carpetMeters, carpetMeters) ||
+                other.carpetMeters == carpetMeters) &&
+            (identical(other.carpetUnitPrice, carpetUnitPrice) ||
+                other.carpetUnitPrice == carpetUnitPrice) &&
+            (identical(other.discountAmount, discountAmount) ||
+                other.discountAmount == discountAmount) &&
+            (identical(other.discountReason, discountReason) ||
+                other.discountReason == discountReason) &&
+            (identical(other.deletedBy, deletedBy) ||
+                other.deletedBy == deletedBy) &&
+            (identical(other.deletedAt, deletedAt) ||
+                other.deletedAt == deletedAt) &&
+            (identical(other.deleteReason, deleteReason) ||
+                other.deleteReason == deleteReason));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1160,6 +1309,14 @@ class _$TicketImpl extends _Ticket {
     const DeepCollectionEquality().hash(_productsUsed),
     createdAt,
     updatedAt,
+    operationType,
+    carpetMeters,
+    carpetUnitPrice,
+    discountAmount,
+    discountReason,
+    deletedBy,
+    deletedAt,
+    deleteReason,
   ]);
 
   /// Create a copy of Ticket
@@ -1206,6 +1363,14 @@ abstract class _Ticket extends Ticket {
     final List<TicketProduct> productsUsed,
     required final DateTime createdAt,
     required final DateTime updatedAt,
+    final String operationType,
+    final double? carpetMeters,
+    final double? carpetUnitPrice,
+    final double? discountAmount,
+    final String? discountReason,
+    final String? deletedBy,
+    final DateTime? deletedAt,
+    final String? deleteReason,
   }) = _$TicketImpl;
   const _Ticket._() : super._();
 
@@ -1217,7 +1382,7 @@ abstract class _Ticket extends Ticket {
   @JsonKey(readValue: readTenantId)
   String get tenantId; // stationId
   @override
-  String get ticketNumber; // ST-{station}-{date}-{heure}-{random}
+  String get ticketNumber; // N°:XXX-DDMMYY-HH:MM (e.g. ST-station-XXX-DDMMYY-HH:MM) or as requested N°:XXX-DDMMYY-HH:MM
   @override
   String get createdBy; // Creator (Worker or Cashier)
   @override
@@ -1225,7 +1390,7 @@ abstract class _Ticket extends Ticket {
   @override
   String? get approvedBy; // Approver
   @override
-  TicketStatus get status; // en_attente, paye, rembourse
+  TicketStatus get status; // en_attente, paye, rembourse, annule, efface
   @override
   double get montant; // Total ticket amount
   @override
@@ -1267,7 +1432,23 @@ abstract class _Ticket extends Ticket {
   @override
   DateTime get createdAt;
   @override
-  DateTime get updatedAt;
+  DateTime get updatedAt; // New fields for Moquettes & Soft Delete
+  @override
+  String get operationType; // 'vehicule' or 'moquette'
+  @override
+  double? get carpetMeters;
+  @override
+  double? get carpetUnitPrice;
+  @override
+  double? get discountAmount;
+  @override
+  String? get discountReason;
+  @override
+  String? get deletedBy;
+  @override
+  DateTime? get deletedAt;
+  @override
+  String? get deleteReason;
 
   /// Create a copy of Ticket
   /// with the given fields replaced by the non-null parameter values.

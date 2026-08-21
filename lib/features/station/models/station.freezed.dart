@@ -40,7 +40,12 @@ mixin _$Station {
   String get city => throw _privateConstructorUsedError;
   bool get isActive => throw _privateConstructorUsedError;
   DateTime get createdAt => throw _privateConstructorUsedError;
-  DateTime get updatedAt => throw _privateConstructorUsedError;
+  DateTime get updatedAt =>
+      throw _privateConstructorUsedError; // Moquette pricing and consumption links
+  double get carpetPricePerMeter => throw _privateConstructorUsedError;
+  List<ServiceProductLink> get carpetLinkedProducts =>
+      throw _privateConstructorUsedError; // Ticket reset configuration
+  int get ticketResetHour => throw _privateConstructorUsedError;
 
   /// Serializes this Station to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -76,6 +81,9 @@ abstract class $StationCopyWith<$Res> {
     bool isActive,
     DateTime createdAt,
     DateTime updatedAt,
+    double carpetPricePerMeter,
+    List<ServiceProductLink> carpetLinkedProducts,
+    int ticketResetHour,
   });
 }
 
@@ -113,6 +121,9 @@ class _$StationCopyWithImpl<$Res, $Val extends Station>
     Object? isActive = null,
     Object? createdAt = null,
     Object? updatedAt = null,
+    Object? carpetPricePerMeter = null,
+    Object? carpetLinkedProducts = null,
+    Object? ticketResetHour = null,
   }) {
     return _then(
       _value.copyWith(
@@ -192,6 +203,18 @@ class _$StationCopyWithImpl<$Res, $Val extends Station>
                 ? _value.updatedAt
                 : updatedAt // ignore: cast_nullable_to_non_nullable
                       as DateTime,
+            carpetPricePerMeter: null == carpetPricePerMeter
+                ? _value.carpetPricePerMeter
+                : carpetPricePerMeter // ignore: cast_nullable_to_non_nullable
+                      as double,
+            carpetLinkedProducts: null == carpetLinkedProducts
+                ? _value.carpetLinkedProducts
+                : carpetLinkedProducts // ignore: cast_nullable_to_non_nullable
+                      as List<ServiceProductLink>,
+            ticketResetHour: null == ticketResetHour
+                ? _value.ticketResetHour
+                : ticketResetHour // ignore: cast_nullable_to_non_nullable
+                      as int,
           )
           as $Val,
     );
@@ -226,6 +249,9 @@ abstract class _$$StationImplCopyWith<$Res> implements $StationCopyWith<$Res> {
     bool isActive,
     DateTime createdAt,
     DateTime updatedAt,
+    double carpetPricePerMeter,
+    List<ServiceProductLink> carpetLinkedProducts,
+    int ticketResetHour,
   });
 }
 
@@ -262,6 +288,9 @@ class __$$StationImplCopyWithImpl<$Res>
     Object? isActive = null,
     Object? createdAt = null,
     Object? updatedAt = null,
+    Object? carpetPricePerMeter = null,
+    Object? carpetLinkedProducts = null,
+    Object? ticketResetHour = null,
   }) {
     return _then(
       _$StationImpl(
@@ -341,6 +370,18 @@ class __$$StationImplCopyWithImpl<$Res>
             ? _value.updatedAt
             : updatedAt // ignore: cast_nullable_to_non_nullable
                   as DateTime,
+        carpetPricePerMeter: null == carpetPricePerMeter
+            ? _value.carpetPricePerMeter
+            : carpetPricePerMeter // ignore: cast_nullable_to_non_nullable
+                  as double,
+        carpetLinkedProducts: null == carpetLinkedProducts
+            ? _value._carpetLinkedProducts
+            : carpetLinkedProducts // ignore: cast_nullable_to_non_nullable
+                  as List<ServiceProductLink>,
+        ticketResetHour: null == ticketResetHour
+            ? _value.ticketResetHour
+            : ticketResetHour // ignore: cast_nullable_to_non_nullable
+                  as int,
       ),
     );
   }
@@ -369,7 +410,11 @@ class _$StationImpl extends _Station {
     this.isActive = true,
     required this.createdAt,
     required this.updatedAt,
-  }) : super._();
+    this.carpetPricePerMeter = 0.0,
+    final List<ServiceProductLink> carpetLinkedProducts = const [],
+    this.ticketResetHour = 21,
+  }) : _carpetLinkedProducts = carpetLinkedProducts,
+       super._();
 
   factory _$StationImpl.fromJson(Map<String, dynamic> json) =>
       _$$StationImplFromJson(json);
@@ -417,10 +462,28 @@ class _$StationImpl extends _Station {
   final DateTime createdAt;
   @override
   final DateTime updatedAt;
+  // Moquette pricing and consumption links
+  @override
+  @JsonKey()
+  final double carpetPricePerMeter;
+  final List<ServiceProductLink> _carpetLinkedProducts;
+  @override
+  @JsonKey()
+  List<ServiceProductLink> get carpetLinkedProducts {
+    if (_carpetLinkedProducts is EqualUnmodifiableListView)
+      return _carpetLinkedProducts;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_carpetLinkedProducts);
+  }
+
+  // Ticket reset configuration
+  @override
+  @JsonKey()
+  final int ticketResetHour;
 
   @override
   String toString() {
-    return 'Station(id: $id, tenantId: $tenantId, name: $name, gerantName: $gerantName, phone: $phone, email: $email, matriculeFiscale: $matriculeFiscale, latitude: $latitude, longitude: $longitude, logoUrl: $logoUrl, licence: $licence, subscriptionDate: $subscriptionDate, expiryDate: $expiryDate, gracePeriodDays: $gracePeriodDays, address: $address, city: $city, isActive: $isActive, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'Station(id: $id, tenantId: $tenantId, name: $name, gerantName: $gerantName, phone: $phone, email: $email, matriculeFiscale: $matriculeFiscale, latitude: $latitude, longitude: $longitude, logoUrl: $logoUrl, licence: $licence, subscriptionDate: $subscriptionDate, expiryDate: $expiryDate, gracePeriodDays: $gracePeriodDays, address: $address, city: $city, isActive: $isActive, createdAt: $createdAt, updatedAt: $updatedAt, carpetPricePerMeter: $carpetPricePerMeter, carpetLinkedProducts: $carpetLinkedProducts, ticketResetHour: $ticketResetHour)';
   }
 
   @override
@@ -457,7 +520,15 @@ class _$StationImpl extends _Station {
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
             (identical(other.updatedAt, updatedAt) ||
-                other.updatedAt == updatedAt));
+                other.updatedAt == updatedAt) &&
+            (identical(other.carpetPricePerMeter, carpetPricePerMeter) ||
+                other.carpetPricePerMeter == carpetPricePerMeter) &&
+            const DeepCollectionEquality().equals(
+              other._carpetLinkedProducts,
+              _carpetLinkedProducts,
+            ) &&
+            (identical(other.ticketResetHour, ticketResetHour) ||
+                other.ticketResetHour == ticketResetHour));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -483,6 +554,9 @@ class _$StationImpl extends _Station {
     isActive,
     createdAt,
     updatedAt,
+    carpetPricePerMeter,
+    const DeepCollectionEquality().hash(_carpetLinkedProducts),
+    ticketResetHour,
   ]);
 
   /// Create a copy of Station
@@ -520,6 +594,9 @@ abstract class _Station extends Station {
     final bool isActive,
     required final DateTime createdAt,
     required final DateTime updatedAt,
+    final double carpetPricePerMeter,
+    final List<ServiceProductLink> carpetLinkedProducts,
+    final int ticketResetHour,
   }) = _$StationImpl;
   const _Station._() : super._();
 
@@ -563,7 +640,13 @@ abstract class _Station extends Station {
   @override
   DateTime get createdAt;
   @override
-  DateTime get updatedAt;
+  DateTime get updatedAt; // Moquette pricing and consumption links
+  @override
+  double get carpetPricePerMeter;
+  @override
+  List<ServiceProductLink> get carpetLinkedProducts; // Ticket reset configuration
+  @override
+  int get ticketResetHour;
 
   /// Create a copy of Station
   /// with the given fields replaced by the non-null parameter values.

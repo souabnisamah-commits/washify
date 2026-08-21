@@ -172,6 +172,14 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen>
                       final repo = ref.read(productRepositoryProvider);
                       final now = DateTime.now();
 
+                      final barcode = barcodeController.text.trim();
+                      if (barcode.isNotEmpty) {
+                        final existing = await repo.getProductByBarcode(station.id, barcode);
+                        if (existing != null && existing.id != (product?.id ?? '')) {
+                          throw 'Un produit avec ce code-barres existe déjà : ${existing.name}'.tr;
+                        }
+                      }
+
                       final newProduct = Product(
                         id: product?.id ?? '',
                         tenantId: station.id,
@@ -183,7 +191,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen>
                         purchasePrice: double.tryParse(purchasePriceController.text) ?? 0.0,
                         minStock: int.tryParse(minStockController.text) ?? 0,
                         capacityMl: double.tryParse(capacityController.text) ?? 0.0,
-                        barcode: barcodeController.text.trim(),
+                        barcode: barcode,
                         isActive: true,
                         createdAt: product?.createdAt ?? now,
                         updatedAt: now,

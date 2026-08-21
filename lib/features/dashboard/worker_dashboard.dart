@@ -154,7 +154,10 @@ class _WorkerDashboardState extends ConsumerState<WorkerDashboard> {
                                 backgroundColor: AppTheme.primaryBlue.withValues(alpha: 0.1),
                                 child: Icon(Icons.local_car_wash, color: AppTheme.primaryBlue),
                               ),
-                              title: Text(ticket.vehiclePlate ?? 'Véhicule', style: TextStyle(fontWeight: FontWeight.bold)),
+                              title: Text(
+                                "${ticket.ticketNumber} - ${ticket.vehiclePlate ?? 'Véhicule'}",
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
                               subtitle: Text('${ticket.serviceName} • $dateStr'),
                               trailing: Icon(Icons.chevron_right, color: AppTheme.textHint),
                             ),

@@ -22,7 +22,9 @@ import 'package:washify/features/services/services_screen.dart';
 import 'package:washify/features/services/vehicle_categories_screen.dart';
 import 'package:washify/features/services/service_definitions_screen.dart';
 import 'package:washify/features/services/offers_screen.dart';
+import 'package:washify/features/services/models/offer.dart';
 import 'package:washify/features/hr/screens/hr_dashboard_screen.dart';
+import 'package:washify/features/tickets/models/ticket.dart';
 import 'package:washify/features/products/products_screen.dart';
 import 'package:washify/features/stock/stock_screen.dart';
 import 'package:washify/features/stock/stock_entry_screen.dart';
@@ -30,6 +32,9 @@ import 'package:washify/features/tickets/tickets_screen.dart';
 import 'package:washify/features/tickets/new_ticket_screen.dart';
 import 'package:washify/features/wallet/wallet_screen.dart';
 import 'package:washify/features/payroll/payroll_screen.dart';
+import 'package:washify/features/stations/patron_station_settings_screen.dart';
+import 'package:washify/features/caisse/screens/patron_caisse_screen.dart';
+import 'package:washify/features/caisse/screens/daily_recap_screen.dart';
 
 import 'package:washify/features/inventory/inventory_history_screen.dart';
 import 'package:washify/features/inventory/inventory_form_screen.dart';
@@ -81,7 +86,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         if (!roles.contains(UserRole.patron)) return '/login';
       }
       if (path == '/cashier' || path.startsWith('/cashier/')) {
-        if (!roles.contains(UserRole.caissier)) return '/login';
+        if (!roles.contains(UserRole.caissier) && !roles.contains(UserRole.patron)) return '/login';
       }
       if (path == '/worker' || path.startsWith('/worker/')) {
         if (!roles.contains(UserRole.ouvrier)) return '/login';
@@ -184,10 +189,29 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          GoRoute(
-            path: 'payroll',
-            builder: (context, state) => const PayrollScreen(),
-          ),
+           GoRoute(
+             path: 'settings',
+             builder: (context, state) => const PatronStationSettingsScreen(),
+           ),
+           GoRoute(
+             path: 'caisse',
+             builder: (context, state) => const PatronCaisseScreen(),
+           ),
+           GoRoute(
+             path: 'daily-recap',
+             builder: (context, state) => const DailyRecapScreen(),
+           ),
+            GoRoute(
+              path: 'payroll',
+              builder: (context, state) => const PayrollScreen(),
+            ),
+            GoRoute(
+              path: 'tickets/new',
+              builder: (context, state) {
+                final editTicket = state.extra as Ticket?;
+                return NewTicketScreen(editTicket: editTicket);
+              },
+            ),
           GoRoute(
             path: 'inventory',
             builder: (context, state) => const InventoryHistoryScreen(),
@@ -214,7 +238,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: 'tickets/new',
-            builder: (context, state) => const NewTicketScreen(),
+            builder: (context, state) {
+              final editTicket = state.extra as Ticket?;
+              return NewTicketScreen(editTicket: editTicket);
+            },
           ),
           GoRoute(
             path: 'tickets',

@@ -11,6 +11,8 @@ import 'package:washify/providers/stock_provider.dart';
 import 'package:washify/providers/product_provider.dart';
 import 'package:washify/providers/station_provider.dart';
 import 'package:washify/features/stock/models/stock.dart';
+import 'package:washify/features/products/models/product.dart';
+
 class StockScreen extends ConsumerStatefulWidget {
   const StockScreen({super.key});
 
@@ -19,7 +21,6 @@ class StockScreen extends ConsumerStatefulWidget {
 }
 
 class _StockScreenState extends ConsumerState<StockScreen> {
-
   void _showProductHistoryDialog(StockLevel stock, String stationId) {
     showDialog(
       context: context,
@@ -35,9 +36,9 @@ class _StockScreenState extends ConsumerState<StockScreen> {
               title: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(stock.productName, style: TextStyle(fontWeight: FontWeight.bold)),
-                  SizedBox(height: 4),
-                  Text('Historique des Mouvements de Stock', style: TextStyle(fontSize: 12, color: AppTheme.textHint)),
+                  Text(stock.productName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  const Text('Historique des Mouvements de Stock', style: TextStyle(fontSize: 12, color: AppTheme.textHint)),
                 ],
               ),
               content: SizedBox(
@@ -49,7 +50,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                       return Center(
                         child: Text(
                           'Aucun mouvement de stock enregistré pour ce produit.',
-                          style: TextStyle(color: AppTheme.textHint),
+                          style: const TextStyle(color: AppTheme.textHint),
                         ),
                       );
                     }
@@ -74,18 +75,16 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                           sign = m.newQuantity >= m.previousQuantity ? '+' : '';
                         }
 
-                        // Format quantity: double if decimal, otherwise int
                         String formatQty(double val) {
                           return val % 1 == 0 ? val.toInt().toString() : val.toStringAsFixed(1);
                         }
 
-                        // Simple date formatter
                         String formatDate(DateTime dt) {
                           return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year} à ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
                         }
 
                         return Card(
-                          margin: EdgeInsets.only(bottom: 8),
+                          margin: const EdgeInsets.only(bottom: 8),
                           color: AppTheme.surfaceCard,
                           child: ListTile(
                             leading: CircleAvatar(
@@ -99,12 +98,12 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                SizedBox(height: 4),
-                                Text('Raison : ${m.reason}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
-                                SizedBox(height: 2),
+                                const SizedBox(height: 4),
+                                Text('Raison : ${m.reason}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                                const SizedBox(height: 2),
                                 Text(
                                   'Par ${m.performedBy} • ${formatDate(m.createdAt)}',
-                                  style: TextStyle(fontSize: 10, color: AppTheme.textHint),
+                                  style: const TextStyle(fontSize: 10, color: AppTheme.textHint),
                                 ),
                               ],
                             ),
@@ -113,7 +112,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                       },
                     );
                   },
-                  loading: () => Center(child: CircularProgressIndicator()),
+                  loading: () => const Center(child: CircularProgressIndicator()),
                   error: (e, s) => Center(child: Text('Erreur: $e'.tr)),
                 ),
               ),
@@ -135,7 +134,6 @@ class _StockScreenState extends ConsumerState<StockScreen> {
     final user = ref.watch(currentUserProvider);
     final selectedStation = ref.watch(selectedStationProvider);
 
-    // Resolve active stationId
     final stationId = user?.role == UserRole.patron
         ? selectedStation?.id
         : user?.stationId;
@@ -149,117 +147,316 @@ class _StockScreenState extends ConsumerState<StockScreen> {
     final stockStream = ref.watch(stockStreamProvider(stationId));
     final productsAsync = ref.watch(productsStreamProvider(stationId));
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Stock & Niveaux'.tr),
-      ),
-      body: stockStream.when(
-        data: (stockLevels) {
-          if (stockLevels.isEmpty) {
-            return Center(
-              child: Text('Aucun stock enregistré.', style: TextStyle(color: AppTheme.textHint)),
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text('Stock & Niveaux'.tr),
+          bottom: TabBar(
+            indicatorColor: AppTheme.accentCyan,
+            labelColor: AppTheme.accentCyan,
+            unselectedLabelColor: AppTheme.textHint,
+            tabs: const [
+              Tab(icon: Icon(Icons.shopping_bag_outlined, size: 18), text: 'Boutique (Revente)'),
+              Tab(icon: Icon(Icons.auto_awesome_outlined, size: 18), text: 'Consommable Premium'),
+              Tab(icon: Icon(Icons.opacity_outlined, size: 18), text: 'Consommable Standard'),
+            ],
+          ),
+        ),
+        body: stockStream.when(
+          data: (stockLevels) {
+            return productsAsync.when(
+              data: (products) {
+                final productMap = {for (var p in products) p.id: p};
+
+                return TabBarView(
+                  children: [
+                    // Tab 1: Boutique (Revente)
+                    _StockCategoryTabView(
+                      family: ProductFamily.revente,
+                      stockLevels: stockLevels,
+                      productMap: productMap,
+                      stationId: stationId,
+                      onShowHistory: _showProductHistoryDialog,
+                    ),
+
+                    // Tab 2: Consommables Premium (Extra)
+                    _StockCategoryTabView(
+                      family: ProductFamily.extra,
+                      stockLevels: stockLevels,
+                      productMap: productMap,
+                      stationId: stationId,
+                      onShowHistory: _showProductHistoryDialog,
+                    ),
+
+                    // Tab 3: Consommables Standard
+                    _StockCategoryTabView(
+                      family: ProductFamily.standard,
+                      stockLevels: stockLevels,
+                      productMap: productMap,
+                      stationId: stationId,
+                      onShowHistory: _showProductHistoryDialog,
+                    ),
+                  ],
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, s) => Center(child: Text('Erreur: $e'.tr)),
             );
-          }
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, s) => Center(child: Text('Erreur: $e'.tr)),
+        ),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () => context.push('${GoRouterState.of(context).matchedLocation}/entry'),
+          icon: const Icon(Icons.add_shopping_cart),
+          label: Text('Entrée Stock / Achat', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          backgroundColor: AppTheme.accentCyan,
+          foregroundColor: Colors.white,
+        ),
+      ),
+    );
+  }
+}
 
-          return productsAsync.when(
-            data: (products) {
-              // Map de productId -> Product pour retrouver facilement les informations (catégorie)
-              final productMap = {for (var p in products) p.id: p};
-              
-              // Grouper les niveaux de stock par catégorie
-              final Map<String, List<StockLevel>> groupedStocks = {};
-              for (var stock in stockLevels) {
-                final product = productMap[stock.productId];
-                final categoryName = product?.family.label ?? 'Autre';
-                groupedStocks.putIfAbsent(categoryName, () => []).add(stock);
-              }
+class _StockCategoryTabView extends ConsumerStatefulWidget {
+  final ProductFamily family;
+  final List<StockLevel> stockLevels;
+  final Map<String, Product> productMap;
+  final String stationId;
+  final void Function(StockLevel, String) onShowHistory;
 
-              // Trier les catégories par ordre alphabétique
-              final categories = groupedStocks.keys.toList()..sort();
+  const _StockCategoryTabView({
+    required this.family,
+    required this.stockLevels,
+    required this.productMap,
+    required this.stationId,
+    required this.onShowHistory,
+  });
 
-              return ListView.builder(
-                padding: EdgeInsets.all(16),
-                itemCount: categories.length,
-                itemBuilder: (context, index) {
-                  final category = categories[index];
-                  final categoryStocks = groupedStocks[category]!;
+  @override
+  ConsumerState<_StockCategoryTabView> createState() => _StockCategoryTabViewState();
+}
 
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+class _StockCategoryTabViewState extends ConsumerState<_StockCategoryTabView> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isBoutique = widget.family == ProductFamily.revente;
+
+    final filteredStocks = widget.stockLevels.where((stock) {
+      final product = widget.productMap[stock.productId];
+      final prodFamily = product?.family ?? ProductFamily.standard;
+
+      if (prodFamily != widget.family) return false;
+
+      if (_searchQuery.trim().isNotEmpty) {
+        final q = _searchQuery.trim().toLowerCase();
+        final nameMatch = stock.productName.toLowerCase().contains(q);
+        final barcodeMatch = product != null && product.barcode.toLowerCase().contains(q);
+        final unitMatch = product != null && product.unit.toLowerCase().contains(q);
+
+        return nameMatch || barcodeMatch || unitMatch;
+      }
+
+      return true;
+    }).toList();
+
+    return Column(
+      children: [
+        // Intelligent Search Bar
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          child: TextField(
+            controller: _searchController,
+            onChanged: (val) => setState(() => _searchQuery = val),
+            decoration: InputDecoration(
+              hintText: isBoutique
+                  ? 'Recherche par nom, description ou code-barres...'.tr
+                  : 'Recherche par nom de produit...'.tr,
+              prefixIcon: const Icon(Icons.search, color: AppTheme.accentCyan),
+              suffixIcon: _searchQuery.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, size: 18),
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() => _searchQuery = '');
+                      },
+                    )
+                  : (isBoutique ? const Icon(Icons.qr_code_scanner, color: AppTheme.accentCyan, size: 20) : null),
+              filled: true,
+              fillColor: Theme.of(context).colorScheme.surface,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: AppTheme.accentCyan.withValues(alpha: 0.3)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: AppTheme.accentCyan.withValues(alpha: 0.3)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppTheme.accentCyan, width: 2),
+              ),
+            ),
+          ),
+        ),
+
+        // Result count & alert badge
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${filteredStocks.length} produit(s) dans cette catégorie',
+                style: const TextStyle(fontSize: 12, color: AppTheme.textHint, fontWeight: FontWeight.bold),
+              ),
+              if (filteredStocks.any((s) => s.isLowStock))
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AppTheme.errorRed.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Padding(
-                        padding: EdgeInsets.symmetric(vertical: 12.0, horizontal: 4.0),
-                        child: Text(
-                          category.toUpperCase(),
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.accentCyan,
-                            letterSpacing: 1.2,
+                      const Icon(Icons.warning_amber_rounded, color: AppTheme.errorRed, size: 12),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${filteredStocks.where((s) => s.isLowStock).length} en alerte stock',
+                        style: const TextStyle(fontSize: 11, color: AppTheme.errorRed, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 4),
+
+        // List View
+        Expanded(
+          child: filteredStocks.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(isBoutique ? Icons.shopping_bag_outlined : Icons.inventory_2_outlined, size: 48, color: AppTheme.textHint.withValues(alpha: 0.5)),
+                      const SizedBox(height: 12),
+                      Text(
+                        _searchQuery.isNotEmpty
+                            ? 'Aucun produit ne correspond à la recherche.'
+                            : 'Aucun produit enregistré dans cette catégorie.',
+                        style: const TextStyle(color: AppTheme.textHint),
+                      ),
+                    ],
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: filteredStocks.length,
+                  itemBuilder: (context, index) {
+                    final stock = filteredStocks[index];
+                    final product = widget.productMap[stock.productId];
+                    final isLow = stock.isLowStock;
+                    final barcodeStr = (product != null && product.barcode.isNotEmpty) ? product.barcode : '';
+
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      child: ListTile(
+                        onTap: () => widget.onShowHistory(stock, widget.stationId),
+                        leading: CircleAvatar(
+                          backgroundColor: isLow ? AppTheme.errorRed.withValues(alpha: 0.15) : AppTheme.primaryBlue.withValues(alpha: 0.15),
+                          child: Icon(
+                            isBoutique ? Icons.shopping_bag : Icons.inventory_2,
+                            color: isLow ? AppTheme.errorRed : AppTheme.accentCyan,
                           ),
                         ),
-                      ),
-                      ...categoryStocks.map((stock) {
-                        final isLow = stock.isLowStock;
-                        return Card(
-                          margin: EdgeInsets.only(bottom: 12),
-                          elevation: 2,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          child: ListTile(
-                            onTap: () => _showProductHistoryDialog(stock, stationId),
-                            leading: CircleAvatar(
-                              backgroundColor: isLow ? AppTheme.errorRed.withValues(alpha: 0.15) : AppTheme.primaryBlue.withValues(alpha: 0.15),
-                              child: Icon(
-                                Icons.inventory_2,
-                                color: isLow ? AppTheme.errorRed : AppTheme.accentCyan,
+                        title: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                stock.productName,
+                                style: const TextStyle(fontWeight: FontWeight.bold),
                               ),
                             ),
-                            title: Text(stock.productName, style: TextStyle(fontWeight: FontWeight.bold)),
-                            subtitle: Text('Seuil min alerte : ${stock.minStock % 1 == 0 ? stock.minStock.toInt().toString() : stock.minStock.toStringAsFixed(2)}'.tr),
-                            trailing: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  stock.currentQuantity % 1 == 0
-                                      ? stock.currentQuantity.toInt().toString()
-                                      : stock.currentQuantity.toStringAsFixed(2),
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: isLow ? AppTheme.errorRed : AppTheme.successGreen,
-                                  ),
+                            if (barcodeStr.isNotEmpty)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.accentCyan.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: AppTheme.accentCyan.withValues(alpha: 0.3)),
                                 ),
-                                if (isLow)
-                                  Text(
-                                    'Stock faible',
-                                    style: TextStyle(color: AppTheme.errorRed, fontSize: 10, fontWeight: FontWeight.bold),
-                                  ),
-                              ],
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.qr_code_2, size: 12, color: AppTheme.accentCyan),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      barcodeStr,
+                                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.accentCyan),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
+                        ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 4),
+                            Text(
+                              'Seuil min alerte : ${stock.minStock % 1 == 0 ? stock.minStock.toInt().toString() : stock.minStock.toStringAsFixed(2)} ${product?.unit ?? ""}'.tr,
+                              style: const TextStyle(fontSize: 12, color: AppTheme.textHint),
                             ),
-                          ),
-                        );
-                      }),
-                      SizedBox(height: 8), // Espace après chaque catégorie
-                    ],
-                  );
-                },
-              );
-            },
-            loading: () => Center(child: CircularProgressIndicator()),
-            error: (e, s) => Center(child: Text('Erreur: $e'.tr)),
-          );
-        },
-        loading: () => Center(child: CircularProgressIndicator()),
-        error: (e, s) => Center(child: Text('Erreur: $e'.tr)),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.push('${GoRouterState.of(context).matchedLocation}/entry'),
-        icon: Icon(Icons.add_shopping_cart),
-        label: Text('Entrée Stock / Achat', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-        backgroundColor: AppTheme.accentCyan,
-        foregroundColor: Colors.white,
-      ),
+                            if (product != null && product.unitPrice > 0)
+                              Text(
+                                'Prix : ${product.unitPrice.toStringAsFixed(1)} DT',
+                                style: const TextStyle(fontSize: 11, color: AppTheme.primaryBlue, fontWeight: FontWeight.w600),
+                              ),
+                          ],
+                        ),
+                        trailing: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              stock.currentQuantity % 1 == 0
+                                  ? stock.currentQuantity.toInt().toString()
+                                  : stock.currentQuantity.toStringAsFixed(2),
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: isLow ? AppTheme.errorRed : AppTheme.successGreen,
+                              ),
+                            ),
+                            if (isLow)
+                              const Text(
+                                'Stock faible',
+                                style: TextStyle(color: AppTheme.errorRed, fontSize: 10, fontWeight: FontWeight.bold),
+                              ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
     );
   }
 }

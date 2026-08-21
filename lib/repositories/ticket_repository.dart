@@ -173,9 +173,128 @@ class TicketRepository {
     return _ticketFromDoc(doc);
   }
 
+  Future<int> getLastValidatedCount(String stationId, String dateStr) async {
+    final counterRef = _firestore.collection('ticket_counters').doc('${stationId}_$dateStr');
+    final snapshot = await counterRef.get();
+    if (!snapshot.exists) return 0;
+    final data = snapshot.data();
+    final count = data?['lastValidated'] as int? ?? 0;
+    if (count > 0) {
+      try {
+        final existingTicketsQuery = await _ticketsRef
+            .where('tenantId', isEqualTo: stationId)
+            .where('ticketNumber', isGreaterThanOrEqualTo: 'N°:001-$dateStr')
+            .where('ticketNumber', isLessThanOrEqualTo: 'N°:999-$dateStr-99:99')
+            .limit(1)
+            .get();
+        if (existingTicketsQuery.docs.isEmpty) {
+          return 0;
+        }
+      } catch (e) {
+        // Fallback gracefully if index is missing or building
+      }
+    }
+    return count;
+  }
+
+  Future<int> _getNextValidatedCount(String stationId, String dateStr) async {
+    final counterRef = _firestore.collection('ticket_counters').doc('${stationId}_$dateStr');
+    
+    bool shouldReset = false;
+    final counterSnap = await counterRef.get();
+    if (counterSnap.exists) {
+      final count = counterSnap.data()?['lastValidated'] as int? ?? 0;
+      if (count > 0) {
+        try {
+          final existingTicketsQuery = await _ticketsRef
+              .where('tenantId', isEqualTo: stationId)
+              .where('ticketNumber', isGreaterThanOrEqualTo: 'N°:001-$dateStr')
+              .where('ticketNumber', isLessThanOrEqualTo: 'N°:999-$dateStr-99:99')
+              .limit(1)
+              .get();
+          if (existingTicketsQuery.docs.isEmpty) {
+            shouldReset = true;
+          }
+        } catch (e) {
+          // Fallback gracefully if index is missing or building
+        }
+      }
+    }
+
+    return _firestore.runTransaction((transaction) async {
+      final snapshot = await transaction.get(counterRef);
+      
+      int currentCount = 0;
+      if (snapshot.exists && !shouldReset) {
+        final data = snapshot.data();
+        currentCount = data?['lastValidated'] as int? ?? 0;
+      }
+      
+      final nextCount = currentCount + 1;
+      transaction.set(counterRef, {
+        'lastValidated': nextCount,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      
+      return nextCount;
+    });
+  }
+
+  Future<void> resetTodayCounter(String stationId) async {
+    final resetHour = await _getStationResetHour(stationId);
+    final dateStr = _getOperationalDateStr(DateTime.now(), resetHour);
+    final counterRef = _firestore.collection('ticket_counters').doc('${stationId}_$dateStr');
+    await counterRef.set({
+      'lastValidated': 0,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<int> _getStationResetHour(String stationId) async {
+    try {
+      final doc = await _firestore.collection(AppConstants.stationsCollection).doc(stationId).get();
+      if (doc.exists) {
+        final data = doc.data();
+        return (data?['ticketResetHour'] as num?)?.toInt() ?? 21;
+      }
+    } catch (_) {}
+    return 21;
+  }
+
+  String _getOperationalDateStr(DateTime timestamp, int resetHour) {
+    final operationalDate = timestamp.hour >= resetHour
+        ? timestamp.add(const Duration(days: 1))
+        : timestamp;
+    return "${operationalDate.day.toString().padLeft(2, '0')}${operationalDate.month.toString().padLeft(2, '0')}${operationalDate.year.toString().substring(2)}";
+  }
+
+  Future<String> _getNextTicketNumber(String stationId, DateTime timestamp) async {
+    final resetHour = await _getStationResetHour(stationId);
+    final dateStr = _getOperationalDateStr(timestamp, resetHour);
+    final timeStr = "${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}";
+    final count = await _getNextValidatedCount(stationId, dateStr);
+    return "N°:${count.toString().padLeft(3, '0')}-$dateStr-$timeStr";
+  }
+
+  Future<String> getProvisionalTicketNumber(String stationId) async {
+    final now = DateTime.now();
+    final resetHour = await _getStationResetHour(stationId);
+    final dateStr = _getOperationalDateStr(now, resetHour);
+    final timeStr = "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
+    final count = await getLastValidatedCount(stationId, dateStr);
+    final nextNum = count + 1;
+    return "N°:${nextNum.toString().padLeft(3, '0')}-$dateStr-$timeStr";
+  }
+
   Future<String> createTicket(Ticket ticket) async {
     final docRef = _ticketsRef.doc();
-    final newTicket = ticket.copyWith(id: docRef.id);
+    
+    final finalTicketNumber = await _getNextTicketNumber(ticket.tenantId, ticket.createdAt);
+    Ticket newTicket = ticket.copyWith(
+      id: docRef.id,
+      ticketNumber: finalTicketNumber,
+    );
+    
     await docRef.set(_ticketToDoc(newTicket));
 
     if (currentUser != null) {
@@ -184,7 +303,7 @@ class TicketRepository {
         userName: currentUser!.name,
         action: 'Création Ticket',
         module: 'ticket',
-        description: 'A créé le ticket #${newTicket.ticketNumber} (Client: ${newTicket.clientName})',
+        description: 'A créé le ticket ${newTicket.ticketNumber} (Client: ${newTicket.clientName})',
         stationId: newTicket.tenantId,
         newData: {'ticketId': newTicket.id, 'ticketNumber': newTicket.ticketNumber, 'total': newTicket.totalAmount},
       );
@@ -198,15 +317,30 @@ class TicketRepository {
     return docRef.id;
   }
 
-  Future<void> deleteTicket(String ticketId) async {
+  Future<void> deleteTicket(String ticketId, {String? reason}) async {
     final doc = await _ticketsRef.doc(ticketId).get();
     if (doc.exists) {
-      final data = doc.data() as Map<String, dynamic>?;
-      final status = data?['status'];
-      if (status == 'en_attente' || status == 'enAttente' || status == 'pending' || status == 'in_progress') {
-        await _ticketsRef.doc(ticketId).delete();
-      } else {
-        throw Exception("Impossible de supprimer un ticket déjà payé ou remboursé.");
+      final ticket = _ticketFromDoc(doc);
+      if (ticket.status == TicketStatus.paye) {
+        final stockRepo = StockRepository(firestore: _firestore, tenantId: tenantId, currentUser: currentUser, auditRepo: auditRepo);
+        await stockRepo.restoreStockForTicket(ticket);
+      }
+
+      await _ticketsRef.doc(ticketId).update({
+        'status': 'efface',
+        'cancellationReason': reason ?? 'Supprimé / Annulé',
+        'updatedAt': Timestamp.now(),
+      });
+
+      if (currentUser != null) {
+        auditRepo?.log(
+          userId: currentUser!.id,
+          userName: currentUser!.name,
+          action: 'Suppression Ticket',
+          module: 'ticket',
+          description: 'A effacé le ticket ${ticket.ticketNumber} (Motif: ${reason ?? 'N/A'})',
+          stationId: ticket.tenantId,
+        );
       }
     }
   }
@@ -215,9 +349,10 @@ class TicketRepository {
     // Fetch old ticket to see its status
     final oldDoc = await _ticketsRef.doc(ticket.id).get();
     String? oldStatus;
+    Ticket? oldTicket;
     if (oldDoc.exists) {
-      final data = oldDoc.data() as Map<String, dynamic>?;
-      oldStatus = data?['status'] as String?;
+      oldTicket = _ticketFromDoc(oldDoc);
+      oldStatus = oldTicket.status.value;
     }
 
     if (currentUser != null &&
@@ -228,17 +363,23 @@ class TicketRepository {
       }
     }
 
-    await _ticketsRef.doc(ticket.id).update(_ticketToDoc(ticket));
+    Ticket updatedTicket = ticket;
+    if (oldStatus != 'paye' && ticket.status == TicketStatus.paye) {
+      final finalTicketNumber = await _getNextTicketNumber(ticket.tenantId, ticket.createdAt);
+      updatedTicket = ticket.copyWith(ticketNumber: finalTicketNumber);
+    }
+
+    await _ticketsRef.doc(ticket.id).update(_ticketToDoc(updatedTicket));
 
     if (currentUser != null) {
       final bool isValidation = oldStatus != 'paye' && ticket.status == TicketStatus.paye;
       
-      String actorDescription = 'A mis à jour le ticket #${ticket.ticketNumber}';
+      String actorDescription = 'A mis à jour le ticket #${updatedTicket.ticketNumber}';
       if (isValidation) {
         if (ticket.assignedWorkerId != null && ticket.assignedWorkerId != currentUser!.id) {
-           actorDescription = 'A validé le ticket #${ticket.ticketNumber} de ${ticket.assignedWorkerName ?? 'l\'ouvrier'}';
+           actorDescription = 'A validé le ticket #${updatedTicket.ticketNumber} de ${ticket.assignedWorkerName ?? 'l\'ouvrier'}';
         } else {
-           actorDescription = 'A validé le ticket #${ticket.ticketNumber}';
+           actorDescription = 'A validé le ticket #${updatedTicket.ticketNumber}';
         }
       }
 
@@ -248,8 +389,8 @@ class TicketRepository {
         action: isValidation ? 'Validation Ticket' : 'Modification Ticket',
         module: 'ticket',
         description: actorDescription,
-        stationId: ticket.tenantId,
-        newData: {'ticketId': ticket.id, 'status': ticket.status.value},
+        stationId: updatedTicket.tenantId,
+        newData: {'ticketId': updatedTicket.id, 'status': updatedTicket.status.value},
       );
 
       // Log pour l'ouvrier si quelqu'un d'autre (le caissier) valide son ticket
@@ -259,24 +400,78 @@ class TicketRepository {
           userName: ticket.assignedWorkerName ?? 'Ouvrier',
           action: 'Ticket Validé par Caissier',
           module: 'ticket',
-          description: 'Votre ticket #${ticket.ticketNumber} a été validé par ${currentUser!.name}',
-          stationId: ticket.tenantId,
-          newData: {'ticketId': ticket.id, 'status': ticket.status.value, 'validatedBy': currentUser!.id},
+          description: 'Votre ticket #${updatedTicket.ticketNumber} a été validé par ${currentUser!.name}',
+          stationId: updatedTicket.tenantId,
+          newData: {'ticketId': updatedTicket.id, 'status': updatedTicket.status.value, 'validatedBy': currentUser!.id},
         );
       }
     }
 
-    // If it transitioned to paye, we deduct stock and update client balance
-    if (oldStatus != 'paye' && ticket.status == TicketStatus.paye) {
+    // 1. If the old version was paid, we restore its stock and subtract its client balance
+    final bool oldWasPaye = oldDoc.exists && oldStatus == 'paye';
+    if (oldWasPaye && oldTicket != null) {
       final stockRepo = StockRepository(firestore: _firestore, tenantId: tenantId, currentUser: currentUser, auditRepo: auditRepo);
-      await stockRepo.deductStockForTicket(ticket);
+      await stockRepo.restoreStockForTicket(oldTicket);
 
-      if (ticket.paymentMethod == 'compte_client' && ticket.clientId != null) {
+      if (oldTicket.paymentMethod == 'compte_client' && oldTicket.clientId != null) {
         final clientRepo = ClientRepository(firestore: _firestore, tenantId: tenantId);
-        await clientRepo.updateClientBalance(ticket.clientId!, ticket.totalAmount);
-        if (ticket.vehiclePlate != null && ticket.vehiclePlate!.isNotEmpty) {
-          await clientRepo.addVehicleToClient(ticket.clientId!, ticket.vehiclePlate!);
+        await clientRepo.updateClientBalance(oldTicket.clientId!, -oldTicket.totalAmount);
+      }
+    }
+
+    // 2. If the new version is paid, we deduct stock and add client balance
+    if (updatedTicket.status == TicketStatus.paye) {
+      final stockRepo = StockRepository(firestore: _firestore, tenantId: tenantId, currentUser: currentUser, auditRepo: auditRepo);
+      await stockRepo.deductStockForTicket(updatedTicket);
+
+      if (updatedTicket.paymentMethod == 'compte_client' && updatedTicket.clientId != null) {
+        final clientRepo = ClientRepository(firestore: _firestore, tenantId: tenantId);
+        await clientRepo.updateClientBalance(updatedTicket.clientId!, updatedTicket.totalAmount);
+        if (updatedTicket.vehiclePlate != null && updatedTicket.vehiclePlate!.isNotEmpty) {
+          await clientRepo.addVehicleToClient(updatedTicket.clientId!, updatedTicket.vehiclePlate!);
         }
+      }
+    }
+  }
+
+  Future<void> softDeleteTicket(String ticketId, String reason) async {
+    final doc = await _ticketsRef.doc(ticketId).get();
+    if (!doc.exists) return;
+    
+    final oldTicket = _ticketFromDoc(doc);
+    final wasPaye = oldTicket.status == TicketStatus.paye;
+    
+    final updatedTicket = oldTicket.copyWith(
+      status: TicketStatus.efface,
+      deletedBy: currentUser?.name ?? 'Patron',
+      deletedAt: DateTime.now(),
+      deleteReason: reason,
+      updatedAt: DateTime.now(),
+    );
+    
+    await _ticketsRef.doc(ticketId).update(_ticketToDoc(updatedTicket));
+    
+    if (currentUser != null) {
+      auditRepo?.log(
+        userId: currentUser!.id,
+        userName: currentUser!.name,
+        action: 'Suppression Ticket',
+        module: 'ticket',
+        description: 'A supprimé le ticket #${oldTicket.ticketNumber} pour la raison : $reason',
+        stationId: oldTicket.tenantId,
+        newData: {'ticketId': ticketId, 'status': 'efface', 'reason': reason},
+      );
+    }
+    
+    if (wasPaye) {
+      // Restore stock
+      final stockRepo = StockRepository(firestore: _firestore, tenantId: tenantId, currentUser: currentUser, auditRepo: auditRepo);
+      await stockRepo.restoreStockForTicket(oldTicket);
+      
+      // Reverse B2B balance
+      if (oldTicket.paymentMethod == 'compte_client' && oldTicket.clientId != null) {
+        final clientRepo = ClientRepository(firestore: _firestore, tenantId: tenantId);
+        await clientRepo.updateClientBalance(oldTicket.clientId!, -oldTicket.totalAmount);
       }
     }
   }
@@ -290,22 +485,45 @@ class TicketRepository {
     } else if (status == 'cancelled' || status == AppConstants.ticketStatusCancelled) {
       mappedStatus = 'rembourse';
     }
-    await _ticketsRef.doc(ticketId).update({
-      'status': mappedStatus,
-      'updatedAt': Timestamp.now(),
-    });
 
-    if (currentUser != null) {
-      auditRepo?.log(
-        userId: currentUser!.id,
-        userName: currentUser!.name,
-        action: 'Modification Statut Ticket',
-        module: 'ticket',
-        description: 'A changé le statut du ticket en $mappedStatus',
-        stationId: currentUser!.tenantId,
-        newData: {'ticketId': ticketId, 'status': mappedStatus},
-      );
-    }
+    final docRef = _ticketsRef.doc(ticketId);
+    
+    await _firestore.runTransaction((transaction) async {
+      final docSnapshot = await transaction.get(docRef);
+      if (!docSnapshot.exists) return;
+      
+      final data = docSnapshot.data() as Map<String, dynamic>;
+      final oldStatus = data['status'] as String?;
+      
+      final Map<String, dynamic> updates = {
+        'status': mappedStatus,
+        'updatedAt': Timestamp.now(),
+      };
+      
+      if (oldStatus != 'paye' && mappedStatus == 'paye') {
+        final stationId = data['stationId'] ?? data['tenantId'] ?? tenantId;
+        final createdAt = (data['createdAt'] as Timestamp).toDate();
+        
+        final dateStr = "${createdAt.day.toString().padLeft(2, '0')}${createdAt.month.toString().padLeft(2, '0')}${createdAt.year.toString().substring(2)}";
+        final timeStr = "${createdAt.hour.toString().padLeft(2, '0')}:${createdAt.minute.toString().padLeft(2, '0')}";
+        final counterRef = _firestore.collection('ticket_counters').doc('${stationId}_$dateStr');
+        
+        final counterSnapshot = await transaction.get(counterRef);
+        int currentCount = 0;
+        if (counterSnapshot.exists) {
+          currentCount = counterSnapshot.data()?['lastValidated'] as int? ?? 0;
+        }
+        final nextCount = currentCount + 1;
+        transaction.set(counterRef, {
+          'lastValidated': nextCount,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+        
+        updates['ticketNumber'] = "N°:${nextCount.toString().padLeft(3, '0')}-$dateStr-$timeStr";
+      }
+      
+      transaction.update(docRef, updates);
+    });
 
     if (mappedStatus == 'paye') {
       final ticket = await getTicketById(ticketId);

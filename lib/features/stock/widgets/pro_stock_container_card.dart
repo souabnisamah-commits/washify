@@ -19,18 +19,21 @@ class ProStockContainerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final prod = product;
+    final family = prod?.family ?? ProductFamily.standard;
     final unit = prod?.unit ?? 'ml';
-    final breakdown = parseStockContainers(stock.currentQuantity, unit, customCapacity: prod?.capacityMl ?? 0.0);
+    final breakdown = parseStockContainers(
+      stock.currentQuantity,
+      unit,
+      family: family,
+      customCapacityMl: prod?.capacityMl ?? 0.0,
+    );
     final isLow = stock.isLowStock;
     final barcodeStr = (prod != null && prod.barcode.isNotEmpty) ? prod.barcode : '';
-    final isLiquid = unit.toLowerCase().contains('ml') ||
-        unit.toLowerCase().contains('l') ||
-        unit.toLowerCase().contains('cl') ||
-        unit.toLowerCase().contains('bidon');
+    final isBoutique = breakdown.isBoutiqueItem;
 
-    final Color themeColor = (product?.family == ProductFamily.extra)
-        ? Colors.purple
-        : (isLiquid ? AppTheme.accentCyan : AppTheme.primaryBlue);
+    final Color themeColor = isBoutique
+        ? Colors.orange
+        : (family == ProductFamily.extra ? Colors.purple : AppTheme.accentCyan);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 14),
@@ -63,7 +66,7 @@ class ProStockContainerCard extends StatelessWidget {
                       border: Border.all(color: (isLow ? AppTheme.errorRed : themeColor).withValues(alpha: 0.3)),
                     ),
                     child: Icon(
-                      isLiquid ? Icons.opacity_rounded : Icons.inventory_2_rounded,
+                      isBoutique ? Icons.shopping_bag_outlined : Icons.opacity_rounded,
                       color: isLow ? AppTheme.errorRed : themeColor,
                       size: 24,
                     ),
@@ -83,9 +86,16 @@ class ProStockContainerCard extends StatelessWidget {
                         Row(
                           children: [
                             Text(
-                              'Seuil d\'alerte : ${stock.minStock % 1 == 0 ? stock.minStock.toInt() : stock.minStock.toStringAsFixed(1)} $unit',
+                              'Seuil d\'alerte : ${stock.minStock % 1 == 0 ? stock.minStock.toInt() : stock.minStock.toStringAsFixed(1)} ${isBoutique ? (prod?.unit ?? "pièce") : "ml"}',
                               style: const TextStyle(fontSize: 11, color: AppTheme.textHint),
                             ),
+                            if (prod != null && prod.unitPrice > 0) ...[
+                              const SizedBox(width: 10),
+                              Text(
+                                'Prix : ${prod.unitPrice.toStringAsFixed(1)} DT',
+                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.primaryBlue),
+                              ),
+                            ],
                             if (barcodeStr.isNotEmpty) ...[
                               const SizedBox(width: 8),
                               Container(
@@ -130,164 +140,199 @@ class ProStockContainerCard extends StatelessWidget {
               ),
               const Divider(height: 20),
 
-              // Main Section: Inventory Breakdown (Image de la Réalité Terrain)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      (isLow ? AppTheme.errorRed : themeColor).withValues(alpha: 0.08),
-                      Theme.of(context).colorScheme.surface,
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: (isLow ? AppTheme.errorRed : themeColor).withValues(alpha: 0.25)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              // ==============================================================
+              // CASE A: BOUTIQUE (Revente) ITEMS -> Raw Pieces/Units Card
+              // ==============================================================
+              if (isBoutique) ...[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.shelves,
-                              size: 18,
-                              color: isLow ? AppTheme.errorRed : themeColor,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              'Inventaire Terrain (Étagère Local Stock)',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: isLow ? AppTheme.errorRed : themeColor,
-                                letterSpacing: 0.3,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Text(
-                          'Stock brut : ${stock.currentQuantity % 1 == 0 ? stock.currentQuantity.toInt().toString() : stock.currentQuantity.toStringAsFixed(1)} $unit',
-                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textHint),
-                        ),
-                      ],
+                    Text(
+                      'Quantité en Magasin :',
+                      style: const TextStyle(fontSize: 13, color: AppTheme.textHint, fontWeight: FontWeight.w600),
                     ),
-                    const SizedBox(height: 10),
-
-                    // Clear Dual Badges: Sealed Bidons vs Open Bidon
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        // Sealed Bidons Badge
-                        if (breakdown.fullContainersCount > 0)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                            decoration: BoxDecoration(
-                              color: AppTheme.successGreen.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: AppTheme.successGreen.withValues(alpha: 0.4)),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.lock, size: 16, color: AppTheme.successGreen),
-                                const SizedBox(width: 6),
-                                Text(
-                                  '${breakdown.fullContainersCount}x Bidon${breakdown.fullContainersCount > 1 ? 's' : ''} Cacheté${breakdown.fullContainersCount > 1 ? 's' : ''} (100% Neuf)',
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w900,
-                                    color: AppTheme.successGreen,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                        // Open Bidon Badge
-                        if (breakdown.hasOpenContainer)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                            decoration: BoxDecoration(
-                              color: Colors.amber.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.amber.withValues(alpha: 0.45)),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.opacity, size: 16, color: Colors.amber),
-                                const SizedBox(width: 6),
-                                Text(
-                                  'Bidon Entamé : ${breakdown.openContainerMl.toInt()} ml / ${breakdown.containerCapacityMl.toInt()} ml (${(breakdown.openContainerRatio * 100).toInt()}%)',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w900,
-                                    color: Colors.amber.shade900,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                      ],
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: (isLow ? AppTheme.errorRed : Colors.orange).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: (isLow ? AppTheme.errorRed : Colors.orange).withValues(alpha: 0.4)),
+                      ),
+                      child: Text(
+                        breakdown.displayText,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          color: isLow ? AppTheme.errorRed : Colors.orange.shade900,
+                        ),
+                      ),
                     ),
                   ],
                 ),
-              ),
-
-              // Visual Physical Containers Representation (Individual Bidons on Shelf)
-              if (isLiquid && breakdown.totalPhysicalContainers > 0) ...[
-                const SizedBox(height: 12),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
+              ]
+              // ==============================================================
+              // CASE B: LIQUID CONSUMABLES -> Bidon Conversion & Visual Shelf
+              // ==============================================================
+              else ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        (isLow ? AppTheme.errorRed : themeColor).withValues(alpha: 0.08),
+                        Theme.of(context).colorScheme.surface,
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: (isLow ? AppTheme.errorRed : themeColor).withValues(alpha: 0.25)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Full Sealed Bidons
-                      for (int i = 0; i < breakdown.fullContainersCount && i < 6; i++) ...[
-                        _buildJerrycanGraphicItem(
-                          index: i + 1,
-                          fillRatio: 1.0,
-                          label: 'Cacheté (100%)',
-                          isFull: true,
-                          themeColor: AppTheme.successGreen,
-                        ),
-                        const SizedBox(width: 8),
-                      ],
-
-                      // Open / Partial Bidon
-                      if (breakdown.hasOpenContainer && breakdown.fullContainersCount < 6) ...[
-                        _buildJerrycanGraphicItem(
-                          index: breakdown.fullContainersCount + 1,
-                          fillRatio: breakdown.openContainerRatio.clamp(0.04, 0.96),
-                          label: 'Entamé (${breakdown.openContainerMl.toInt()}ml / ${breakdown.containerCapacityMl.toInt()}ml)',
-                          isFull: false,
-                          themeColor: Colors.amber.shade800,
-                        ),
-                      ],
-
-                      if (breakdown.fullContainersCount >= 6) ...[
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.shelves,
+                                size: 18,
+                                color: isLow ? AppTheme.errorRed : themeColor,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Inventaire Réel Stock (Local)',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: isLow ? AppTheme.errorRed : themeColor,
+                                  letterSpacing: 0.3,
+                                ),
+                              ),
+                            ],
                           ),
-                          child: Text(
-                            '+ ${breakdown.fullContainersCount - 6} bidon(s)',
-                            style: const TextStyle(fontSize: 10, color: AppTheme.textHint),
+                          // Small text showing raw volume in ml requested by Patron ("2/- oui")
+                          Text(
+                            breakdown.rawTotalText,
+                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textHint),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Clear Dual Badges: Full Bidons vs Open Bidon with exact % fill
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          // Full Bidons Chip
+                          if (breakdown.fullContainersCount > 0)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                              decoration: BoxDecoration(
+                                color: AppTheme.successGreen.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: AppTheme.successGreen.withValues(alpha: 0.4)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.lock, size: 16, color: AppTheme.successGreen),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    breakdown.sealedLabel,
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w900,
+                                      color: AppTheme.successGreen,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                          // Open Bidon Chip with exact ml/capacity and % fill
+                          if (breakdown.hasOpenContainer)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                              decoration: BoxDecoration(
+                                color: Colors.amber.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.amber.withValues(alpha: 0.45)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.opacity, size: 16, color: Colors.amber),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    breakdown.openLabel,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.amber.shade900,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
+
+                // Visual Graphic Jerrycan Row representing exact fill % of open bidon
+                if (breakdown.totalPhysicalContainers > 0) ...[
+                  const SizedBox(height: 12),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        // Full Sealed Bidons
+                        for (int i = 0; i < breakdown.fullContainersCount && i < 6; i++) ...[
+                          _buildJerrycanGraphicItem(
+                            index: i + 1,
+                            fillRatio: 1.0,
+                            percentLabel: '100% Plein',
+                            isFull: true,
+                            themeColor: AppTheme.successGreen,
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+
+                        // Open Bidon with exact % fill
+                        if (breakdown.hasOpenContainer && breakdown.fullContainersCount < 6) ...[
+                          _buildJerrycanGraphicItem(
+                            index: breakdown.fullContainersCount + 1,
+                            fillRatio: (breakdown.openContainerPercent / 100.0).clamp(0.04, 0.98),
+                            percentLabel: '${breakdown.openContainerMl.toInt()}ml (${breakdown.openContainerPercent % 1 == 0 ? breakdown.openContainerPercent.toInt() : breakdown.openContainerPercent.toStringAsFixed(1)}% Plein)',
+                            isFull: false,
+                            themeColor: Colors.amber.shade800,
+                          ),
+                        ],
+
+                        if (breakdown.fullContainersCount >= 6) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              '+ ${breakdown.fullContainersCount - 6} bidon(s)',
+                              style: const TextStyle(fontSize: 10, color: AppTheme.textHint),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ],
           ),
@@ -299,11 +344,10 @@ class ProStockContainerCard extends StatelessWidget {
   Widget _buildJerrycanGraphicItem({
     required int index,
     required double fillRatio,
-    required String label,
+    required String percentLabel,
     required bool isFull,
     required Color themeColor,
   }) {
-    final ordinalStr = getFrenchOrdinal(index);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
@@ -314,10 +358,10 @@ class ProStockContainerCard extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Mini Jerrycan Visual
+          // Mini Jerrycan Visual with liquid fill level
           Container(
             width: 24,
-            height: 32,
+            height: 34,
             decoration: BoxDecoration(
               color: Colors.black.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(5),
@@ -352,7 +396,7 @@ class ProStockContainerCard extends StatelessWidget {
               Row(
                 children: [
                   Text(
-                    'Bidon #$index ($ordinalStr)',
+                    'Bidon #$index ${isFull ? '(Plein)' : '(Entamé)'}',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
@@ -361,7 +405,7 @@ class ProStockContainerCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                   Icon(
-                    isFull ? Icons.check_circle : Icons.warning,
+                    isFull ? Icons.check_circle : Icons.water_drop,
                     size: 12,
                     color: themeColor,
                   ),
@@ -369,7 +413,7 @@ class ProStockContainerCard extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                label,
+                percentLabel,
                 style: const TextStyle(fontSize: 10, color: AppTheme.textHint, fontWeight: FontWeight.w600),
               ),
             ],

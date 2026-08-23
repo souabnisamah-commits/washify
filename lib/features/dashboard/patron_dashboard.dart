@@ -1807,7 +1807,7 @@ class _JerrycanGaugeWidget extends StatelessWidget {
                   style: const TextStyle(fontSize: 10, color: AppTheme.textHint),
                 ),
                 Text(
-                  parseStockContainers(currentStock, unit, customCapacity: capacityMl).displayText,
+                  parseStockContainers(currentStock, unit, customCapacityMl: capacityMl).displayText,
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w900,

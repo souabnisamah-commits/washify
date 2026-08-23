@@ -18,6 +18,7 @@ import 'package:washify/features/auth/widgets/change_pin_dialog.dart';
 import 'package:washify/core/widgets/language_toggle_button.dart';
 
 import 'package:intl/intl.dart';
+import 'package:washify/features/dashboard/widgets/tickets_details_dialog.dart';
 import 'package:washify/providers/theme_provider.dart';
 import 'package:washify/providers/caisse_provider.dart';
 
@@ -577,7 +578,7 @@ class _WorkerCashierDashboardState extends ConsumerState<WorkerCashierDashboard>
                   value: '${total.toStringAsFixed(1)} DT',
                   icon: Icons.person,
                   color: Colors.deepPurpleAccent,
-                  onTap: () => _showTicketsBottomSheet(context, tickets, 'Mes Tickets du Jour'),
+                  onTap: () => showTicketsDetailsDialog(context, 'Mes Recettes (${total.toStringAsFixed(1)} DT)', tickets),
                 );
               },
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -600,7 +601,7 @@ class _WorkerCashierDashboardState extends ConsumerState<WorkerCashierDashboard>
                   value: '${total.toStringAsFixed(1)} DT',
                   icon: Icons.groups,
                   color: Colors.orange,
-                  onTap: () => _showTicketsBottomSheet(context, tickets, 'Tickets Équipe du Jour'),
+                  onTap: () => showTicketsDetailsDialog(context, 'Recettes Équipe (${total.toStringAsFixed(1)} DT)', tickets),
                 );
               },
               loading: () => const Center(child: CircularProgressIndicator()),

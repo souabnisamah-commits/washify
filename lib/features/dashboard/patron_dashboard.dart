@@ -15,6 +15,7 @@ import 'package:washify/providers/auth_provider.dart';
 import 'package:washify/providers/station_provider.dart';
 import 'package:washify/providers/ticket_provider.dart';
 import 'package:intl/intl.dart';
+import 'package:washify/features/dashboard/widgets/tickets_details_dialog.dart';
 import 'package:washify/features/station/models/station.dart';
 import 'package:washify/features/tickets/models/ticket.dart';
 import 'package:washify/repositories/ticket_repository.dart';
@@ -106,28 +107,7 @@ class _PatronDashboardState extends ConsumerState<PatronDashboard> {
     String title,
     List<Ticket> tickets,
   ) {
-    final isMobile = MediaQuery.of(context).size.width < 600;
-    showDialog(
-      context: context,
-      builder: (context) {
-        return Dialog(
-          insetPadding: EdgeInsets.symmetric(
-            horizontal: isMobile ? 6 : 12,
-            vertical: isMobile ? 10 : 16,
-          ),
-          backgroundColor: Theme.of(context).colorScheme.surface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          child: SizedBox(
-            width: isMobile ? double.infinity : MediaQuery.of(context).size.width * 0.96,
-            height: MediaQuery.of(context).size.height * (isMobile ? 0.94 : 0.88),
-            child: _TicketsTableModal(
-              title: title,
-              tickets: tickets,
-            ),
-          ),
-        );
-      },
-    );
+    showTicketsDetailsDialog(context, title, tickets);
   }
 
   void _showWashingAndStockAuditModal(BuildContext context, List<Ticket> tickets, Station? station) {

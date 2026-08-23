@@ -20,6 +20,7 @@ import 'package:washify/core/widgets/language_toggle_button.dart';
 import 'package:intl/intl.dart';
 import 'package:washify/providers/theme_provider.dart';
 import 'package:washify/providers/caisse_provider.dart';
+import 'package:washify/features/dashboard/widgets/tickets_details_dialog.dart';
 
 
 class CashierDashboard extends ConsumerStatefulWidget {
@@ -415,19 +416,11 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
             ),
             const SizedBox(height: 24),
 
-            // 2. Solde Actuel
+            // 2. Solde Actuel (Pro Glassmorphism Design)
             walletStream.when(
               data: (wallet) {
                 final balance = wallet?.balance ?? 0;
-                return _buildActionCard(
-                  context,
-                  title: 'Solde Actuel',
-                  value: '${balance.toStringAsFixed(1)} DT',
-                  icon: Icons.account_balance_wallet,
-                  color: AppTheme.successGreen,
-                  // Cashier doesn't have a wallet screen in routing yet, but let's assume they can view transactions
-                  onTap: () {},
-                );
+                return _buildProSoldeActuelCard(context, balance);
               },
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, s) => Text('Erreur Wallet: $e'),
@@ -447,7 +440,7 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
             ),
             const SizedBox(height: 24),
 
-            // 3b. Mes Recettes (Added per user request)
+            // 3b. Mes Recettes
             ticketsStream.when(
               data: (allTickets) {
                 final employeeId = employeeAsync.value?.id ?? user.id;
@@ -464,7 +457,11 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
                   value: '${total.toStringAsFixed(1)} DT',
                   icon: Icons.payments,
                   color: Colors.orange,
-                  onTap: () => _showTicketsBottomSheet(context, tickets),
+                  onTap: () => showTicketsDetailsDialog(
+                    context,
+                    'Mes Recettes (${total.toStringAsFixed(1)} DT)',
+                    tickets,
+                  ),
                 );
               },
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -485,9 +482,13 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
                   context,
                   title: 'Recettes Équipe',
                   value: '${total.toStringAsFixed(1)} DT',
-                  icon: Icons.payments,
+                  icon: Icons.groups,
                   color: Colors.orange,
-                  onTap: () => _showTicketsBottomSheet(context, tickets),
+                  onTap: () => showTicketsDetailsDialog(
+                    context,
+                    'Recettes Équipe (${total.toStringAsFixed(1)} DT)',
+                    tickets,
+                  ),
                 );
               },
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -503,6 +504,167 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProSoldeActuelCard(BuildContext context, double balance) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        gradient: const LinearGradient(
+          colors: [
+            Color(0xFF0F2027),
+            Color(0xFF203A43),
+            Color(0xFF2C5364),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.accentCyan.withValues(alpha: 0.25),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+        border: Border.all(color: AppTheme.accentCyan.withValues(alpha: 0.35), width: 1.5),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(22),
+        child: Stack(
+          children: [
+            Positioned(
+              right: -20,
+              top: -20,
+              child: Container(
+                width: 130,
+                height: 130,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppTheme.accentCyan.withValues(alpha: 0.12),
+                ),
+              ),
+            ),
+            Positioned(
+              left: -30,
+              bottom: -30,
+              child: Container(
+                width: 140,
+                height: 140,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppTheme.successGreen.withValues(alpha: 0.1),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: AppTheme.accentCyan.withValues(alpha: 0.2),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: AppTheme.accentCyan.withValues(alpha: 0.4)),
+                            ),
+                            child: const Icon(Icons.account_balance_wallet_rounded, color: AppTheme.accentCyan, size: 24),
+                          ),
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Mon Solde Actuel'.tr,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Row(
+                                children: [
+                                  Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: const BoxDecoration(
+                                      color: AppTheme.successGreen,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Caisse Active • Temps Réel'.tr,
+                                    style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.7)),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppTheme.successGreen.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: AppTheme.successGreen.withValues(alpha: 0.4)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.verified, size: 14, color: AppTheme.successGreen),
+                            const SizedBox(width: 4),
+                            Text(
+                              'PRO'.tr,
+                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.successGreen),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text(
+                        balance.toStringAsFixed(2),
+                        style: const TextStyle(
+                          fontSize: 34,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                          letterSpacing: 1.0,
+                          shadows: [
+                            Shadow(color: AppTheme.accentCyan, blurRadius: 10),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'DT',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.accentCyan,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ],

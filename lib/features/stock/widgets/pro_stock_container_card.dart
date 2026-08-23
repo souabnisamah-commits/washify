@@ -25,7 +25,8 @@ class ProStockContainerCard extends StatelessWidget {
     final barcodeStr = (prod != null && prod.barcode.isNotEmpty) ? prod.barcode : '';
     final isLiquid = unit.toLowerCase().contains('ml') ||
         unit.toLowerCase().contains('l') ||
-        unit.toLowerCase().contains('cl');
+        unit.toLowerCase().contains('cl') ||
+        unit.toLowerCase().contains('bidon');
 
     final Color themeColor = (product?.family == ProductFamily.extra)
         ? Colors.purple
@@ -49,7 +50,7 @@ class ProStockContainerCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Top Header Row: Product Name, Family, Barcode & Low Alert
+              // Header Row: Product Name, Seuil, Barcode & Low Stock Alert
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -69,7 +70,7 @@ class ProStockContainerCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
 
-                  // Name & Barcode
+                  // Name & Details
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -105,7 +106,7 @@ class ProStockContainerCard extends StatelessWidget {
                     ),
                   ),
 
-                  // Low Stock Badge
+                  // Low Stock Alert Badge
                   if (isLow)
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -129,10 +130,10 @@ class ProStockContainerCard extends StatelessWidget {
               ),
               const Divider(height: 20),
 
-              // Main Section: Container Breakdown Banner (Ex: 2 Bidons (5L) + 850 ml)
+              // Main Section: Inventory Breakdown (Image de la Réalité Terrain)
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
@@ -154,15 +155,15 @@ class ProStockContainerCard extends StatelessWidget {
                         Row(
                           children: [
                             Icon(
-                              isLiquid ? Icons.propane_tank_outlined : Icons.inventory_2_outlined,
+                              Icons.shelves,
                               size: 18,
                               color: isLow ? AppTheme.errorRed : themeColor,
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              'Récapitulatif en Réserve',
+                              'Inventaire Terrain (Étagère Local Stock)',
                               style: TextStyle(
-                                fontSize: 11,
+                                fontSize: 12,
                                 fontWeight: FontWeight.bold,
                                 color: isLow ? AppTheme.errorRed : themeColor,
                                 letterSpacing: 0.3,
@@ -171,71 +172,107 @@ class ProStockContainerCard extends StatelessWidget {
                           ],
                         ),
                         Text(
-                          'Total brut : ${stock.currentQuantity % 1 == 0 ? stock.currentQuantity.toInt().toString() : stock.currentQuantity.toStringAsFixed(1)} $unit',
+                          'Stock brut : ${stock.currentQuantity % 1 == 0 ? stock.currentQuantity.toInt().toString() : stock.currentQuantity.toStringAsFixed(1)} $unit',
                           style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textHint),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
 
-                    // Big Clear Container Breakdown Badge (e.g. 1x Bidon (5000ml) + 968 ml)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: themeColor.withValues(alpha: 0.18),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: themeColor.withValues(alpha: 0.45), width: 1.5),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Text('🛢️ ', style: TextStyle(fontSize: 16)),
-                          Text(
-                            breakdown.displayText,
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w900,
-                              color: isLow ? AppTheme.errorRed : themeColor,
+                    // Clear Dual Badges: Sealed Bidons vs Open Bidon
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        // Sealed Bidons Badge
+                        if (breakdown.fullContainersCount > 0)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                            decoration: BoxDecoration(
+                              color: AppTheme.successGreen.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: AppTheme.successGreen.withValues(alpha: 0.4)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.lock, size: 16, color: AppTheme.successGreen),
+                                const SizedBox(width: 6),
+                                Text(
+                                  '${breakdown.fullContainersCount}x Bidon${breakdown.fullContainersCount > 1 ? 's' : ''} Cacheté${breakdown.fullContainersCount > 1 ? 's' : ''} (100% Neuf)',
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w900,
+                                    color: AppTheme.successGreen,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
-                      ),
+
+                        // Open Bidon Badge
+                        if (breakdown.hasOpenContainer)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                            decoration: BoxDecoration(
+                              color: Colors.amber.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.amber.withValues(alpha: 0.45)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.opacity, size: 16, color: Colors.amber),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Bidon Entamé : ${breakdown.openContainerMl.toInt()} ml / ${breakdown.containerCapacityMl.toInt()} ml (${(breakdown.openContainerRatio * 100).toInt()}%)',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.amber.shade900,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
                     ),
                   ],
                 ),
               ),
 
-              // Visual Jerrycan Containers Graphic Representation
-              if (isLiquid && (breakdown.fullContainers > 0 || breakdown.remainingQuantity > 0)) ...[
+              // Visual Physical Containers Representation (Individual Bidons on Shelf)
+              if (isLiquid && breakdown.totalPhysicalContainers > 0) ...[
                 const SizedBox(height: 12),
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
                       // Full Sealed Bidons
-                      for (int i = 0; i < breakdown.fullContainers && i < 6; i++) ...[
+                      for (int i = 0; i < breakdown.fullContainersCount && i < 6; i++) ...[
                         _buildJerrycanGraphicItem(
                           index: i + 1,
                           fillRatio: 1.0,
-                          label: 'Bidon 5L',
+                          label: 'Cacheté (100%)',
                           isFull: true,
-                          themeColor: themeColor,
+                          themeColor: AppTheme.successGreen,
                         ),
                         const SizedBox(width: 8),
                       ],
 
                       // Open / Partial Bidon
-                      if (breakdown.remainingQuantity > 0 && breakdown.fullContainers < 6) ...[
+                      if (breakdown.hasOpenContainer && breakdown.fullContainersCount < 6) ...[
                         _buildJerrycanGraphicItem(
-                          index: breakdown.fullContainers + 1,
-                          fillRatio: breakdown.fillPercentageOfOpenContainer.clamp(0.05, 0.95),
-                          label: '${breakdown.remainingQuantity % 1 == 0 ? breakdown.remainingQuantity.toInt() : breakdown.remainingQuantity.toStringAsFixed(0)} ${breakdown.remainingUnit}',
+                          index: breakdown.fullContainersCount + 1,
+                          fillRatio: breakdown.openContainerRatio.clamp(0.04, 0.96),
+                          label: 'Entamé (${breakdown.openContainerMl.toInt()}ml / ${breakdown.containerCapacityMl.toInt()}ml)',
                           isFull: false,
-                          themeColor: AppTheme.successGreen,
+                          themeColor: Colors.amber.shade800,
                         ),
                       ],
 
-                      if (breakdown.fullContainers >= 6) ...[
+                      if (breakdown.fullContainersCount >= 6) ...[
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
@@ -243,7 +280,7 @@ class ProStockContainerCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
-                            '+ ${breakdown.fullContainers - 6} bidon(s)',
+                            '+ ${breakdown.fullContainersCount - 6} bidon(s)',
                             style: const TextStyle(fontSize: 10, color: AppTheme.textHint),
                           ),
                         ),
@@ -266,24 +303,25 @@ class ProStockContainerCard extends StatelessWidget {
     required bool isFull,
     required Color themeColor,
   }) {
+    final ordinalStr = getFrenchOrdinal(index);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: isFull ? themeColor.withValues(alpha: 0.08) : AppTheme.successGreen.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: (isFull ? themeColor : AppTheme.successGreen).withValues(alpha: 0.25)),
+        color: themeColor.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: themeColor.withValues(alpha: 0.35), width: 1.2),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           // Mini Jerrycan Visual
           Container(
-            width: 20,
-            height: 28,
+            width: 24,
+            height: 32,
             decoration: BoxDecoration(
               color: Colors.black.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: isFull ? themeColor : AppTheme.successGreen, width: 1),
+              borderRadius: BorderRadius.circular(5),
+              border: Border.all(color: themeColor, width: 1.2),
             ),
             child: Stack(
               alignment: Alignment.bottomCenter,
@@ -293,30 +331,46 @@ class ProStockContainerCard extends StatelessWidget {
                   widthFactor: 1.0,
                   child: Container(
                     decoration: BoxDecoration(
-                      color: isFull ? themeColor : AppTheme.successGreen,
-                      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(3)),
+                      color: themeColor,
+                      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(4)),
                     ),
                   ),
                 ),
+                if (isFull)
+                  const Positioned(
+                    top: 2,
+                    child: Icon(Icons.lock, size: 10, color: Colors.white),
+                  ),
               ],
             ),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 8),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                '#$index ${isFull ? 'Plein' : 'Entamé'}',
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  color: isFull ? themeColor : AppTheme.successGreen,
-                ),
+              Row(
+                children: [
+                  Text(
+                    'Bidon #$index ($ordinalStr)',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: themeColor,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    isFull ? Icons.check_circle : Icons.warning,
+                    size: 12,
+                    color: themeColor,
+                  ),
+                ],
               ),
+              const SizedBox(height: 2),
               Text(
                 label,
-                style: const TextStyle(fontSize: 9, color: AppTheme.textHint),
+                style: const TextStyle(fontSize: 10, color: AppTheme.textHint, fontWeight: FontWeight.w600),
               ),
             ],
           ),

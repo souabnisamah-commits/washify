@@ -122,6 +122,20 @@ class _TicketsTableModalState extends ConsumerState<TicketsTableModal> {
   }
 
   Future<void> _confirmDeleteTicket(BuildContext context, Ticket ticket) async {
+    final user = ref.read(currentUserProvider);
+    final isPatron = (user?.role == UserRole.patron);
+
+    // Strict Rule: Cashiers cannot delete already validated tickets
+    if (ticket.status == TicketStatus.paye && !isPatron) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Un ticket déjà validé ne peut être supprimé que par le patron !'.tr),
+          backgroundColor: Colors.amber.shade900,
+        ),
+      );
+      return;
+    }
+
     final reasonController = TextEditingController();
     final confirm = await showDialog<bool>(
       context: context,
@@ -185,9 +199,22 @@ class _TicketsTableModalState extends ConsumerState<TicketsTableModal> {
   }
 
   void _editTicket(BuildContext context, Ticket ticket) {
-    Navigator.pop(context); // Close details modal
     final user = ref.read(currentUserProvider);
-    final route = (user?.role == UserRole.patron) ? '/patron/tickets/new' : '/cashier/tickets/new';
+    final isPatron = (user?.role == UserRole.patron);
+
+    // Strict Rule: Cashiers cannot edit already validated tickets
+    if (ticket.status == TicketStatus.paye && !isPatron) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Un ticket déjà validé ne peut être modifié que par le patron !'.tr),
+          backgroundColor: Colors.amber.shade900,
+        ),
+      );
+      return;
+    }
+
+    Navigator.pop(context); // Close details modal
+    final route = isPatron ? '/patron/tickets/new' : '/cashier/tickets/new';
     context.push(route, extra: ticket);
   }
 
@@ -220,6 +247,7 @@ class _TicketsTableModalState extends ConsumerState<TicketsTableModal> {
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(currentUserProvider);
+    final isPatron = (user?.role == UserRole.patron);
     final stationId = user?.stationId ?? '';
     final allProducts = ref.watch(productsStreamProvider(stationId)).value ?? [];
     final allServicesDef = ref.watch(serviceDefinitionsStreamProvider(stationId)).value ?? [];
@@ -321,7 +349,7 @@ class _TicketsTableModalState extends ConsumerState<TicketsTableModal> {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.analytics_outlined, color: AppTheme.primaryBlue),
+                  const Icon(Icons.analytics_outlined, color: AppTheme.primaryBlue, size: 26),
                   const SizedBox(width: 10),
                   Text(
                     widget.title,
@@ -330,7 +358,7 @@ class _TicketsTableModalState extends ConsumerState<TicketsTableModal> {
                 ],
               ),
               IconButton(
-                icon: const Icon(Icons.close),
+                icon: const Icon(Icons.close, size: 26),
                 onPressed: () => Navigator.pop(context),
               ),
             ],
@@ -385,7 +413,7 @@ class _TicketsTableModalState extends ConsumerState<TicketsTableModal> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.badge_outlined, size: 16, color: _filterWorker == 'all' ? AppTheme.textHint : AppTheme.accentCyan),
+                    Icon(Icons.badge_outlined, size: 18, color: _filterWorker == 'all' ? AppTheme.textHint : AppTheme.accentCyan),
                     const SizedBox(width: 6),
                     DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
@@ -430,7 +458,7 @@ class _TicketsTableModalState extends ConsumerState<TicketsTableModal> {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.filter_list, size: 16, color: AppTheme.textHint),
+                  const Icon(Icons.filter_list, size: 18, color: AppTheme.textHint),
                   const SizedBox(width: 6),
                   FilterChip(
                     label: Text('Tous Modes'.tr),
@@ -439,7 +467,7 @@ class _TicketsTableModalState extends ConsumerState<TicketsTableModal> {
                   ),
                   const SizedBox(width: 6),
                   FilterChip(
-                    avatar: const Icon(Icons.payments_outlined, size: 14, color: AppTheme.successGreen),
+                    avatar: const Icon(Icons.payments_outlined, size: 16, color: AppTheme.successGreen),
                     label: Text('Espèces (${widget.tickets.where((t) {
                       final pm = t.paymentMethod?.toLowerCase() ?? '';
                       return !pm.contains('compte') && !pm.contains('b2b') && !pm.contains('tpe') && !pm.contains('carte');
@@ -449,7 +477,7 @@ class _TicketsTableModalState extends ConsumerState<TicketsTableModal> {
                   ),
                   const SizedBox(width: 6),
                   FilterChip(
-                    avatar: const Icon(Icons.credit_card, size: 14, color: Colors.purple),
+                    avatar: const Icon(Icons.credit_card, size: 16, color: Colors.purple),
                     label: Text('Compte Client (${widget.tickets.where((t) {
                       final pm = t.paymentMethod?.toLowerCase() ?? '';
                       return pm.contains('compte') || pm.contains('b2b');
@@ -459,7 +487,7 @@ class _TicketsTableModalState extends ConsumerState<TicketsTableModal> {
                   ),
                   const SizedBox(width: 6),
                   FilterChip(
-                    avatar: const Icon(Icons.contactless, size: 14, color: AppTheme.primaryBlue),
+                    avatar: const Icon(Icons.contactless, size: 16, color: AppTheme.primaryBlue),
                     label: Text('TPE (${widget.tickets.where((t) {
                       final pm = t.paymentMethod?.toLowerCase() ?? '';
                       return pm.contains('tpe') || pm.contains('carte');
@@ -475,11 +503,11 @@ class _TicketsTableModalState extends ConsumerState<TicketsTableModal> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
-                      color: AppTheme.primaryBlue.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppTheme.primaryBlue.withValues(alpha: 0.3)),
+                      color: AppTheme.primaryBlue.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppTheme.primaryBlue.withValues(alpha: 0.35)),
                     ),
                     child: Text(
                       'Total Filtre: ${filterTotal.toStringAsFixed(1)} DT'.tr,
@@ -492,10 +520,10 @@ class _TicketsTableModalState extends ConsumerState<TicketsTableModal> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.primaryBlue,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
-                    icon: const Icon(Icons.copy_outlined, size: 16),
+                    icon: const Icon(Icons.copy_outlined, size: 18),
                     label: Text('Copier le Tableau'.tr, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                   ),
                 ],
@@ -519,7 +547,7 @@ class _TicketsTableModalState extends ConsumerState<TicketsTableModal> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.stars, color: Colors.amber, size: 18),
+                      const Icon(Icons.stars, color: Colors.amber, size: 20),
                       const SizedBox(width: 6),
                       Text(
                         'Rendement Stratégique & Commercial : $_filterWorker'.tr,
@@ -555,7 +583,7 @@ class _TicketsTableModalState extends ConsumerState<TicketsTableModal> {
                         itemCount: filteredTickets.length,
                         itemBuilder: (context, index) {
                           final ticket = filteredTickets[index];
-                          return _buildMobileTicketCard(context, ticket, productMap, serviceMap);
+                          return _buildMobileTicketCard(context, ticket, isPatron, productMap, serviceMap);
                         },
                       )
                     : Scrollbar(
@@ -594,6 +622,8 @@ class _TicketsTableModalState extends ConsumerState<TicketsTableModal> {
                                 rows: filteredTickets.map((ticket) {
                                   final isDeleted = ticket.status == TicketStatus.efface || ticket.status == TicketStatus.annule;
                                   final isMoquette = ticket.operationType == 'moquette';
+                                  final isPaid = ticket.status == TicketStatus.paye;
+                                  final canEditOrDelete = !isPaid || isPatron;
 
                                   final vehiculeDisplay = isMoquette
                                       ? '${ticket.carpetMeters ?? 0} m²'
@@ -714,7 +744,7 @@ class _TicketsTableModalState extends ConsumerState<TicketsTableModal> {
                                                 child: Row(
                                                   mainAxisSize: MainAxisSize.min,
                                                   children: [
-                                                    const Icon(Icons.person_outline, size: 12, color: AppTheme.primaryBlue),
+                                                    const Icon(Icons.person_outline, size: 14, color: AppTheme.primaryBlue),
                                                     const SizedBox(width: 3),
                                                     Text(
                                                       ticket.clientName!,
@@ -826,22 +856,51 @@ class _TicketsTableModalState extends ConsumerState<TicketsTableModal> {
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
                                             if (!isDeleted) ...[
-                                              if (ticket.status != TicketStatus.paye)
-                                                IconButton(
-                                                  icon: const Icon(Icons.check_circle_outline, color: AppTheme.successGreen, size: 20),
-                                                  tooltip: 'Valider le paiement'.tr,
+                                              if (!isPaid)
+                                                ElevatedButton.icon(
+                                                  style: ElevatedButton.styleFrom(
+                                                    backgroundColor: AppTheme.successGreen,
+                                                    foregroundColor: Colors.white,
+                                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                                  ),
+                                                  icon: const Icon(Icons.check_circle_rounded, size: 22),
+                                                  label: Text('Valider'.tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                                                   onPressed: () => _validateTicketPayment(context, ticket),
                                                 ),
-                                              IconButton(
-                                                icon: const Icon(Icons.edit_outlined, color: AppTheme.primaryBlue, size: 20),
-                                                tooltip: 'Modifier'.tr,
-                                                onPressed: () => _editTicket(context, ticket),
-                                              ),
-                                              IconButton(
-                                                icon: const Icon(Icons.delete_outline, color: AppTheme.errorRed, size: 20),
-                                                tooltip: 'Supprimer'.tr,
-                                                onPressed: () => _confirmDeleteTicket(context, ticket),
-                                              ),
+                                              if (!isPaid) const SizedBox(width: 6),
+                                              if (canEditOrDelete) ...[
+                                                IconButton(
+                                                  icon: const Icon(Icons.edit_square, color: AppTheme.primaryBlue, size: 24),
+                                                  tooltip: 'Modifier'.tr,
+                                                  onPressed: () => _editTicket(context, ticket),
+                                                ),
+                                                IconButton(
+                                                  icon: const Icon(Icons.delete_forever_rounded, color: AppTheme.errorRed, size: 24),
+                                                  tooltip: 'Supprimer'.tr,
+                                                  onPressed: () => _confirmDeleteTicket(context, ticket),
+                                                ),
+                                              ] else ...[
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.amber.withValues(alpha: 0.15),
+                                                    borderRadius: BorderRadius.circular(6),
+                                                    border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      const Icon(Icons.lock_rounded, size: 14, color: Colors.amber),
+                                                      const SizedBox(width: 4),
+                                                      Text(
+                                                        'Réservé au patron'.tr,
+                                                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.amber),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
                                             ],
                                           ],
                                         ),
@@ -860,15 +919,19 @@ class _TicketsTableModalState extends ConsumerState<TicketsTableModal> {
     );
   }
 
-  // Mobile Ticket Card with Bottom Strategic Action Bar (Zero horizontal scrolling needed!)
+  // Mobile Ticket Card with Bottom Strategic Action Bar & Large Ergonomic Icons
   Widget _buildMobileTicketCard(
     BuildContext context,
     Ticket ticket,
+    bool isPatron,
     Map<String, Product> productMap,
     Map<String, dynamic> serviceMap,
   ) {
     final isDeleted = ticket.status == TicketStatus.efface || ticket.status == TicketStatus.annule;
     final isMoquette = ticket.operationType == 'moquette';
+    final isPaid = ticket.status == TicketStatus.paye;
+    final canEditOrDelete = !isPaid || isPatron;
+
     final vehiculeDisplay = isMoquette
         ? '${ticket.carpetMeters ?? 0} m²'
         : '${ticket.vehiclePlate ?? '-'} ${ticket.vehicleBrand ?? ''} ${ticket.vehicleModel ?? ''}'.trim();
@@ -894,15 +957,18 @@ class _TicketsTableModalState extends ConsumerState<TicketsTableModal> {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
+      elevation: 3,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         side: BorderSide(
-          color: isDeleted ? AppTheme.errorRed.withValues(alpha: 0.3) : AppTheme.primaryBlue.withValues(alpha: 0.15),
+          color: isDeleted
+              ? AppTheme.errorRed.withValues(alpha: 0.3)
+              : (isPaid ? AppTheme.successGreen.withValues(alpha: 0.3) : AppTheme.primaryBlue.withValues(alpha: 0.25)),
+          width: 1.5,
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(14.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -913,26 +979,26 @@ class _TicketsTableModalState extends ConsumerState<TicketsTableModal> {
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
                         color: (isMoquette ? Colors.orange : AppTheme.accentCyan).withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         isMoquette ? 'Moquette'.tr : 'Véhicule'.tr,
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: 12,
                           fontWeight: FontWeight.bold,
                           color: isMoquette ? Colors.orange : AppTheme.accentCyan,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 10),
                     Text(
                       ticket.ticketNumber,
                       style: TextStyle(
                         fontWeight: FontWeight.w900,
-                        fontSize: 15,
+                        fontSize: 16,
                         color: isDeleted ? AppTheme.errorRed : null,
                         decoration: isDeleted ? TextDecoration.lineThrough : null,
                       ),
@@ -942,122 +1008,153 @@ class _TicketsTableModalState extends ConsumerState<TicketsTableModal> {
                 Text(
                   '${ticket.totalAmount.toStringAsFixed(1)} DT',
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: 20,
                     fontWeight: FontWeight.w900,
                     color: isDeleted ? AppTheme.errorRed : AppTheme.successGreen,
                   ),
                 ),
               ],
             ),
-            const Divider(height: 16),
+            const Divider(height: 20),
 
-            // Vehicle / Client & Service
+            // Vehicle / Client & Service Details
             Row(
               children: [
-                const Icon(Icons.directions_car_outlined, size: 16, color: AppTheme.textHint),
-                const SizedBox(width: 6),
+                const Icon(Icons.directions_car_outlined, size: 20, color: AppTheme.textHint),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     vehiculeDisplay.isEmpty ? '-' : vehiculeDisplay,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: pmColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(6),
+                    color: pmColor.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: pmColor.withValues(alpha: 0.3)),
                   ),
                   child: Text(
                     pmLabel,
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: pmColor),
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: pmColor),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
 
             Row(
               children: [
-                const Icon(Icons.local_car_wash_outlined, size: 16, color: AppTheme.textHint),
-                const SizedBox(width: 6),
+                const Icon(Icons.local_car_wash_outlined, size: 20, color: AppTheme.textHint),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'Service: $serviceDisplay'.tr,
-                    style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8)),
+                    style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.9)),
                   ),
                 ),
                 Text(
                   'Ouvrier: ${ticket.assignedWorkerName ?? 'Non assigné'.tr}',
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textHint),
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textHint),
                 ),
               ],
             ),
 
             if (ticket.clientName != null && ticket.clientName!.trim().isNotEmpty) ...[
-              const SizedBox(height: 4),
+              const SizedBox(height: 6),
               Row(
                 children: [
-                  const Icon(Icons.person_outline, size: 14, color: AppTheme.primaryBlue),
-                  const SizedBox(width: 4),
+                  const Icon(Icons.person_outline, size: 18, color: AppTheme.primaryBlue),
+                  const SizedBox(width: 6),
                   Text(
                     'Client: ${ticket.clientName!}'.tr,
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.primaryBlue),
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.primaryBlue),
                   ),
                 ],
               ),
             ],
 
             if (isDeleted) ...[
-              const SizedBox(height: 6),
+              const SizedBox(height: 8),
               Text(
                 'Effacé: ${ticket.deleteReason ?? ''}'.tr,
-                style: const TextStyle(fontSize: 11, color: AppTheme.errorRed, fontStyle: FontStyle.italic),
+                style: const TextStyle(fontSize: 12, color: AppTheme.errorRed, fontStyle: FontStyle.italic),
               ),
             ],
 
-            // BOTTOM STRATEGIC ACTION BAR (Zero horizontal scrolling required!)
+            // BOTTOM STRATEGIC ACTION BAR (Large touch targets & big icons!)
             if (!isDeleted) ...[
-              const Divider(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+              const Divider(height: 20),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                alignment: WrapAlignment.end,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  if (ticket.status != TicketStatus.paye)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8.0),
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.successGreen,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                        icon: const Icon(Icons.check_circle, size: 16),
-                        label: Text('Valider Paiement'.tr, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                        onPressed: () => _validateTicketPayment(context, ticket),
+                  if (!isPaid)
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.successGreen,
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(130, 48),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 3,
+                      ),
+                      icon: const Icon(Icons.check_circle_rounded, size: 26),
+                      label: Text('Valider Paiement'.tr, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                      onPressed: () => _validateTicketPayment(context, ticket),
+                    ),
+
+                  if (canEditOrDelete) ...[
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppTheme.primaryBlue,
+                        side: BorderSide(color: AppTheme.primaryBlue.withValues(alpha: 0.6), width: 1.5),
+                        minimumSize: const Size(110, 48),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      icon: const Icon(Icons.edit_square, size: 24),
+                      label: Text('Modifier'.tr, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                      onPressed: () => _editTicket(context, ticket),
+                    ),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.errorRed.withValues(alpha: 0.12),
+                        foregroundColor: AppTheme.errorRed,
+                        elevation: 0,
+                        side: BorderSide(color: AppTheme.errorRed.withValues(alpha: 0.4), width: 1.5),
+                        minimumSize: const Size(110, 48),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      icon: const Icon(Icons.delete_forever_rounded, size: 24),
+                      label: Text('Supprimer'.tr, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                      onPressed: () => _confirmDeleteTicket(context, ticket),
+                    ),
+                  ] else ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.lock_rounded, size: 20, color: Colors.amber),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Ticket Validé • Modif/Suppr réservée au patron'.tr,
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.amber),
+                          ),
+                        ],
                       ),
                     ),
-                  OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppTheme.primaryBlue,
-                      side: BorderSide(color: AppTheme.primaryBlue.withValues(alpha: 0.5)),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                    icon: const Icon(Icons.edit_outlined, size: 16),
-                    label: Text('Modifier'.tr, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                    onPressed: () => _editTicket(context, ticket),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    style: IconButton.styleFrom(
-                      foregroundColor: AppTheme.errorRed,
-                      backgroundColor: AppTheme.errorRed.withValues(alpha: 0.1),
-                    ),
-                    icon: const Icon(Icons.delete_outline, size: 18),
-                    tooltip: 'Supprimer'.tr,
-                    onPressed: () => _confirmDeleteTicket(context, ticket),
-                  ),
+                  ],
                 ],
               ),
             ],

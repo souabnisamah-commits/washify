@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:washify/core/theme/app_theme.dart';
+import 'package:washify/core/constants/user_roles.dart';
 import 'package:washify/core/localization/app_localizations.dart';
-import 'package:washify/providers/auth_provider.dart';
-import 'package:washify/providers/product_provider.dart';
-import 'package:washify/providers/service_definition_provider.dart';
+import 'package:washify/core/theme/app_theme.dart';
 import 'package:washify/features/products/models/product.dart';
 import 'package:washify/features/services/models/service_definition.dart';
 import 'package:washify/features/tickets/models/ticket.dart';
+import 'package:washify/providers/auth_provider.dart';
+import 'package:washify/providers/product_provider.dart';
+import 'package:washify/providers/service_definition_provider.dart';
+import 'package:washify/providers/ticket_provider.dart';
 
 void showTicketsDetailsDialog(
   BuildContext context,
@@ -69,6 +72,125 @@ class _TicketsTableModalState extends ConsumerState<TicketsTableModal> {
     super.dispose();
   }
 
+  Future<void> _validateTicketPayment(BuildContext context, Ticket ticket) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.check_circle_outline, color: AppTheme.successGreen, size: 28),
+            const SizedBox(width: 10),
+            Expanded(child: Text('Valider le Paiement ?'.tr)),
+          ],
+        ),
+        content: Text('Voulez-vous marquer le ticket ${ticket.ticketNumber} (${ticket.totalAmount.toStringAsFixed(1)} DT) comme PAYÉ ?'.tr),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Annuler'.tr),
+          ),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.successGreen, foregroundColor: Colors.white),
+            onPressed: () => Navigator.pop(ctx, true),
+            icon: const Icon(Icons.check),
+            label: Text('Valider'.tr),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await ref.read(ticketRepositoryProvider).updateTicketStatus(ticket.id, 'paye');
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Paiement du ticket ${ticket.ticketNumber} validé avec succès !'.tr),
+              backgroundColor: AppTheme.successGreen,
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Erreur: $e'.tr), backgroundColor: AppTheme.errorRed),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _confirmDeleteTicket(BuildContext context, Ticket ticket) async {
+    final reasonController = TextEditingController();
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('Supprimer le ticket ?'.tr),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Voulez-vous vraiment effacer le ticket ${ticket.ticketNumber} ? Son solde sera déduit de la recette et le stock sera restauré.'.tr),
+            const SizedBox(height: 12),
+            TextField(
+              controller: reasonController,
+              decoration: InputDecoration(
+                labelText: 'Motif de suppression'.tr,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text('Annuler'.tr),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.errorRed),
+            onPressed: () {
+              if (reasonController.text.trim().isEmpty) {
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  SnackBar(content: Text('Le motif est requis'.tr)),
+                );
+                return;
+              }
+              Navigator.pop(dialogContext, true);
+            },
+            child: Text('Confirmer'.tr, style: const TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await ref.read(ticketRepositoryProvider).deleteTicket(
+          ticket.id,
+          reason: reasonController.text.trim(),
+        );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Ticket effacé avec succès'.tr), backgroundColor: AppTheme.successGreen),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Erreur: $e'.tr), backgroundColor: AppTheme.errorRed),
+          );
+        }
+      }
+    }
+  }
+
+  void _editTicket(BuildContext context, Ticket ticket) {
+    Navigator.pop(context); // Close details modal
+    final user = ref.read(currentUserProvider);
+    final route = (user?.role == UserRole.patron) ? '/patron/tickets/new' : '/cashier/tickets/new';
+    context.push(route, extra: ticket);
+  }
+
   Widget _buildMetricTile(String label, String value, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -103,6 +225,8 @@ class _TicketsTableModalState extends ConsumerState<TicketsTableModal> {
     final allServicesDef = ref.watch(serviceDefinitionsStreamProvider(stationId)).value ?? [];
     final productMap = {for (final p in allProducts) p.id: p};
     final serviceMap = {for (final s in allServicesDef) s.id: s};
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isCompactMobile = screenWidth < 768;
 
     // Extract unique workers
     final Set<String> workerNamesSet = {};
@@ -420,283 +544,525 @@ class _TicketsTableModalState extends ConsumerState<TicketsTableModal> {
             ),
           ],
 
-          // Data Table View
+          // View Switcher (Mobile Card List vs Desktop DataTable)
           Expanded(
             child: filteredTickets.isEmpty
                 ? Center(
                     child: Text('Aucun ticket trouvé pour ce filtre.'.tr, style: const TextStyle(color: AppTheme.textHint)),
                   )
-                : Scrollbar(
-                    controller: _horizontalScroll,
-                    thumbVisibility: true,
-                    trackVisibility: true,
-                    child: SingleChildScrollView(
-                      controller: _horizontalScroll,
-                      scrollDirection: Axis.horizontal,
-                      child: Scrollbar(
-                        controller: _verticalScroll,
+                : (isCompactMobile
+                    ? ListView.builder(
+                        itemCount: filteredTickets.length,
+                        itemBuilder: (context, index) {
+                          final ticket = filteredTickets[index];
+                          return _buildMobileTicketCard(context, ticket, productMap, serviceMap);
+                        },
+                      )
+                    : Scrollbar(
+                        controller: _horizontalScroll,
                         thumbVisibility: true,
+                        trackVisibility: true,
                         child: SingleChildScrollView(
-                          controller: _verticalScroll,
-                          scrollDirection: Axis.vertical,
-                          child: DataTable(
-                            columnSpacing: 18,
-                            horizontalMargin: 16,
-                            dataRowMinHeight: 64,
-                            dataRowMaxHeight: double.infinity,
-                            headingRowColor: WidgetStateProperty.all(AppTheme.primaryBlue.withValues(alpha: 0.12)),
-                            columns: [
-                              DataColumn(label: Text('N° Ticket'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
-                              DataColumn(label: Text('Type'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
-                              DataColumn(label: Text('Véhicule / Client'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
-                              DataColumn(label: Text('Service Lavage'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
-                              DataColumn(label: Text('Options & Suppléments'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
-                              DataColumn(label: Text('Boutique'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
-                              DataColumn(label: Text('Remise & Motif'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
-                              DataColumn(label: Text('Caissier'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
-                              DataColumn(label: Text('Ouvrier'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
-                              DataColumn(label: Text('Paiement'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
-                              DataColumn(label: Text('Total'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
-                            ],
-                            rows: filteredTickets.map((ticket) {
-                              final isDeleted = ticket.status == TicketStatus.efface || ticket.status == TicketStatus.annule;
-                              final isMoquette = ticket.operationType == 'moquette';
+                          controller: _horizontalScroll,
+                          scrollDirection: Axis.horizontal,
+                          child: Scrollbar(
+                            controller: _verticalScroll,
+                            thumbVisibility: true,
+                            child: SingleChildScrollView(
+                              controller: _verticalScroll,
+                              scrollDirection: Axis.vertical,
+                              child: DataTable(
+                                columnSpacing: 18,
+                                horizontalMargin: 16,
+                                dataRowMinHeight: 64,
+                                dataRowMaxHeight: double.infinity,
+                                headingRowColor: WidgetStateProperty.all(AppTheme.primaryBlue.withValues(alpha: 0.12)),
+                                columns: [
+                                  DataColumn(label: Text('N° Ticket'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(label: Text('Type'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(label: Text('Véhicule / Client'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(label: Text('Service Lavage'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(label: Text('Options & Suppléments'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(label: Text('Boutique'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(label: Text('Remise & Motif'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(label: Text('Caissier'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(label: Text('Ouvrier'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(label: Text('Paiement'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(label: Text('Total'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(label: Text('Actions'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                ],
+                                rows: filteredTickets.map((ticket) {
+                                  final isDeleted = ticket.status == TicketStatus.efface || ticket.status == TicketStatus.annule;
+                                  final isMoquette = ticket.operationType == 'moquette';
 
-                              final vehiculeDisplay = isMoquette
-                                  ? '${ticket.carpetMeters ?? 0} m²'
-                                  : '${ticket.vehiclePlate ?? '-'} ${ticket.vehicleBrand ?? ''} ${ticket.vehicleModel ?? ''}'.trim();
+                                  final vehiculeDisplay = isMoquette
+                                      ? '${ticket.carpetMeters ?? 0} m²'
+                                      : '${ticket.vehiclePlate ?? '-'} ${ticket.vehicleBrand ?? ''} ${ticket.vehicleModel ?? ''}'.trim();
 
-                              final washServices = ticket.servicesSelected.where((s) {
-                                final def = serviceMap[s.serviceId];
-                                if (def != null) {
-                                  return def.serviceType == ServiceType.lavage;
-                                }
-                                final nameLower = s.serviceName.toLowerCase();
-                                return !nameLower.contains('option') && !nameLower.contains('supplément') && !nameLower.contains('extra') && !nameLower.contains('décrass') && !nameLower.contains('produit');
-                              }).toList();
+                                  final washServices = ticket.servicesSelected.where((s) {
+                                    final def = serviceMap[s.serviceId];
+                                    if (def != null) {
+                                      return def.serviceType == ServiceType.lavage;
+                                    }
+                                    final nameLower = s.serviceName.toLowerCase();
+                                    return !nameLower.contains('option') && !nameLower.contains('supplément') && !nameLower.contains('extra') && !nameLower.contains('décrass') && !nameLower.contains('produit');
+                                  }).toList();
 
-                              final serviceDisplay = isMoquette
-                                  ? 'Moquette (${((ticket.carpetMeters ?? 0) * (ticket.carpetUnitPrice ?? 0)).toStringAsFixed(1)} DT)'
-                                  : (washServices.isNotEmpty
-                                      ? washServices.map((s) => '${s.serviceName} (${s.price.toStringAsFixed(1)} DT)').join('\n')
-                                      : (ticket.servicesSelected.isNotEmpty ? '${ticket.servicesSelected.first.serviceName} (${ticket.servicesSelected.first.price.toStringAsFixed(1)} DT)' : '-'));
+                                  final serviceDisplay = isMoquette
+                                      ? 'Moquette (${((ticket.carpetMeters ?? 0) * (ticket.carpetUnitPrice ?? 0)).toStringAsFixed(1)} DT)'
+                                      : (washServices.isNotEmpty
+                                          ? washServices.map((s) => '${s.serviceName} (${s.price.toStringAsFixed(1)} DT)').join('\n')
+                                          : (ticket.servicesSelected.isNotEmpty ? '${ticket.servicesSelected.first.serviceName} (${ticket.servicesSelected.first.price.toStringAsFixed(1)} DT)' : '-'));
 
-                              final optionServices = ticket.servicesSelected.where((s) {
-                                final def = serviceMap[s.serviceId];
-                                if (def != null) {
-                                  return def.serviceType == ServiceType.supplement || def.serviceType == ServiceType.special;
-                                }
-                                final nameLower = s.serviceName.toLowerCase();
-                                return nameLower.contains('option') || nameLower.contains('supplément') || nameLower.contains('extra') || nameLower.contains('décrass') || nameLower.contains('produit');
-                              }).toList();
+                                  final optionServices = ticket.servicesSelected.where((s) {
+                                    final def = serviceMap[s.serviceId];
+                                    if (def != null) {
+                                      return def.serviceType == ServiceType.supplement || def.serviceType == ServiceType.special;
+                                    }
+                                    final nameLower = s.serviceName.toLowerCase();
+                                    return nameLower.contains('option') || nameLower.contains('supplément') || nameLower.contains('extra') || nameLower.contains('décrass') || nameLower.contains('produit');
+                                  }).toList();
 
-                              final optionProducts = ticket.productsUsed.where((p) {
-                                final prod = productMap[p.productId];
-                                if (prod != null) {
-                                  return prod.family == ProductFamily.extra || prod.family == ProductFamily.standard;
-                                }
-                                final nameLower = p.productName.toLowerCase();
-                                return !nameLower.contains('sapin') && !nameLower.contains('fresh') && !nameLower.contains('tapis');
-                              }).toList();
+                                  final optionProducts = ticket.productsUsed.where((p) {
+                                    final prod = productMap[p.productId];
+                                    if (prod != null) {
+                                      return prod.family == ProductFamily.extra || prod.family == ProductFamily.standard;
+                                    }
+                                    final nameLower = p.productName.toLowerCase();
+                                    return !nameLower.contains('sapin') && !nameLower.contains('fresh') && !nameLower.contains('tapis');
+                                  }).toList();
 
-                              final List<String> optionLines = [
-                                ...optionServices.map((s) => '${s.serviceName} (${s.price.toStringAsFixed(1)} DT)'),
-                                ...optionProducts.map((p) => '${p.productName} x${p.quantity} (${p.total.toStringAsFixed(1)} DT)'),
-                              ];
-                              final optionsDisplay = optionLines.isEmpty ? '-' : optionLines.join('\n');
+                                  final List<String> optionLines = [
+                                    ...optionServices.map((s) => '${s.serviceName} (${s.price.toStringAsFixed(1)} DT)'),
+                                    ...optionProducts.map((p) => '${p.productName} x${p.quantity} (${p.total.toStringAsFixed(1)} DT)'),
+                                  ];
+                                  final optionsDisplay = optionLines.isEmpty ? '-' : optionLines.join('\n');
 
-                              final boutiqueProducts = ticket.productsUsed.where((p) {
-                                final prod = productMap[p.productId];
-                                if (prod != null) {
-                                  return prod.family == ProductFamily.revente;
-                                }
-                                final nameLower = p.productName.toLowerCase();
-                                return nameLower.contains('sapin') || nameLower.contains('fresh') || nameLower.contains('tapis') || p.productName.contains('Boutique');
-                              }).toList();
+                                  final boutiqueProducts = ticket.productsUsed.where((p) {
+                                    final prod = productMap[p.productId];
+                                    if (prod != null) {
+                                      return prod.family == ProductFamily.revente;
+                                    }
+                                    final nameLower = p.productName.toLowerCase();
+                                    return nameLower.contains('sapin') || nameLower.contains('fresh') || nameLower.contains('tapis') || p.productName.contains('Boutique');
+                                  }).toList();
 
-                              final List<String> boutiqueLines = boutiqueProducts.map((p) {
-                                final prod = productMap[p.productId];
-                                final barcodeStr = (prod != null && prod.barcode.isNotEmpty) ? ' [Code: ${prod.barcode}]' : '';
-                                return '${p.productName}$barcodeStr x${p.quantity} (${p.total.toStringAsFixed(1)} DT)';
-                              }).toList();
-                              final boutiqueDisplay = boutiqueLines.isEmpty ? '-' : boutiqueLines.join('\n');
+                                  final List<String> boutiqueLines = boutiqueProducts.map((p) {
+                                    final prod = productMap[p.productId];
+                                    final barcodeStr = (prod != null && prod.barcode.isNotEmpty) ? ' [Code: ${prod.barcode}]' : '';
+                                    return '${p.productName}$barcodeStr x${p.quantity} (${p.total.toStringAsFixed(1)} DT)';
+                                  }).toList();
+                                  final boutiqueDisplay = boutiqueLines.isEmpty ? '-' : boutiqueLines.join('\n');
 
-                              final discountDisplay = (ticket.discountAmount != null && ticket.discountAmount! > 0)
-                                  ? '-${ticket.discountAmount!.toStringAsFixed(1)} DT (${ticket.discountReason ?? ''})'
-                                  : '-';
+                                  final discountDisplay = (ticket.discountAmount != null && ticket.discountAmount! > 0)
+                                      ? '-${ticket.discountAmount!.toStringAsFixed(1)} DT (${ticket.discountReason ?? ''})'
+                                      : '-';
 
-                              return DataRow(
-                                color: isDeleted ? WidgetStateProperty.all(AppTheme.errorRed.withValues(alpha: 0.08)) : null,
-                                cells: [
-                                  // N° Ticket
-                                  DataCell(
-                                    Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          ticket.ticketNumber,
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            color: isDeleted ? AppTheme.errorRed : null,
-                                            decoration: isDeleted ? TextDecoration.lineThrough : null,
-                                          ),
-                                        ),
-                                        if (isDeleted)
-                                          Text(
-                                            'Effacé: ${ticket.deleteReason ?? ''}'.tr,
-                                            style: const TextStyle(fontSize: 10, color: AppTheme.errorRed, fontStyle: FontStyle.italic),
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                  // Type
-                                  DataCell(
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: (isMoquette ? Colors.orange : AppTheme.accentCyan).withValues(alpha: 0.15),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Text(
-                                        isMoquette ? 'Moquette'.tr : 'Véhicule'.tr,
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
-                                          color: isMoquette ? Colors.orange : AppTheme.accentCyan,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  // Véhicule / Client
-                                  DataCell(
-                                    Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(vehiculeDisplay.isEmpty ? '-' : vehiculeDisplay),
-                                        if (ticket.clientName != null && ticket.clientName!.trim().isNotEmpty)
-                                          Padding(
-                                            padding: const EdgeInsets.only(top: 2.0),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                const Icon(Icons.person_outline, size: 12, color: AppTheme.primaryBlue),
-                                                const SizedBox(width: 3),
-                                                Text(
-                                                  ticket.clientName!,
-                                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.primaryBlue),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                  // Service Lavage
-                                  DataCell(
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(vertical: 8.0),
-                                      child: Text(
-                                        serviceDisplay.isEmpty ? '-' : serviceDisplay,
-                                        style: const TextStyle(height: 1.35),
-                                      ),
-                                    ),
-                                  ),
-                                  // Options & Suppléments
-                                  DataCell(
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(vertical: 8.0),
-                                      child: Text(
-                                        optionsDisplay,
-                                        style: const TextStyle(height: 1.35),
-                                      ),
-                                    ),
-                                  ),
-                                  // Boutique
-                                  DataCell(
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(vertical: 8.0),
-                                      child: Text(
-                                        boutiqueDisplay,
-                                        style: const TextStyle(height: 1.35),
-                                      ),
-                                    ),
-                                  ),
-                                  // Remise & Motif
-                                  DataCell(Text(discountDisplay)),
-                                  // Caissier
-                                  DataCell(Text(ticket.paidBy ?? ticket.createdBy)),
-                                  // Ouvrier
-                                  DataCell(Text(ticket.assignedWorkerName ?? 'Non assigné'.tr)),
-                                  // Mode Paiement & Client
-                                  DataCell(
-                                    Builder(
-                                      builder: (context) {
-                                        final pm = ticket.paymentMethod?.toLowerCase() ?? '';
-                                        final isCompte = pm.contains('compte') || pm.contains('b2b');
-                                        final isTpe = pm.contains('tpe') || pm.contains('carte');
-                                        final String label = isCompte ? 'Compte Client'.tr : (isTpe ? 'TPE'.tr : 'Espèces'.tr);
-                                        final IconData icon = isCompte ? Icons.credit_card : (isTpe ? Icons.contactless : Icons.payments_outlined);
-                                        final Color color = isCompte ? Colors.purple : (isTpe ? AppTheme.primaryBlue : AppTheme.successGreen);
-
-                                        return Column(
+                                  return DataRow(
+                                    color: isDeleted ? WidgetStateProperty.all(AppTheme.errorRed.withValues(alpha: 0.08)) : null,
+                                    cells: [
+                                      // N° Ticket
+                                      DataCell(
+                                        Column(
                                           mainAxisAlignment: MainAxisAlignment.center,
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                              decoration: BoxDecoration(
-                                                color: color.withValues(alpha: 0.15),
-                                                borderRadius: BorderRadius.circular(6),
-                                                border: Border.all(color: color.withValues(alpha: 0.3)),
-                                              ),
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Icon(icon, size: 14, color: color),
-                                                  const SizedBox(width: 4),
-                                                  Text(
-                                                    label,
-                                                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color),
-                                                  ),
-                                                ],
+                                            Text(
+                                              ticket.ticketNumber,
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                color: isDeleted ? AppTheme.errorRed : null,
+                                                decoration: isDeleted ? TextDecoration.lineThrough : null,
                                               ),
                                             ),
+                                            if (isDeleted)
+                                              Text(
+                                                'Effacé: ${ticket.deleteReason ?? ''}'.tr,
+                                                style: const TextStyle(fontSize: 10, color: AppTheme.errorRed, fontStyle: FontStyle.italic),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                      // Type
+                                      DataCell(
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: (isMoquette ? Colors.orange : AppTheme.accentCyan).withValues(alpha: 0.15),
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: Text(
+                                            isMoquette ? 'Moquette'.tr : 'Véhicule'.tr,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                              color: isMoquette ? Colors.orange : AppTheme.accentCyan,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      // Véhicule / Client
+                                      DataCell(
+                                        Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(vehiculeDisplay.isEmpty ? '-' : vehiculeDisplay),
                                             if (ticket.clientName != null && ticket.clientName!.trim().isNotEmpty)
                                               Padding(
-                                                padding: const EdgeInsets.only(top: 3.0),
-                                                child: Text(
-                                                  ticket.clientName!,
-                                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color),
+                                                padding: const EdgeInsets.only(top: 2.0),
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    const Icon(Icons.person_outline, size: 12, color: AppTheme.primaryBlue),
+                                                    const SizedBox(width: 3),
+                                                    Text(
+                                                      ticket.clientName!,
+                                                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.primaryBlue),
+                                                    ),
+                                                  ],
                                                 ),
                                               ),
                                           ],
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                  // Total
-                                  DataCell(
-                                    Text(
-                                      '${ticket.totalAmount.toStringAsFixed(1)} DT',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: isDeleted ? AppTheme.errorRed : AppTheme.successGreen,
-                                        decoration: isDeleted ? TextDecoration.lineThrough : null,
+                                        ),
                                       ),
-                                    ),
-                                  ),
-                                ],
-                              );
-                            }).toList(),
+                                      // Service Lavage
+                                      DataCell(
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(vertical: 8.0),
+                                          child: Text(
+                                            serviceDisplay.isEmpty ? '-' : serviceDisplay,
+                                            style: const TextStyle(height: 1.35),
+                                          ),
+                                        ),
+                                      ),
+                                      // Options & Suppléments
+                                      DataCell(
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(vertical: 8.0),
+                                          child: Text(
+                                            optionsDisplay,
+                                            style: const TextStyle(height: 1.35),
+                                          ),
+                                        ),
+                                      ),
+                                      // Boutique
+                                      DataCell(
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(vertical: 8.0),
+                                          child: Text(
+                                            boutiqueDisplay,
+                                            style: const TextStyle(height: 1.35),
+                                          ),
+                                        ),
+                                      ),
+                                      // Remise & Motif
+                                      DataCell(Text(discountDisplay)),
+                                      // Caissier
+                                      DataCell(Text(ticket.paidBy ?? ticket.createdBy)),
+                                      // Ouvrier
+                                      DataCell(Text(ticket.assignedWorkerName ?? 'Non assigné'.tr)),
+                                      // Mode Paiement & Client
+                                      DataCell(
+                                        Builder(
+                                          builder: (context) {
+                                            final pm = ticket.paymentMethod?.toLowerCase() ?? '';
+                                            final isCompte = pm.contains('compte') || pm.contains('b2b');
+                                            final isTpe = pm.contains('tpe') || pm.contains('carte');
+                                            final String label = isCompte ? 'Compte Client'.tr : (isTpe ? 'TPE'.tr : 'Espèces'.tr);
+                                            final IconData icon = isCompte ? Icons.credit_card : (isTpe ? Icons.contactless : Icons.payments_outlined);
+                                            final Color color = isCompte ? Colors.purple : (isTpe ? AppTheme.primaryBlue : AppTheme.successGreen);
+
+                                            return Column(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                  decoration: BoxDecoration(
+                                                    color: color.withValues(alpha: 0.15),
+                                                    borderRadius: BorderRadius.circular(6),
+                                                    border: Border.all(color: color.withValues(alpha: 0.3)),
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      Icon(icon, size: 14, color: color),
+                                                      const SizedBox(width: 4),
+                                                      Text(
+                                                        label,
+                                                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                                if (ticket.clientName != null && ticket.clientName!.trim().isNotEmpty)
+                                                  Padding(
+                                                    padding: const EdgeInsets.only(top: 3.0),
+                                                    child: Text(
+                                                      ticket.clientName!,
+                                                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color),
+                                                    ),
+                                                  ),
+                                              ],
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                      // Total
+                                      DataCell(
+                                        Text(
+                                          '${ticket.totalAmount.toStringAsFixed(1)} DT',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: isDeleted ? AppTheme.errorRed : AppTheme.successGreen,
+                                            decoration: isDeleted ? TextDecoration.lineThrough : null,
+                                          ),
+                                        ),
+                                      ),
+                                      // Actions
+                                      DataCell(
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            if (!isDeleted) ...[
+                                              if (ticket.status != TicketStatus.paye)
+                                                IconButton(
+                                                  icon: const Icon(Icons.check_circle_outline, color: AppTheme.successGreen, size: 20),
+                                                  tooltip: 'Valider le paiement'.tr,
+                                                  onPressed: () => _validateTicketPayment(context, ticket),
+                                                ),
+                                              IconButton(
+                                                icon: const Icon(Icons.edit_outlined, color: AppTheme.primaryBlue, size: 20),
+                                                tooltip: 'Modifier'.tr,
+                                                onPressed: () => _editTicket(context, ticket),
+                                              ),
+                                              IconButton(
+                                                icon: const Icon(Icons.delete_outline, color: AppTheme.errorRed, size: 20),
+                                                tooltip: 'Supprimer'.tr,
+                                                onPressed: () => _confirmDeleteTicket(context, ticket),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                }).toList(),
+                              ),
+                            ),
                           ),
+                        ),
+                      )),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Mobile Ticket Card with Bottom Strategic Action Bar (Zero horizontal scrolling needed!)
+  Widget _buildMobileTicketCard(
+    BuildContext context,
+    Ticket ticket,
+    Map<String, Product> productMap,
+    Map<String, dynamic> serviceMap,
+  ) {
+    final isDeleted = ticket.status == TicketStatus.efface || ticket.status == TicketStatus.annule;
+    final isMoquette = ticket.operationType == 'moquette';
+    final vehiculeDisplay = isMoquette
+        ? '${ticket.carpetMeters ?? 0} m²'
+        : '${ticket.vehiclePlate ?? '-'} ${ticket.vehicleBrand ?? ''} ${ticket.vehicleModel ?? ''}'.trim();
+
+    final washServices = ticket.servicesSelected.where((s) {
+      final def = serviceMap[s.serviceId];
+      if (def != null) return def.serviceType == ServiceType.lavage;
+      final nameLower = s.serviceName.toLowerCase();
+      return !nameLower.contains('option') && !nameLower.contains('supplément') && !nameLower.contains('extra') && !nameLower.contains('décrass') && !nameLower.contains('produit');
+    }).toList();
+
+    final serviceDisplay = isMoquette
+        ? 'Moquette (${((ticket.carpetMeters ?? 0) * (ticket.carpetUnitPrice ?? 0)).toStringAsFixed(1)} DT)'
+        : (washServices.isNotEmpty
+            ? washServices.map((s) => s.serviceName).join(', ')
+            : (ticket.servicesSelected.isNotEmpty ? ticket.servicesSelected.first.serviceName : '-'));
+
+    final pm = ticket.paymentMethod?.toLowerCase() ?? '';
+    final isCompte = pm.contains('compte') || pm.contains('b2b');
+    final isTpe = pm.contains('tpe') || pm.contains('carte');
+    final String pmLabel = isCompte ? 'Compte Client'.tr : (isTpe ? 'TPE'.tr : 'Espèces'.tr);
+    final Color pmColor = isCompte ? Colors.purple : (isTpe ? AppTheme.primaryBlue : AppTheme.successGreen);
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(
+          color: isDeleted ? AppTheme.errorRed.withValues(alpha: 0.3) : AppTheme.primaryBlue.withValues(alpha: 0.15),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Top Row: Ticket Number & Total Amount
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: (isMoquette ? Colors.orange : AppTheme.accentCyan).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        isMoquette ? 'Moquette'.tr : 'Véhicule'.tr,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: isMoquette ? Colors.orange : AppTheme.accentCyan,
                         ),
                       ),
                     ),
+                    const SizedBox(width: 8),
+                    Text(
+                      ticket.ticketNumber,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 15,
+                        color: isDeleted ? AppTheme.errorRed : null,
+                        decoration: isDeleted ? TextDecoration.lineThrough : null,
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  '${ticket.totalAmount.toStringAsFixed(1)} DT',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: isDeleted ? AppTheme.errorRed : AppTheme.successGreen,
                   ),
-          ),
-        ],
+                ),
+              ],
+            ),
+            const Divider(height: 16),
+
+            // Vehicle / Client & Service
+            Row(
+              children: [
+                const Icon(Icons.directions_car_outlined, size: 16, color: AppTheme.textHint),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    vehiculeDisplay.isEmpty ? '-' : vehiculeDisplay,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: pmColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    pmLabel,
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: pmColor),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+
+            Row(
+              children: [
+                const Icon(Icons.local_car_wash_outlined, size: 16, color: AppTheme.textHint),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Service: $serviceDisplay'.tr,
+                    style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8)),
+                  ),
+                ),
+                Text(
+                  'Ouvrier: ${ticket.assignedWorkerName ?? 'Non assigné'.tr}',
+                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textHint),
+                ),
+              ],
+            ),
+
+            if (ticket.clientName != null && ticket.clientName!.trim().isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  const Icon(Icons.person_outline, size: 14, color: AppTheme.primaryBlue),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Client: ${ticket.clientName!}'.tr,
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.primaryBlue),
+                  ),
+                ],
+              ),
+            ],
+
+            if (isDeleted) ...[
+              const SizedBox(height: 6),
+              Text(
+                'Effacé: ${ticket.deleteReason ?? ''}'.tr,
+                style: const TextStyle(fontSize: 11, color: AppTheme.errorRed, fontStyle: FontStyle.italic),
+              ),
+            ],
+
+            // BOTTOM STRATEGIC ACTION BAR (Zero horizontal scrolling required!)
+            if (!isDeleted) ...[
+              const Divider(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  if (ticket.status != TicketStatus.paye)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.successGreen,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        icon: const Icon(Icons.check_circle, size: 16),
+                        label: Text('Valider Paiement'.tr, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                        onPressed: () => _validateTicketPayment(context, ticket),
+                      ),
+                    ),
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppTheme.primaryBlue,
+                      side: BorderSide(color: AppTheme.primaryBlue.withValues(alpha: 0.5)),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    icon: const Icon(Icons.edit_outlined, size: 16),
+                    label: Text('Modifier'.tr, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    onPressed: () => _editTicket(context, ticket),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    style: IconButton.styleFrom(
+                      foregroundColor: AppTheme.errorRed,
+                      backgroundColor: AppTheme.errorRed.withValues(alpha: 0.1),
+                    ),
+                    icon: const Icon(Icons.delete_outline, size: 18),
+                    tooltip: 'Supprimer'.tr,
+                    onPressed: () => _confirmDeleteTicket(context, ticket),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

@@ -572,27 +572,19 @@ class _TicketsTableModalState extends ConsumerState<TicketsTableModal> {
             ),
           ],
 
-          // View Switcher (Mobile Card List vs Desktop DataTable)
+          // Full Detailed Table View (DataTable with complete columns & details)
           Expanded(
             child: filteredTickets.isEmpty
                 ? Center(
                     child: Text('Aucun ticket trouvé pour ce filtre.'.tr, style: const TextStyle(color: AppTheme.textHint)),
                   )
-                : (isCompactMobile
-                    ? ListView.builder(
-                        itemCount: filteredTickets.length,
-                        itemBuilder: (context, index) {
-                          final ticket = filteredTickets[index];
-                          return _buildMobileTicketCard(context, ticket, isPatron, productMap, serviceMap);
-                        },
-                      )
-                    : Scrollbar(
-                        controller: _horizontalScroll,
-                        thumbVisibility: true,
-                        trackVisibility: true,
-                        child: SingleChildScrollView(
-                          controller: _horizontalScroll,
-                          scrollDirection: Axis.horizontal,
+                : Scrollbar(
+                    controller: _horizontalScroll,
+                    thumbVisibility: true,
+                    trackVisibility: true,
+                    child: SingleChildScrollView(
+                      controller: _horizontalScroll,
+                      scrollDirection: Axis.horizontal,
                           child: Scrollbar(
                             controller: _verticalScroll,
                             thumbVisibility: true,
@@ -912,7 +904,7 @@ class _TicketsTableModalState extends ConsumerState<TicketsTableModal> {
                             ),
                           ),
                         ),
-                      )),
+                      ),
           ),
         ],
       ),

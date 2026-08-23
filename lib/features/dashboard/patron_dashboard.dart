@@ -1682,6 +1682,7 @@ class _JerrycanGaugeWidget extends StatelessWidget {
   final double currentStock;
   final double consumedQuantity;
   final String unit;
+  final double capacityMl;
   final double minStock;
   final Color themeColor;
   final int projectedWashes;
@@ -1692,6 +1693,7 @@ class _JerrycanGaugeWidget extends StatelessWidget {
     required this.currentStock,
     required this.consumedQuantity,
     required this.unit,
+    this.capacityMl = 0.0,
     required this.minStock,
     required this.themeColor,
     required this.projectedWashes,
@@ -1805,7 +1807,7 @@ class _JerrycanGaugeWidget extends StatelessWidget {
                   style: const TextStyle(fontSize: 10, color: AppTheme.textHint),
                 ),
                 Text(
-                  parseStockContainers(currentStock, unit).displayText,
+                  parseStockContainers(currentStock, unit, customCapacity: capacityMl).displayText,
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w900,
@@ -2228,6 +2230,7 @@ class _WashingAndStockAuditModalContentState extends ConsumerState<_WashingAndSt
                   currentStock: currentQty,
                   consumedQuantity: consumed,
                   unit: prod.unit,
+                  capacityMl: prod.capacityMl,
                   minStock: minStock,
                   themeColor: AppTheme.accentCyan,
                   projectedWashes: projected,
@@ -2269,6 +2272,7 @@ class _WashingAndStockAuditModalContentState extends ConsumerState<_WashingAndSt
                   currentStock: currentQty,
                   consumedQuantity: consumed,
                   unit: prod.unit,
+                  capacityMl: prod.capacityMl,
                   minStock: minStock,
                   themeColor: Colors.purple,
                   projectedWashes: projected,

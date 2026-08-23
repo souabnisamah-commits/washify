@@ -18,10 +18,10 @@ class ProStockContainerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final unit = product?.unit ?? 'ml';
-    final breakdown = parseStockContainers(stock.currentQuantity, unit);
-    final isLow = stock.isLowStock;
     final prod = product;
+    final unit = prod?.unit ?? 'ml';
+    final breakdown = parseStockContainers(stock.currentQuantity, unit, customCapacity: prod?.capacityMl ?? 0.0);
+    final isLow = stock.isLowStock;
     final barcodeStr = (prod != null && prod.barcode.isNotEmpty) ? prod.barcode : '';
     final isLiquid = unit.toLowerCase().contains('ml') ||
         unit.toLowerCase().contains('l') ||

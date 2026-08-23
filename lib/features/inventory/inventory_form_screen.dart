@@ -14,6 +14,7 @@ import 'package:washify/providers/inventory_provider.dart';
 import 'package:washify/features/stock/models/stock.dart';
 import 'package:washify/features/products/models/product.dart';
 import 'package:washify/features/inventory/models/inventory.dart';
+import 'package:washify/features/inventory/widgets/liquid_inventory_input_card.dart';
 
 class InventoryFormScreen extends ConsumerStatefulWidget {
   const InventoryFormScreen({super.key});
@@ -476,6 +477,17 @@ class _InventoryCategoryTabViewState extends State<_InventoryCategoryTabView> {
                     );
 
                     final ctrl = widget.controllers[prod.id];
+                    if (ctrl == null) return const SizedBox();
+
+                    if (!isBoutique) {
+                      return LiquidInventoryInputCard(
+                        product: prod,
+                        stock: stock,
+                        controller: ctrl,
+                        onChanged: widget.onChanged,
+                      );
+                    }
+
                     final barcodeStr = (isBoutique && prod.barcode.isNotEmpty) ? prod.barcode : '';
 
                     return Card(

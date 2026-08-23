@@ -106,16 +106,20 @@ class _PatronDashboardState extends ConsumerState<PatronDashboard> {
     String title,
     List<Ticket> tickets,
   ) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
     showDialog(
       context: context,
       builder: (context) {
         return Dialog(
-          insetPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-          backgroundColor: AppTheme.surfaceCard,
+          insetPadding: EdgeInsets.symmetric(
+            horizontal: isMobile ? 6 : 12,
+            vertical: isMobile ? 10 : 16,
+          ),
+          backgroundColor: Theme.of(context).colorScheme.surface,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: SizedBox(
-            width: MediaQuery.of(context).size.width * 0.96,
-            height: MediaQuery.of(context).size.height * 0.88,
+            width: isMobile ? double.infinity : MediaQuery.of(context).size.width * 0.96,
+            height: MediaQuery.of(context).size.height * (isMobile ? 0.94 : 0.88),
             child: _TicketsTableModal(
               title: title,
               tickets: tickets,
@@ -127,13 +131,21 @@ class _PatronDashboardState extends ConsumerState<PatronDashboard> {
   }
 
   void _showWashingAndStockAuditModal(BuildContext context, List<Ticket> tickets, Station? station) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
     showDialog(
       context: context,
       builder: (context) => Dialog(
-        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        insetPadding: EdgeInsets.symmetric(
+          horizontal: isMobile ? 6 : 16,
+          vertical: isMobile ? 10 : 24,
+        ),
+        backgroundColor: Theme.of(context).colorScheme.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1100, maxHeight: 850),
+          constraints: BoxConstraints(
+            maxWidth: 1100,
+            maxHeight: MediaQuery.of(context).size.height * (isMobile ? 0.94 : 0.85),
+          ),
           child: _WashingAndStockAuditModalContent(tickets: tickets, station: station),
         ),
       ),
@@ -1950,8 +1962,10 @@ class _WashingAndStockAuditModalContentState extends ConsumerState<_WashingAndSt
       workerTicketsMap.putIfAbsent(worker, () => []).add(t);
     }
 
+    final isMobile = MediaQuery.of(context).size.width < 600;
+
     return Padding(
-      padding: const EdgeInsets.all(20.0),
+      padding: EdgeInsets.all(isMobile ? 12.0 : 20.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -1959,31 +1973,42 @@ class _WashingAndStockAuditModalContentState extends ConsumerState<_WashingAndSt
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppTheme.accentCyan.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(10),
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppTheme.accentCyan.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.local_car_wash, color: AppTheme.accentCyan, size: 24),
                     ),
-                    child: const Icon(Icons.local_car_wash, color: AppTheme.accentCyan, size: 24),
-                  ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Audit Lavages, Stock & Consommation Doses'.tr,
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Audit Lavages, Stock & Consommation Doses'.tr,
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              fontSize: isMobile ? 15 : 18,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            'Vue stratégique de l\'activité, des réserves de stock et de la productivité par employé'.tr,
+                            style: TextStyle(fontSize: isMobile ? 10 : 12, color: AppTheme.textHint),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
-                      Text(
-                        'Vue stratégique de l\'activité, des réserves de stock et de la productivité par employé'.tr,
-                        style: const TextStyle(fontSize: 12, color: AppTheme.textHint),
-                      ),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
               IconButton(
                 icon: const Icon(Icons.close),
@@ -1991,20 +2016,20 @@ class _WashingAndStockAuditModalContentState extends ConsumerState<_WashingAndSt
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
 
           // Summary Badges Banner
           Wrap(
-            spacing: 12,
-            runSpacing: 10,
+            spacing: 8,
+            runSpacing: 8,
             children: [
-              _buildSummaryCard('Véhicules Lavés', '$vehicleCount', Icons.directions_car, AppTheme.primaryBlue),
-              _buildSummaryCard('Moquettes Lavées', '${moquetteMeters.toStringAsFixed(1)} m²', Icons.layers, Colors.orange),
-              _buildSummaryCard('Chiffre d\'Affaires', '${totalRevenue.toStringAsFixed(1)} DT', Icons.monetization_on, AppTheme.successGreen),
-              _buildSummaryCard('Ouvriers Actifs', '${workerTicketsMap.length}', Icons.badge, Colors.purple),
+              _buildSummaryCard('Véhicules Lavés', '$vehicleCount', Icons.directions_car, AppTheme.primaryBlue, isMobile),
+              _buildSummaryCard('Moquettes Lavées', '${moquetteMeters.toStringAsFixed(1)} m²', Icons.layers, Colors.orange, isMobile),
+              _buildSummaryCard('Chiffre d\'Affaires', '${totalRevenue.toStringAsFixed(1)} DT', Icons.monetization_on, AppTheme.successGreen, isMobile),
+              _buildSummaryCard('Ouvriers Actifs', '${workerTicketsMap.length}', Icons.badge, Colors.purple, isMobile),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
 
           // Tab Bar Navigation
           Container(
@@ -2015,6 +2040,7 @@ class _WashingAndStockAuditModalContentState extends ConsumerState<_WashingAndSt
             ),
             child: TabBar(
               controller: _tabController,
+              isScrollable: isMobile,
               indicatorColor: AppTheme.accentCyan,
               labelColor: AppTheme.accentCyan,
               unselectedLabelColor: AppTheme.textHint,
@@ -2025,7 +2051,7 @@ class _WashingAndStockAuditModalContentState extends ConsumerState<_WashingAndSt
               ],
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
 
           // Tab Views
           Expanded(
@@ -2048,26 +2074,29 @@ class _WashingAndStockAuditModalContentState extends ConsumerState<_WashingAndSt
     );
   }
 
-  Widget _buildSummaryCard(String title, String value, IconData icon, Color color) {
+  Widget _buildSummaryCard(String title, String value, IconData icon, Color color, [bool isMobile = false]) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      width: isMobile ? (MediaQuery.of(context).size.width - 56) / 2 : null,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: color.withValues(alpha: 0.25)),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: isMobile ? MainAxisSize.max : MainAxisSize.min,
         children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(title, style: const TextStyle(fontSize: 11, color: AppTheme.textHint)),
-              Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color)),
-            ],
+          Icon(icon, color: color, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(title, style: const TextStyle(fontSize: 10, color: AppTheme.textHint), maxLines: 1, overflow: TextOverflow.ellipsis),
+                Text(value, style: TextStyle(fontSize: isMobile ? 13 : 14, fontWeight: FontWeight.bold, color: color), maxLines: 1, overflow: TextOverflow.ellipsis),
+              ],
+            ),
           ),
         ],
       ),

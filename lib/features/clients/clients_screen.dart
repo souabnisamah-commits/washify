@@ -9,7 +9,6 @@ import 'package:washify/core/theme/app_theme.dart';
 import 'package:washify/providers/auth_provider.dart';
 import 'package:washify/repositories/client_repository.dart';
 
-
 class ClientsScreen extends ConsumerStatefulWidget {
   const ClientsScreen({super.key});
 
@@ -31,7 +30,14 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('Nouveau Compte Client', style: TextStyle(fontWeight: FontWeight.bold)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              const Icon(Icons.business_outlined, color: AppTheme.accentCyan),
+              const SizedBox(width: 10),
+              Text('Nouveau Compte Client B2B'.tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            ],
+          ),
           content: SingleChildScrollView(
             child: Form(
               key: formKey,
@@ -39,37 +45,37 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   TextFormField(
-                    decoration: InputDecoration(labelText: 'Nom de la Société (ou Client) *'.tr, prefixIcon: Icon(Icons.business)),
-                    validator: (v) => v == null || v.isEmpty ? 'Requis' : null,
+                    decoration: InputDecoration(labelText: 'Nom de la Société (ou Client) *'.tr, prefixIcon: const Icon(Icons.business, color: AppTheme.accentCyan)),
+                    validator: (v) => v == null || v.isEmpty ? 'Requis'.tr : null,
                     onSaved: (v) => companyName = v!,
                   ),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
                   TextFormField(
-                    decoration: InputDecoration(labelText: 'Nom du Responsable'.tr, prefixIcon: Icon(Icons.person)),
+                    decoration: InputDecoration(labelText: 'Nom du Responsable'.tr, prefixIcon: const Icon(Icons.person, color: AppTheme.accentCyan)),
                     onSaved: (v) => contactName = v ?? '',
                   ),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
                   TextFormField(
-                    decoration: InputDecoration(labelText: 'Matricule Fiscale'.tr, prefixIcon: Icon(Icons.receipt)),
+                    decoration: InputDecoration(labelText: 'Matricule Fiscale'.tr, prefixIcon: const Icon(Icons.receipt, color: AppTheme.accentCyan)),
                     onSaved: (v) => taxId = v ?? '',
                   ),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
                   TextFormField(
-                    decoration: InputDecoration(labelText: 'Téléphone'.tr, prefixIcon: Icon(Icons.phone)),
+                    decoration: InputDecoration(labelText: 'Téléphone'.tr, prefixIcon: const Icon(Icons.phone, color: AppTheme.accentCyan)),
                     keyboardType: TextInputType.phone,
                     onSaved: (v) => phone = v ?? '',
                   ),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
                   TextFormField(
-                    decoration: InputDecoration(labelText: 'Seuil d\'.tralerte (DT)', prefixIcon: Icon(Icons.warning)),
+                    decoration: InputDecoration(labelText: 'Seuil d\'alerte (DT)'.tr, prefixIcon: const Icon(Icons.warning_amber_rounded, color: AppTheme.accentCyan)),
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     initialValue: '500',
-                    validator: (v) => v == null || double.tryParse(v) == null ? 'Invalide' : null,
+                    validator: (v) => v == null || double.tryParse(v) == null ? 'Invalide'.tr : null,
                     onSaved: (v) => thresholdStr = v!,
                   ),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
                   TextFormField(
-                    decoration: InputDecoration(labelText: 'Immatriculation initiale (Optionnel)'.tr, prefixIcon: Icon(Icons.directions_car)),
+                    decoration: InputDecoration(labelText: 'Immatriculation initiale (Optionnel)'.tr, prefixIcon: const Icon(Icons.directions_car, color: AppTheme.accentCyan)),
                     onSaved: (v) => initialVehicle = v ?? '',
                   ),
                 ],
@@ -106,7 +112,8 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                   if (context.mounted) Navigator.of(context).pop();
                 }
               },
-              child: Text('Créer'.tr),
+              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.accentCyan, foregroundColor: Colors.white),
+              child: Text('Créer'.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
             ),
           ],
         );
@@ -118,62 +125,81 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
   Widget build(BuildContext context) {
     final user = ref.watch(currentUserProvider);
     if (user == null || user.stationId == null) {
-      return Center(child: Text('Erreur d\'authentification'));
+      return Scaffold(
+        body: Center(child: Text('Erreur d\'authentification'.tr)),
+      );
     }
 
     final clientsAsync = ref.watch(clientsStreamProvider(user.stationId!));
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: Text('Comptes Clients B2B', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text('Comptes Clients B2B'.tr, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: AppTheme.primaryBlue,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showAddClientDialog,
-        icon: Icon(Icons.add),
-        label: Text('Nouveau Client'.tr),
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: Text('Nouveau Client'.tr, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: AppTheme.accentCyan,
       ),
       body: clientsAsync.when(
         data: (clients) {
           if (clients.isEmpty) {
             return Center(
-              child: Text('Aucun compte client B2B n\'a été créé.', style: TextStyle(fontSize: 16, color: Colors.grey)),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.business_outlined, size: 54, color: AppTheme.textHint.withValues(alpha: 0.5)),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Aucun compte client B2B n\'a été créé.'.tr,
+                    style: const TextStyle(fontSize: 15, color: AppTheme.textHint),
+                  ),
+                ],
+              ),
             );
           }
 
           return ListView.builder(
-            padding: EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
             itemCount: clients.length,
             itemBuilder: (context, index) {
               final client = clients[index];
               final isOverThreshold = client.alertThreshold > 0 && client.currentBalance >= client.alertThreshold;
-
               final bool hasBalance = client.currentBalance > 0;
 
+              final cardBg = isOverThreshold
+                  ? (isDarkMode ? AppTheme.errorRed.withValues(alpha: 0.15) : Colors.red.shade50)
+                  : Theme.of(context).colorScheme.surface;
+
+              final titleColor = isOverThreshold
+                  ? AppTheme.errorRed
+                  : Theme.of(context).colorScheme.onSurface;
+
               return Card(
-                elevation: isOverThreshold ? 4 : 1,
-                margin: EdgeInsets.only(bottom: 12),
-                color: isOverThreshold ? Colors.red.shade50 : Colors.white,
+                elevation: isOverThreshold ? 4 : 2,
+                margin: const EdgeInsets.only(bottom: 12),
+                color: cardBg,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
                   side: isOverThreshold
-                      ? BorderSide(color: AppTheme.errorRed.withValues(alpha: 0.5), width: 1.5)
-                      : BorderSide(color: Colors.grey.shade200, width: 1),
+                      ? BorderSide(color: AppTheme.errorRed.withValues(alpha: 0.6), width: 1.5)
+                      : BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.2), width: 1),
                 ),
                 child: ListTile(
-                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   leading: Container(
-                    padding: EdgeInsets.all(10),
+                    padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: isOverThreshold ? AppTheme.errorRed.withValues(alpha: 0.1) : AppTheme.primaryBlue.withValues(alpha: 0.1),
+                      color: isOverThreshold ? AppTheme.errorRed.withValues(alpha: 0.15) : AppTheme.primaryBlue.withValues(alpha: 0.15),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
-                      Icons.business, 
-                      color: isOverThreshold ? AppTheme.errorRed : AppTheme.primaryBlue,
+                      Icons.business,
+                      color: isOverThreshold ? AppTheme.errorRed : AppTheme.accentCyan,
                     ),
                   ),
                   title: Text(
@@ -181,12 +207,15 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
-                      color: isOverThreshold ? AppTheme.errorRed : Colors.black87,
+                      color: titleColor,
                     ),
                   ),
                   subtitle: Padding(
-                    padding: EdgeInsets.only(top: 4.0),
-                    child: Text('Resp: ${client.contactName}\nTél: ${client.phone}'.tr),
+                    padding: const EdgeInsets.only(top: 4.0),
+                    child: Text(
+                      'Resp: ${client.contactName}\nTél: ${client.phone}'.tr,
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12),
+                    ),
                   ),
                   isThreeLine: true,
                   trailing: Column(
@@ -197,22 +226,22 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                         '${client.currentBalance.toStringAsFixed(3)} DT',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                          color: isOverThreshold 
-                              ? AppTheme.errorRed 
+                          fontSize: 17,
+                          color: isOverThreshold
+                              ? AppTheme.errorRed
                               : (hasBalance ? AppTheme.warningOrange : AppTheme.successGreen),
                         ),
                       ),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 4),
                       Container(
-                        padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: Colors.grey.shade200,
-                          borderRadius: BorderRadius.circular(4),
+                          color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
-                          'Seuil: ${client.alertThreshold.toStringAsFixed(0)} DT',
-                          style: TextStyle(fontSize: 11, color: Colors.black54),
+                          'Seuil: ${client.alertThreshold.toStringAsFixed(0)} DT'.tr,
+                          style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w600),
                         ),
                       ),
                     ],
@@ -229,7 +258,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
             },
           );
         },
-        loading: () => Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Erreur: $e'.tr)),
       ),
     );

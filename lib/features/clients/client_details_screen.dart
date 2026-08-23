@@ -358,24 +358,24 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
     return DefaultTabController(
       length: 3,
       child: Scaffold(
-        backgroundColor: Colors.grey[100],
         appBar: AppBar(
-          title: Text(_currentClient.companyName, style: TextStyle(color: Colors.white)),
+          title: Text(_currentClient.companyName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           backgroundColor: AppTheme.primaryBlue,
           iconTheme: const IconThemeData(color: Colors.white),
           actions: [
             IconButton(
-              icon: Icon(Icons.edit),
+              icon: const Icon(Icons.edit),
               onPressed: _showEditClientDialog,
             ),
             IconButton(
-              icon: Icon(Icons.delete),
+              icon: const Icon(Icons.delete),
               onPressed: _deleteClient,
             ),
           ],
           bottom: const TabBar(
             labelColor: Colors.white,
             unselectedLabelColor: Colors.white70,
+            indicatorColor: AppTheme.accentCyan,
             tabs: [
               Tab(text: 'Tickets'),
               Tab(text: 'Paiements'),
@@ -386,19 +386,19 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
         body: Column(
           children: [
             Container(
-              color: Colors.white,
-              padding: EdgeInsets.all(16),
+              color: Theme.of(context).colorScheme.surface,
+              padding: const EdgeInsets.all(16),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Solde Restant', style: TextStyle(color: Colors.grey[600], fontSize: 14)),
+                      Text('Solde Restant'.tr, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13)),
                       Text(
                         currencyFormat.format(_currentClient.currentBalance),
                         style: TextStyle(
-                          fontSize: 24,
+                          fontSize: 22,
                           fontWeight: FontWeight.bold,
                           color: _currentClient.currentBalance > 0 ? AppTheme.errorRed : AppTheme.successGreen,
                         ),
@@ -410,19 +410,19 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
                       if (_currentClient.currentBalance > 0)
                         ElevatedButton.icon(
                           onPressed: _showPaymentDialog,
-                          icon: Icon(Icons.payment),
-                          label: Text('Régler'.tr),
-                          style: ElevatedButton.styleFrom(backgroundColor: AppTheme.successGreen),
+                          icon: const Icon(Icons.payment),
+                          label: Text('Régler'.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
+                          style: ElevatedButton.styleFrom(backgroundColor: AppTheme.successGreen, foregroundColor: Colors.white),
                         ),
-                      SizedBox(width: 8),
+                      const SizedBox(width: 8),
                       ElevatedButton.icon(
                         onPressed: _exportUnpaidBalance,
-                        icon: Icon(Icons.picture_as_pdf),
-                        label: Text('Détail Solde'.tr),
+                        icon: const Icon(Icons.picture_as_pdf),
+                        label: Text('Détail Solde'.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: AppTheme.primaryBlue,
-                          side: BorderSide(color: AppTheme.primaryBlue),
+                          backgroundColor: Theme.of(context).colorScheme.surface,
+                          foregroundColor: AppTheme.accentCyan,
+                          side: const BorderSide(color: AppTheme.accentCyan),
                         ),
                       ),
                     ],

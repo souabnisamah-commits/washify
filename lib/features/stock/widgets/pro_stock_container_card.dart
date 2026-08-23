@@ -178,69 +178,28 @@ class ProStockContainerCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
 
-                    // Big Clear Container Breakdown Badge
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        if (breakdown.fullContainers > 0)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: themeColor.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: themeColor.withValues(alpha: 0.4)),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Text('🛢️ ', style: TextStyle(fontSize: 14)),
-                                Text(
-                                  '${breakdown.fullContainers} ${breakdown.containerName}${breakdown.fullContainers > 1 ? 's' : ''}',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w900,
-                                    color: themeColor,
-                                  ),
-                                ),
-                              ],
+                    // Big Clear Container Breakdown Badge (e.g. 1x Bidon (5000ml) + 968 ml)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: themeColor.withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: themeColor.withValues(alpha: 0.45), width: 1.5),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text('🛢️ ', style: TextStyle(fontSize: 16)),
+                          Text(
+                            breakdown.displayText,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w900,
+                              color: isLow ? AppTheme.errorRed : themeColor,
                             ),
                           ),
-
-                        if (breakdown.remainingQuantity > 0 || breakdown.fullContainers == 0)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: (breakdown.fullContainers > 0 ? AppTheme.successGreen : themeColor).withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: (breakdown.fullContainers > 0 ? AppTheme.successGreen : themeColor).withValues(alpha: 0.35),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  breakdown.fullContainers > 0 ? Icons.water_drop_outlined : Icons.opacity,
-                                  size: 16,
-                                  color: breakdown.fullContainers > 0 ? AppTheme.successGreen : themeColor,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  breakdown.fullContainers > 0
-                                      ? '+ ${breakdown.remainingQuantity % 1 == 0 ? breakdown.remainingQuantity.toInt() : breakdown.remainingQuantity.toStringAsFixed(1)} ${breakdown.remainingUnit} (Bidon entamé)'
-                                      : '${breakdown.remainingQuantity % 1 == 0 ? breakdown.remainingQuantity.toInt() : breakdown.remainingQuantity.toStringAsFixed(1)} ${breakdown.remainingUnit}',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                    color: breakdown.fullContainers > 0 ? AppTheme.successGreen : themeColor,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),

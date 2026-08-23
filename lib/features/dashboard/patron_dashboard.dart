@@ -26,6 +26,7 @@ import 'package:washify/features/services/models/service_definition.dart';
 import 'package:washify/providers/service_definition_provider.dart';
 import 'package:washify/providers/stock_provider.dart';
 import 'package:washify/features/stock/models/stock.dart';
+import 'package:washify/features/stock/utils/stock_formatter.dart';
 
 class PatronDashboard extends ConsumerStatefulWidget {
   const PatronDashboard({super.key});
@@ -1799,20 +1800,29 @@ class _JerrycanGaugeWidget extends StatelessWidget {
                   style: TextStyle(fontSize: 10, color: themeColor, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 6),
+                Text(
+                  'Référence Bidons / Stock:',
+                  style: const TextStyle(fontSize: 10, color: AppTheme.textHint),
+                ),
+                Text(
+                  parseStockContainers(currentStock, unit).displayText,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                    color: isLowStock ? AppTheme.errorRed : AppTheme.successGreen,
+                  ),
+                ),
+                const SizedBox(height: 4),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Reste: ${currentStock.toStringAsFixed(1)} $unit',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: isLowStock ? AppTheme.errorRed : AppTheme.successGreen,
-                      ),
+                      'Total brut: ${currentStock % 1 == 0 ? currentStock.toInt() : currentStock.toStringAsFixed(1)} $unit',
+                      style: const TextStyle(fontSize: 10, color: AppTheme.textHint),
                     ),
                     Text(
-                      'Consommé: ${consumedQuantity.toStringAsFixed(1)}',
-                      style: const TextStyle(fontSize: 11, color: AppTheme.textHint),
+                      'Consommé: ${consumedQuantity % 1 == 0 ? consumedQuantity.toInt() : consumedQuantity.toStringAsFixed(1)} $unit',
+                      style: const TextStyle(fontSize: 10, color: AppTheme.textHint),
                     ),
                   ],
                 ),

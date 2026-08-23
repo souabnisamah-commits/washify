@@ -12,6 +12,7 @@ import 'package:washify/providers/product_provider.dart';
 import 'package:washify/providers/station_provider.dart';
 import 'package:washify/features/stock/models/stock.dart';
 import 'package:washify/features/products/models/product.dart';
+import 'package:washify/features/stock/widgets/pro_stock_container_card.dart';
 
 class StockScreen extends ConsumerStatefulWidget {
   const StockScreen({super.key});
@@ -369,89 +370,10 @@ class _StockCategoryTabViewState extends ConsumerState<_StockCategoryTabView> {
                   itemBuilder: (context, index) {
                     final stock = filteredStocks[index];
                     final product = widget.productMap[stock.productId];
-                    final isLow = stock.isLowStock;
-                    final barcodeStr = (product != null && product.barcode.isNotEmpty) ? product.barcode : '';
-
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      elevation: 2,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      child: ListTile(
-                        onTap: () => widget.onShowHistory(stock, widget.stationId),
-                        leading: CircleAvatar(
-                          backgroundColor: isLow ? AppTheme.errorRed.withValues(alpha: 0.15) : AppTheme.primaryBlue.withValues(alpha: 0.15),
-                          child: Icon(
-                            isBoutique ? Icons.shopping_bag : Icons.inventory_2,
-                            color: isLow ? AppTheme.errorRed : AppTheme.accentCyan,
-                          ),
-                        ),
-                        title: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                stock.productName,
-                                style: const TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                            if (barcodeStr.isNotEmpty)
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.accentCyan.withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: AppTheme.accentCyan.withValues(alpha: 0.3)),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(Icons.qr_code_2, size: 12, color: AppTheme.accentCyan),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      barcodeStr,
-                                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.accentCyan),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                          ],
-                        ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: 4),
-                            Text(
-                              'Seuil min alerte : ${stock.minStock % 1 == 0 ? stock.minStock.toInt().toString() : stock.minStock.toStringAsFixed(2)} ${product?.unit ?? ""}'.tr,
-                              style: const TextStyle(fontSize: 12, color: AppTheme.textHint),
-                            ),
-                            if (product != null && product.unitPrice > 0)
-                              Text(
-                                'Prix : ${product.unitPrice.toStringAsFixed(1)} DT',
-                                style: const TextStyle(fontSize: 11, color: AppTheme.primaryBlue, fontWeight: FontWeight.w600),
-                              ),
-                          ],
-                        ),
-                        trailing: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              stock.currentQuantity % 1 == 0
-                                  ? stock.currentQuantity.toInt().toString()
-                                  : stock.currentQuantity.toStringAsFixed(2),
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: isLow ? AppTheme.errorRed : AppTheme.successGreen,
-                              ),
-                            ),
-                            if (isLow)
-                              const Text(
-                                'Stock faible',
-                                style: TextStyle(color: AppTheme.errorRed, fontSize: 10, fontWeight: FontWeight.bold),
-                              ),
-                          ],
-                        ),
-                      ),
+                    return ProStockContainerCard(
+                      stock: stock,
+                      product: product,
+                      onTap: () => widget.onShowHistory(stock, widget.stationId),
                     );
                   },
                 ),

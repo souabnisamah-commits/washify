@@ -21,6 +21,7 @@ class AppUser with _$AppUser {
     @Default(true) bool isActive,
     @Default(false) bool isOnline,
     @Default(false) bool forceLogout,
+    String? clientId,
     DateTime? lastLoginAt,
     required DateTime createdAt,
     required DateTime updatedAt,

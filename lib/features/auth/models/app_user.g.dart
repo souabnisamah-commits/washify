@@ -21,6 +21,7 @@ _$AppUserImpl _$$AppUserImplFromJson(Map<String, dynamic> json) =>
       isActive: json['isActive'] as bool? ?? true,
       isOnline: json['isOnline'] as bool? ?? false,
       forceLogout: json['forceLogout'] as bool? ?? false,
+      clientId: json['clientId'] as String?,
       lastLoginAt: json['lastLoginAt'] == null
           ? null
           : DateTime.parse(json['lastLoginAt'] as String),
@@ -41,6 +42,7 @@ Map<String, dynamic> _$$AppUserImplToJson(_$AppUserImpl instance) =>
       'isActive': instance.isActive,
       'isOnline': instance.isOnline,
       'forceLogout': instance.forceLogout,
+      'clientId': instance.clientId,
       'lastLoginAt': instance.lastLoginAt?.toIso8601String(),
       'createdAt': instance.createdAt.toIso8601String(),
       'updatedAt': instance.updatedAt.toIso8601String(),
@@ -51,4 +53,5 @@ const _$UserRoleEnumMap = {
   UserRole.patron: 'patron',
   UserRole.caissier: 'caissier',
   UserRole.ouvrier: 'ouvrier',
+  UserRole.clientB2B: 'clientB2B',
 };

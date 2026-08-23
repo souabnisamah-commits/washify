@@ -34,6 +34,10 @@ mixin _$Client {
       throw _privateConstructorUsedError; // Montant total non payé
   @VehicleListConverter()
   List<ClientVehicle> get vehicles => throw _privateConstructorUsedError; // Véhicules du client
+  bool get hasAppAccess => throw _privateConstructorUsedError;
+  String get accessPasswordHash => throw _privateConstructorUsedError;
+  String get accessStatus =>
+      throw _privateConstructorUsedError; // 'active' or 'blocked'
   DateTime get createdAt => throw _privateConstructorUsedError;
   DateTime get updatedAt => throw _privateConstructorUsedError;
 
@@ -61,6 +65,9 @@ abstract class $ClientCopyWith<$Res> {
     double alertThreshold,
     double currentBalance,
     @VehicleListConverter() List<ClientVehicle> vehicles,
+    bool hasAppAccess,
+    String accessPasswordHash,
+    String accessStatus,
     DateTime createdAt,
     DateTime updatedAt,
   });
@@ -90,6 +97,9 @@ class _$ClientCopyWithImpl<$Res, $Val extends Client>
     Object? alertThreshold = null,
     Object? currentBalance = null,
     Object? vehicles = null,
+    Object? hasAppAccess = null,
+    Object? accessPasswordHash = null,
+    Object? accessStatus = null,
     Object? createdAt = null,
     Object? updatedAt = null,
   }) {
@@ -131,6 +141,18 @@ class _$ClientCopyWithImpl<$Res, $Val extends Client>
                 ? _value.vehicles
                 : vehicles // ignore: cast_nullable_to_non_nullable
                       as List<ClientVehicle>,
+            hasAppAccess: null == hasAppAccess
+                ? _value.hasAppAccess
+                : hasAppAccess // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            accessPasswordHash: null == accessPasswordHash
+                ? _value.accessPasswordHash
+                : accessPasswordHash // ignore: cast_nullable_to_non_nullable
+                      as String,
+            accessStatus: null == accessStatus
+                ? _value.accessStatus
+                : accessStatus // ignore: cast_nullable_to_non_nullable
+                      as String,
             createdAt: null == createdAt
                 ? _value.createdAt
                 : createdAt // ignore: cast_nullable_to_non_nullable
@@ -163,6 +185,9 @@ abstract class _$$ClientImplCopyWith<$Res> implements $ClientCopyWith<$Res> {
     double alertThreshold,
     double currentBalance,
     @VehicleListConverter() List<ClientVehicle> vehicles,
+    bool hasAppAccess,
+    String accessPasswordHash,
+    String accessStatus,
     DateTime createdAt,
     DateTime updatedAt,
   });
@@ -191,6 +216,9 @@ class __$$ClientImplCopyWithImpl<$Res>
     Object? alertThreshold = null,
     Object? currentBalance = null,
     Object? vehicles = null,
+    Object? hasAppAccess = null,
+    Object? accessPasswordHash = null,
+    Object? accessStatus = null,
     Object? createdAt = null,
     Object? updatedAt = null,
   }) {
@@ -232,6 +260,18 @@ class __$$ClientImplCopyWithImpl<$Res>
             ? _value._vehicles
             : vehicles // ignore: cast_nullable_to_non_nullable
                   as List<ClientVehicle>,
+        hasAppAccess: null == hasAppAccess
+            ? _value.hasAppAccess
+            : hasAppAccess // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        accessPasswordHash: null == accessPasswordHash
+            ? _value.accessPasswordHash
+            : accessPasswordHash // ignore: cast_nullable_to_non_nullable
+                  as String,
+        accessStatus: null == accessStatus
+            ? _value.accessStatus
+            : accessStatus // ignore: cast_nullable_to_non_nullable
+                  as String,
         createdAt: null == createdAt
             ? _value.createdAt
             : createdAt // ignore: cast_nullable_to_non_nullable
@@ -258,6 +298,9 @@ class _$ClientImpl implements _Client {
     this.alertThreshold = 0.0,
     this.currentBalance = 0.0,
     @VehicleListConverter() final List<ClientVehicle> vehicles = const [],
+    this.hasAppAccess = false,
+    this.accessPasswordHash = '',
+    this.accessStatus = 'active',
     required this.createdAt,
     required this.updatedAt,
   }) : _vehicles = vehicles;
@@ -300,13 +343,23 @@ class _$ClientImpl implements _Client {
 
   // Véhicules du client
   @override
+  @JsonKey()
+  final bool hasAppAccess;
+  @override
+  @JsonKey()
+  final String accessPasswordHash;
+  @override
+  @JsonKey()
+  final String accessStatus;
+  // 'active' or 'blocked'
+  @override
   final DateTime createdAt;
   @override
   final DateTime updatedAt;
 
   @override
   String toString() {
-    return 'Client(id: $id, tenantId: $tenantId, companyName: $companyName, contactName: $contactName, taxId: $taxId, phone: $phone, alertThreshold: $alertThreshold, currentBalance: $currentBalance, vehicles: $vehicles, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'Client(id: $id, tenantId: $tenantId, companyName: $companyName, contactName: $contactName, taxId: $taxId, phone: $phone, alertThreshold: $alertThreshold, currentBalance: $currentBalance, vehicles: $vehicles, hasAppAccess: $hasAppAccess, accessPasswordHash: $accessPasswordHash, accessStatus: $accessStatus, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -328,6 +381,12 @@ class _$ClientImpl implements _Client {
             (identical(other.currentBalance, currentBalance) ||
                 other.currentBalance == currentBalance) &&
             const DeepCollectionEquality().equals(other._vehicles, _vehicles) &&
+            (identical(other.hasAppAccess, hasAppAccess) ||
+                other.hasAppAccess == hasAppAccess) &&
+            (identical(other.accessPasswordHash, accessPasswordHash) ||
+                other.accessPasswordHash == accessPasswordHash) &&
+            (identical(other.accessStatus, accessStatus) ||
+                other.accessStatus == accessStatus) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
             (identical(other.updatedAt, updatedAt) ||
@@ -347,6 +406,9 @@ class _$ClientImpl implements _Client {
     alertThreshold,
     currentBalance,
     const DeepCollectionEquality().hash(_vehicles),
+    hasAppAccess,
+    accessPasswordHash,
+    accessStatus,
     createdAt,
     updatedAt,
   );
@@ -376,6 +438,9 @@ abstract class _Client implements Client {
     final double alertThreshold,
     final double currentBalance,
     @VehicleListConverter() final List<ClientVehicle> vehicles,
+    final bool hasAppAccess,
+    final String accessPasswordHash,
+    final String accessStatus,
     required final DateTime createdAt,
     required final DateTime updatedAt,
   }) = _$ClientImpl;
@@ -402,6 +467,12 @@ abstract class _Client implements Client {
   @override
   @VehicleListConverter()
   List<ClientVehicle> get vehicles; // Véhicules du client
+  @override
+  bool get hasAppAccess;
+  @override
+  String get accessPasswordHash;
+  @override
+  String get accessStatus; // 'active' or 'blocked'
   @override
   DateTime get createdAt;
   @override

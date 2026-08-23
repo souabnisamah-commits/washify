@@ -231,4 +231,48 @@ class AuthRepository {
         .get();
     return querySnapshot.docs.map((doc) => _appUserFromDoc(doc)).toList();
   }
+
+  Future<void> syncB2BUserAccount({
+    required String clientId,
+    required String stationId,
+    required String companyName,
+    required String phone,
+    required String password,
+    required bool isActive,
+  }) async {
+    final sanitizedPhone = phone.replaceAll(RegExp(r'[^0-9]'), '');
+    if (sanitizedPhone.isEmpty) return;
+
+    final existingSnap = await _usersRef.where('phone', isEqualTo: sanitizedPhone).get();
+    
+    if (existingSnap.docs.isNotEmpty) {
+      final docId = existingSnap.docs.first.id;
+      final updates = <String, dynamic>{
+        'name': companyName,
+        'tenantId': stationId,
+        'isActive': isActive,
+        'clientId': clientId,
+        'updatedAt': Timestamp.now(),
+      };
+      if (password.isNotEmpty) {
+        updates['pinHash'] = hashPin(password);
+      }
+      await _usersRef.doc(docId).update(updates);
+    } else {
+      final newUserDoc = _usersRef.doc();
+      final user = AppUser(
+        id: newUserDoc.id,
+        tenantId: stationId,
+        phone: sanitizedPhone,
+        pinHash: hashPin(password),
+        name: companyName,
+        roles: [UserRole.clientB2B],
+        isActive: isActive,
+        clientId: clientId,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      await newUserDoc.set(_appUserToDoc(user));
+    }
+  }
 }

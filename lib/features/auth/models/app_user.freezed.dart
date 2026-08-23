@@ -34,6 +34,7 @@ mixin _$AppUser {
   bool get isActive => throw _privateConstructorUsedError;
   bool get isOnline => throw _privateConstructorUsedError;
   bool get forceLogout => throw _privateConstructorUsedError;
+  String? get clientId => throw _privateConstructorUsedError;
   DateTime? get lastLoginAt => throw _privateConstructorUsedError;
   DateTime get createdAt => throw _privateConstructorUsedError;
   DateTime get updatedAt => throw _privateConstructorUsedError;
@@ -64,6 +65,7 @@ abstract class $AppUserCopyWith<$Res> {
     bool isActive,
     bool isOnline,
     bool forceLogout,
+    String? clientId,
     DateTime? lastLoginAt,
     DateTime createdAt,
     DateTime updatedAt,
@@ -96,6 +98,7 @@ class _$AppUserCopyWithImpl<$Res, $Val extends AppUser>
     Object? isActive = null,
     Object? isOnline = null,
     Object? forceLogout = null,
+    Object? clientId = freezed,
     Object? lastLoginAt = freezed,
     Object? createdAt = null,
     Object? updatedAt = null,
@@ -146,6 +149,10 @@ class _$AppUserCopyWithImpl<$Res, $Val extends AppUser>
                 ? _value.forceLogout
                 : forceLogout // ignore: cast_nullable_to_non_nullable
                       as bool,
+            clientId: freezed == clientId
+                ? _value.clientId
+                : clientId // ignore: cast_nullable_to_non_nullable
+                      as String?,
             lastLoginAt: freezed == lastLoginAt
                 ? _value.lastLoginAt
                 : lastLoginAt // ignore: cast_nullable_to_non_nullable
@@ -184,6 +191,7 @@ abstract class _$$AppUserImplCopyWith<$Res> implements $AppUserCopyWith<$Res> {
     bool isActive,
     bool isOnline,
     bool forceLogout,
+    String? clientId,
     DateTime? lastLoginAt,
     DateTime createdAt,
     DateTime updatedAt,
@@ -215,6 +223,7 @@ class __$$AppUserImplCopyWithImpl<$Res>
     Object? isActive = null,
     Object? isOnline = null,
     Object? forceLogout = null,
+    Object? clientId = freezed,
     Object? lastLoginAt = freezed,
     Object? createdAt = null,
     Object? updatedAt = null,
@@ -265,6 +274,10 @@ class __$$AppUserImplCopyWithImpl<$Res>
             ? _value.forceLogout
             : forceLogout // ignore: cast_nullable_to_non_nullable
                   as bool,
+        clientId: freezed == clientId
+            ? _value.clientId
+            : clientId // ignore: cast_nullable_to_non_nullable
+                  as String?,
         lastLoginAt: freezed == lastLoginAt
             ? _value.lastLoginAt
             : lastLoginAt // ignore: cast_nullable_to_non_nullable
@@ -297,6 +310,7 @@ class _$AppUserImpl extends _AppUser {
     this.isActive = true,
     this.isOnline = false,
     this.forceLogout = false,
+    this.clientId,
     this.lastLoginAt,
     required this.createdAt,
     required this.updatedAt,
@@ -344,6 +358,8 @@ class _$AppUserImpl extends _AppUser {
   @JsonKey()
   final bool forceLogout;
   @override
+  final String? clientId;
+  @override
   final DateTime? lastLoginAt;
   @override
   final DateTime createdAt;
@@ -352,7 +368,7 @@ class _$AppUserImpl extends _AppUser {
 
   @override
   String toString() {
-    return 'AppUser(id: $id, tenantId: $tenantId, phone: $phone, pinHash: $pinHash, name: $name, roles: $roles, baseDailyWage: $baseDailyWage, extraHourRate: $extraHourRate, isActive: $isActive, isOnline: $isOnline, forceLogout: $forceLogout, lastLoginAt: $lastLoginAt, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'AppUser(id: $id, tenantId: $tenantId, phone: $phone, pinHash: $pinHash, name: $name, roles: $roles, baseDailyWage: $baseDailyWage, extraHourRate: $extraHourRate, isActive: $isActive, isOnline: $isOnline, forceLogout: $forceLogout, clientId: $clientId, lastLoginAt: $lastLoginAt, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -377,6 +393,8 @@ class _$AppUserImpl extends _AppUser {
                 other.isOnline == isOnline) &&
             (identical(other.forceLogout, forceLogout) ||
                 other.forceLogout == forceLogout) &&
+            (identical(other.clientId, clientId) ||
+                other.clientId == clientId) &&
             (identical(other.lastLoginAt, lastLoginAt) ||
                 other.lastLoginAt == lastLoginAt) &&
             (identical(other.createdAt, createdAt) ||
@@ -400,6 +418,7 @@ class _$AppUserImpl extends _AppUser {
     isActive,
     isOnline,
     forceLogout,
+    clientId,
     lastLoginAt,
     createdAt,
     updatedAt,
@@ -432,6 +451,7 @@ abstract class _AppUser extends AppUser {
     final bool isActive,
     final bool isOnline,
     final bool forceLogout,
+    final String? clientId,
     final DateTime? lastLoginAt,
     required final DateTime createdAt,
     required final DateTime updatedAt,
@@ -463,6 +483,8 @@ abstract class _AppUser extends AppUser {
   bool get isOnline;
   @override
   bool get forceLogout;
+  @override
+  String? get clientId;
   @override
   DateTime? get lastLoginAt;
   @override

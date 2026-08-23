@@ -18,6 +18,9 @@ _$ClientImpl _$$ClientImplFromJson(Map<String, dynamic> json) => _$ClientImpl(
   vehicles: json['vehicles'] == null
       ? const []
       : const VehicleListConverter().fromJson(json['vehicles'] as List),
+  hasAppAccess: json['hasAppAccess'] as bool? ?? false,
+  accessPasswordHash: json['accessPasswordHash'] as String? ?? '',
+  accessStatus: json['accessStatus'] as String? ?? 'active',
   createdAt: DateTime.parse(json['createdAt'] as String),
   updatedAt: DateTime.parse(json['updatedAt'] as String),
 );
@@ -33,6 +36,9 @@ Map<String, dynamic> _$$ClientImplToJson(_$ClientImpl instance) =>
       'alertThreshold': instance.alertThreshold,
       'currentBalance': instance.currentBalance,
       'vehicles': const VehicleListConverter().toJson(instance.vehicles),
+      'hasAppAccess': instance.hasAppAccess,
+      'accessPasswordHash': instance.accessPasswordHash,
+      'accessStatus': instance.accessStatus,
       'createdAt': instance.createdAt.toIso8601String(),
       'updatedAt': instance.updatedAt.toIso8601String(),
     };

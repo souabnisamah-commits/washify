@@ -113,6 +113,32 @@ class ClientRepository {
     return true;
   }
 
+  // WATCH SINGLE CLIENT
+  Stream<Client?> watchClientById(String clientId) {
+    return _clientsRef.doc(clientId).snapshots().map((doc) {
+      if (!doc.exists) return null;
+      return _clientFromDoc(doc);
+    });
+  }
+
+  // UPDATE B2B CLIENT APP ACCESS & STATUS
+  Future<void> updateClientAccess(
+    String clientId, {
+    required bool hasAppAccess,
+    required String accessStatus,
+    String? password,
+  }) async {
+    final updates = <String, dynamic>{
+      'hasAppAccess': hasAppAccess,
+      'accessStatus': accessStatus,
+      'updatedAt': Timestamp.now(),
+    };
+    if (password != null && password.isNotEmpty) {
+      updates['accessPasswordHash'] = password;
+    }
+    await _clientsRef.doc(clientId).update(updates);
+  }
+
   // WATCH CLIENTS
   Stream<List<Client>> watchClients(String stationId) {
     return _tenantClientsRef

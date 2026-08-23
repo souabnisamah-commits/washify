@@ -13,6 +13,7 @@ import 'package:washify/features/dashboard/worker_dashboard.dart';
 import 'package:washify/features/audit/screens/audit_application_screen.dart';
 import 'package:washify/features/employees/employees_screen.dart';
 import 'package:washify/features/clients/clients_screen.dart';
+import 'package:washify/features/clients/b2b_client_dashboard_screen.dart';
 
 // Child Screens
 import 'package:washify/features/stations/stations_screen.dart';
@@ -60,6 +61,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       if (isLoggingIn) {
         if (roles.contains(UserRole.admin)) return '/admin';
+        if (roles.contains(UserRole.clientB2B)) return '/client-b2b';
 
         final isPatron = roles.contains(UserRole.patron);
         final isWorker = roles.contains(UserRole.ouvrier);
@@ -80,6 +82,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Role-based route guards
       final path = state.matchedLocation;
       if (path.startsWith('/admin') && !roles.contains(UserRole.admin)) return '/login';
+      if (path.startsWith('/client-b2b') && !roles.contains(UserRole.clientB2B)) return '/login';
       
       // We check if the path starts with a base role path, and only restrict if they DON'T have that role
       if (path == '/patron' || path.startsWith('/patron/')) {
@@ -269,6 +272,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const WalletScreen(),
           ),
         ],
+      ),
+      // B2B Client Portal Route
+      GoRoute(
+        path: '/client-b2b',
+        builder: (context, state) => const B2BClientDashboardScreen(),
       ),
     ],
   );

@@ -257,6 +257,203 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
     }
   }
 
+  void _showManageAppAccessDialog() {
+    final formKey = GlobalKey<FormState>();
+    String password = '';
+    bool hasAccess = _currentClient.hasAppAccess;
+    String status = _currentClient.accessStatus.isEmpty ? 'active' : _currentClient.accessStatus;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Row(
+              children: [
+                const Icon(Icons.vpn_key_outlined, color: AppTheme.accentCyan),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Accès App Client B2B'.tr,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  ),
+                ),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryBlue.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppTheme.primaryBlue.withValues(alpha: 0.2)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Identifiant de connexion (Téléphone) :'.tr, style: const TextStyle(fontSize: 11, color: AppTheme.textHint)),
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              const Icon(Icons.phone, size: 16, color: AppTheme.primaryBlue),
+                              const SizedBox(width: 6),
+                              Text(
+                                _currentClient.phone.isNotEmpty ? _currentClient.phone : 'Non spécifié'.tr,
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Switch Enable/Disable Access
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text('Autoriser l\'Accès App'.tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      subtitle: Text(
+                        hasAccess
+                            ? 'Le client peut se connecter sur l\'application.'.tr
+                            : 'Accès désactivé par le lavoir.'.tr,
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      value: hasAccess,
+                      activeColor: AppTheme.accentCyan,
+                      onChanged: (val) {
+                        setDialogState(() {
+                          hasAccess = val;
+                          if (!val) status = 'blocked';
+                          else status = 'active';
+                        });
+                      },
+                    ),
+                    const Divider(height: 20),
+
+                    // Status Dropdown (Active vs Blocked)
+                    if (hasAccess) ...[
+                      DropdownButtonFormField<String>(
+                        value: status,
+                        decoration: InputDecoration(
+                          labelText: 'Statut de l\'accès'.tr,
+                          prefixIcon: const Icon(Icons.shield_outlined, color: AppTheme.accentCyan),
+                        ),
+                        items: [
+                          DropdownMenuItem(
+                            value: 'active',
+                            child: Row(
+                              children: [
+                                const Icon(Icons.check_circle, color: AppTheme.successGreen, size: 18),
+                                const SizedBox(width: 8),
+                                Text('Autorisé & Actif'.tr),
+                              ],
+                            ),
+                          ),
+                          DropdownMenuItem(
+                            value: 'blocked',
+                            child: Row(
+                              children: [
+                                const Icon(Icons.block, color: AppTheme.errorRed, size: 18),
+                                const SizedBox(width: 8),
+                                Text('Bloqué / Suspendu'.tr),
+                              ],
+                            ),
+                          ),
+                        ],
+                        onChanged: (val) {
+                          if (val != null) setDialogState(() => status = val);
+                        },
+                      ),
+                      const SizedBox(height: 14),
+                    ],
+
+                    // Password / PIN field
+                    TextFormField(
+                      obscureText: true,
+                      decoration: InputDecoration(
+                        labelText: 'Mot de passe / Code PIN'.tr,
+                        hintText: 'Laisser vide pour ne pas modifier'.tr,
+                        prefixIcon: const Icon(Icons.lock_outline, color: AppTheme.accentCyan),
+                      ),
+                      validator: (v) {
+                        if (hasAccess && _currentClient.accessPasswordHash.isEmpty && (v == null || v.trim().isEmpty)) {
+                          return 'Veuillez saisir un mot de passe initial'.tr;
+                        }
+                        return null;
+                      },
+                      onSaved: (v) => password = v?.trim() ?? '',
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Annuler'.tr),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  if (formKey.currentState!.validate()) {
+                    formKey.currentState!.save();
+                    final user = ref.read(currentUserProvider);
+                    if (user == null || user.stationId == null) return;
+
+                    final isClientActive = hasAccess && status == 'active';
+
+                    await ref.read(clientRepositoryProvider).updateClientAccess(
+                      _currentClient.id,
+                      hasAppAccess: hasAccess,
+                      accessStatus: status,
+                      password: password,
+                    );
+
+                    await ref.read(authRepositoryProvider).syncB2BUserAccount(
+                      clientId: _currentClient.id,
+                      stationId: user.stationId!,
+                      companyName: _currentClient.companyName,
+                      phone: _currentClient.phone,
+                      password: password,
+                      isActive: isClientActive,
+                    );
+
+                    final updated = _currentClient.copyWith(
+                      hasAppAccess: hasAccess,
+                      accessStatus: status,
+                      accessPasswordHash: password.isNotEmpty ? password : _currentClient.accessPasswordHash,
+                    );
+
+                    if (context.mounted) {
+                      setState(() {
+                        _currentClient = updated;
+                      });
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Accès App Client B2B mis à jour avec succès.'.tr),
+                          backgroundColor: AppTheme.successGreen,
+                        ),
+                      );
+                    }
+                  }
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.accentCyan, foregroundColor: Colors.white),
+                child: Text('Enregistrer'.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _exportUnpaidBalance() async {
     showDialog(context: context, barrierDismissible: false, builder: (_) => Center(child: CircularProgressIndicator()));
     try {
@@ -364,6 +561,18 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
           iconTheme: const IconThemeData(color: Colors.white),
           actions: [
             IconButton(
+              icon: Icon(
+                _currentClient.hasAppAccess && _currentClient.accessStatus == 'active'
+                    ? Icons.vpn_key
+                    : Icons.vpn_key_off_outlined,
+                color: _currentClient.hasAppAccess && _currentClient.accessStatus == 'active'
+                    ? AppTheme.accentCyan
+                    : Colors.white70,
+              ),
+              tooltip: 'Gérer l\'accès App Client B2B'.tr,
+              onPressed: _showManageAppAccessDialog,
+            ),
+            IconButton(
               icon: const Icon(Icons.edit),
               onPressed: _showEditClientDialog,
             ),
@@ -385,6 +594,44 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
         ),
         body: Column(
           children: [
+            // B2B App Access Status Bar
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        _currentClient.hasAppAccess && _currentClient.accessStatus == 'active'
+                            ? Icons.check_circle
+                            : Icons.block,
+                        size: 16,
+                        color: _currentClient.hasAppAccess && _currentClient.accessStatus == 'active'
+                            ? AppTheme.successGreen
+                            : AppTheme.warningOrange,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        _currentClient.hasAppAccess && _currentClient.accessStatus == 'active'
+                            ? 'Accès App Client: Autorisé'.tr
+                            : 'Accès App Client: Bloqué / Non configuré'.tr,
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  InkWell(
+                    onTap: _showManageAppAccessDialog,
+                    child: Text(
+                      'Gérer l\'Accès'.tr,
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.accentCyan, decoration: TextDecoration.underline),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
             Container(
               color: Theme.of(context).colorScheme.surface,
               padding: const EdgeInsets.all(16),

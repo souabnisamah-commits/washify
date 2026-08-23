@@ -35,6 +35,9 @@ class Client with _$Client {
     @Default(0.0) double alertThreshold, // Seuil d'alerte
     @Default(0.0) double currentBalance, // Montant total non payé
     @VehicleListConverter() @Default([]) List<ClientVehicle> vehicles, // Véhicules du client
+    @Default(false) bool hasAppAccess,
+    @Default('') String accessPasswordHash,
+    @Default('active') String accessStatus, // 'active' or 'blocked'
     required DateTime createdAt,
     required DateTime updatedAt,
   }) = _Client;

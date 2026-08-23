@@ -60,4 +60,5 @@ const _$UserRoleEnumMap = {
   UserRole.patron: 'patron',
   UserRole.caissier: 'caissier',
   UserRole.ouvrier: 'ouvrier',
+  UserRole.clientB2B: 'clientB2B',
 };

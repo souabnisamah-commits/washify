@@ -391,70 +391,33 @@ class _B2BClientDashboardScreenState extends ConsumerState<B2BClientDashboardScr
                         final isCancelled = t.status == TicketStatus.annule || t.status == TicketStatus.efface;
 
                         return Card(
-                          margin: const EdgeInsets.only(bottom: 10),
+                          margin: const EdgeInsets.only(bottom: 12),
                           elevation: isUnpaid ? 3 : 1.5,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(14),
                             side: isUnpaid
                                 ? BorderSide(color: AppTheme.warningOrange.withValues(alpha: 0.6), width: 1.5)
                                 : BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.2)),
                           ),
                           child: Padding(
-                            padding: const EdgeInsets.all(12.0),
+                            padding: const EdgeInsets.all(14.0),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                // Top Row: Ticket Number Badge & Status Pill
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Row(
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                          decoration: BoxDecoration(
-                                            color: AppTheme.accentCyan.withValues(alpha: 0.15),
-                                            borderRadius: BorderRadius.circular(6),
-                                          ),
-                                          child: Text(
-                                            'N° ${t.ticketNumber}',
-                                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.accentCyan),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          (t.vehiclePlate != null && t.vehiclePlate!.isNotEmpty) ? t.vehiclePlate! : 'Moquette'.tr,
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 15,
-                                            decoration: isCancelled ? TextDecoration.lineThrough : null,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    Text(
-                                      currencyFormat.format(t.totalAmount),
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: isCancelled
-                                            ? AppTheme.textHint
-                                            : (isUnpaid ? AppTheme.errorRed : AppTheme.successGreen),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.accentCyan.withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(6),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  t.serviceName ?? '',
-                                  style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                                ),
-                                const SizedBox(height: 6),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      DateFormat('dd/MM/yyyy HH:mm').format(t.createdAt),
-                                      style: const TextStyle(fontSize: 11, color: AppTheme.textHint),
+                                      child: Text(
+                                        'Ticket ${t.ticketNumber}',
+                                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.accentCyan),
+                                      ),
                                     ),
 
                                     // Status Pill
@@ -509,6 +472,64 @@ class _B2BClientDashboardScreenState extends ConsumerState<B2BClientDashboardScr
                                           ],
                                         ),
                                       ),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+
+                                // Vehicle Plate & Service Name
+                                Row(
+                                  children: [
+                                    Icon(
+                                      t.operationType == 'moquette' ? Icons.layers : Icons.directions_car,
+                                      color: isCancelled ? AppTheme.textHint : AppTheme.accentCyan,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        (t.vehiclePlate != null && t.vehiclePlate!.isNotEmpty) ? t.vehiclePlate! : 'Moquette'.tr,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                          decoration: isCancelled ? TextDecoration.lineThrough : null,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                if (t.serviceName != null && t.serviceName!.isNotEmpty) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    t.serviceName!,
+                                    style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                                  ),
+                                ],
+                                const Divider(height: 16),
+
+                                // Footer Row: Date/Time & Price
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.access_time, size: 14, color: AppTheme.textHint),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          DateFormat('dd/MM/yyyy HH:mm').format(t.createdAt),
+                                          style: const TextStyle(fontSize: 12, color: AppTheme.textHint),
+                                        ),
+                                      ],
+                                    ),
+                                    Text(
+                                      currencyFormat.format(t.totalAmount),
+                                      style: TextStyle(
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.bold,
+                                        color: isCancelled
+                                            ? AppTheme.textHint
+                                            : (isUnpaid ? AppTheme.errorRed : AppTheme.successGreen),
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ],

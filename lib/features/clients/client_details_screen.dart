@@ -37,6 +37,7 @@ class ClientDetailsScreen extends ConsumerStatefulWidget {
 class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
   final currencyFormat = NumberFormat.currency(locale: 'fr_FR', symbol: 'DT');
   late Client _currentClient;
+  String _ticketFilter = 'all'; // 'all', 'unpaid', 'paid'
 
   @override
   void initState() {
@@ -696,23 +697,224 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
     final ticketsAsync = ref.watch(clientTicketsProvider(_currentClient.id));
     return ticketsAsync.when(
       data: (tickets) {
-        if (tickets.isEmpty) return Center(child: Text('Aucun ticket'.tr));
-        return ListView.builder(
-          itemCount: tickets.length,
-          itemBuilder: (context, index) {
-            final t = tickets[index];
-            return Card(
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: ListTile(
-                title: Text('${t.vehiclePlate} - ${t.serviceName}'),
-                subtitle: Text(DateFormat('dd/MM/yyyy HH:mm').format(t.createdAt)),
-                trailing: Text(currencyFormat.format(t.montant), style: TextStyle(fontWeight: FontWeight.bold)),
+        if (tickets.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.receipt_long_outlined, size: 48, color: AppTheme.textHint),
+                const SizedBox(height: 12),
+                Text('Aucun ticket enregistré pour ce client.'.tr, style: const TextStyle(color: AppTheme.textHint)),
+              ],
+            ),
+          );
+        }
+
+        // Calculate FIFO Unpaid tickets making up the current balance
+        final Set<String> unpaidTicketIds = {};
+        final validTickets = tickets.where((t) => t.status != TicketStatus.annule && t.status != TicketStatus.efface).toList();
+        
+        double remBalance = _currentClient.currentBalance;
+        for (final t in validTickets) {
+          if (remBalance <= 0.01) break;
+          unpaidTicketIds.add(t.id);
+          remBalance -= t.montant;
+        }
+
+        final unpaidCount = tickets.where((t) => unpaidTicketIds.contains(t.id)).length;
+        final paidCount = tickets.where((t) => !unpaidTicketIds.contains(t.id) && t.status != TicketStatus.annule && t.status != TicketStatus.efface).length;
+
+        final filtered = tickets.where((t) {
+          final isUnpaid = unpaidTicketIds.contains(t.id);
+          final isCancelled = t.status == TicketStatus.annule || t.status == TicketStatus.efface;
+          final isPaid = !isUnpaid && !isCancelled;
+
+          if (_ticketFilter == 'unpaid' && !isUnpaid) return false;
+          if (_ticketFilter == 'paid' && !isPaid) return false;
+          return true;
+        }).toList();
+
+        return Column(
+          children: [
+            // Filter Bar
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    FilterChip(
+                      label: Text('Tous (${tickets.length})'.tr),
+                      selected: _ticketFilter == 'all',
+                      onSelected: (_) => setState(() => _ticketFilter = 'all'),
+                    ),
+                    const SizedBox(width: 8),
+                    FilterChip(
+                      avatar: const Icon(Icons.warning_amber_rounded, size: 14, color: AppTheme.warningOrange),
+                      label: Text('Solde En Cours ($unpaidCount)'.tr),
+                      selected: _ticketFilter == 'unpaid',
+                      selectedColor: AppTheme.warningOrange.withValues(alpha: 0.25),
+                      onSelected: (_) => setState(() => _ticketFilter = 'unpaid'),
+                    ),
+                    const SizedBox(width: 8),
+                    FilterChip(
+                      avatar: const Icon(Icons.check_circle_outline, size: 14, color: AppTheme.successGreen),
+                      label: Text('Archivés / Réglés ($paidCount)'.tr),
+                      selected: _ticketFilter == 'paid',
+                      selectedColor: AppTheme.successGreen.withValues(alpha: 0.25),
+                      onSelected: (_) => setState(() => _ticketFilter = 'paid'),
+                    ),
+                  ],
+                ),
               ),
-            );
-          },
+            ),
+
+            // Tickets List
+            Expanded(
+              child: filtered.isEmpty
+                  ? Center(
+                      child: Text('Aucun ticket ne correspond au filtre.'.tr, style: const TextStyle(color: AppTheme.textHint)),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: filtered.length,
+                      itemBuilder: (context, index) {
+                        final t = filtered[index];
+                        final isUnpaid = unpaidTicketIds.contains(t.id);
+                        final isCancelled = t.status == TicketStatus.annule || t.status == TicketStatus.efface;
+
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          elevation: isUnpaid ? 3 : 1,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: isUnpaid
+                                ? BorderSide(color: AppTheme.warningOrange.withValues(alpha: 0.6), width: 1.5)
+                                : BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.2)),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(14.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                          decoration: BoxDecoration(
+                                            color: AppTheme.primaryBlue.withValues(alpha: 0.15),
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: Text(
+                                            'N° ${t.ticketNumber}',
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppTheme.primaryBlue),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          (t.vehiclePlate != null && t.vehiclePlate!.isNotEmpty) ? t.vehiclePlate! : 'Moquette'.tr,
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 15,
+                                            decoration: isCancelled ? TextDecoration.lineThrough : null,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    Text(
+                                      currencyFormat.format(t.montant),
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                        color: isCancelled
+                                            ? AppTheme.textHint
+                                            : (isUnpaid ? AppTheme.errorRed : AppTheme.successGreen),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  t.serviceName ?? '',
+                                  style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      DateFormat('dd/MM/yyyy HH:mm').format(t.createdAt),
+                                      style: const TextStyle(fontSize: 11, color: AppTheme.textHint),
+                                    ),
+
+                                    // Payment Status Pill
+                                    if (isCancelled)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.textHint.withValues(alpha: 0.15),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Text(
+                                          'Annulé'.tr,
+                                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.textHint),
+                                        ),
+                                      )
+                                    else if (isUnpaid)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.warningOrange.withValues(alpha: 0.15),
+                                          borderRadius: BorderRadius.circular(6),
+                                          border: Border.all(color: AppTheme.warningOrange.withValues(alpha: 0.4)),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(Icons.warning_amber_rounded, size: 12, color: AppTheme.warningOrange),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              'Solde non réglé'.tr,
+                                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.warningOrange),
+                                            ),
+                                          ],
+                                        ),
+                                      )
+                                    else
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.successGreen.withValues(alpha: 0.15),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(Icons.check_circle_outline, size: 12, color: AppTheme.successGreen),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              'Réglé / Archivé'.tr,
+                                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.successGreen),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
         );
       },
-      loading: () => Center(child: CircularProgressIndicator()),
+      loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('Erreur: $e'.tr)),
     );
   }

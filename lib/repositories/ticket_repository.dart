@@ -365,8 +365,10 @@ class TicketRepository {
 
     Ticket updatedTicket = ticket;
     if (oldStatus != 'paye' && ticket.status == TicketStatus.paye) {
-      final finalTicketNumber = await _getNextTicketNumber(ticket.tenantId, ticket.createdAt);
-      updatedTicket = ticket.copyWith(ticketNumber: finalTicketNumber);
+      if (ticket.ticketNumber.isEmpty || ticket.ticketNumber.startsWith('DRAFT')) {
+        final finalTicketNumber = await _getNextTicketNumber(ticket.tenantId, ticket.createdAt);
+        updatedTicket = ticket.copyWith(ticketNumber: finalTicketNumber);
+      }
     }
 
     await _ticketsRef.doc(ticket.id).update(_ticketToDoc(updatedTicket));
@@ -501,25 +503,28 @@ class TicketRepository {
       };
       
       if (oldStatus != 'paye' && mappedStatus == 'paye') {
-        final stationId = data['stationId'] ?? data['tenantId'] ?? tenantId;
-        final createdAt = (data['createdAt'] as Timestamp).toDate();
-        
-        final dateStr = "${createdAt.day.toString().padLeft(2, '0')}${createdAt.month.toString().padLeft(2, '0')}${createdAt.year.toString().substring(2)}";
-        final timeStr = "${createdAt.hour.toString().padLeft(2, '0')}:${createdAt.minute.toString().padLeft(2, '0')}";
-        final counterRef = _firestore.collection('ticket_counters').doc('${stationId}_$dateStr');
-        
-        final counterSnapshot = await transaction.get(counterRef);
-        int currentCount = 0;
-        if (counterSnapshot.exists) {
-          currentCount = counterSnapshot.data()?['lastValidated'] as int? ?? 0;
+        final existingTicketNum = data['ticketNumber'] as String? ?? '';
+        if (existingTicketNum.isEmpty || existingTicketNum.startsWith('DRAFT')) {
+          final stationId = data['stationId'] ?? data['tenantId'] ?? tenantId;
+          final createdAt = (data['createdAt'] as Timestamp).toDate();
+          
+          final dateStr = "${createdAt.day.toString().padLeft(2, '0')}${createdAt.month.toString().padLeft(2, '0')}${createdAt.year.toString().substring(2)}";
+          final timeStr = "${createdAt.hour.toString().padLeft(2, '0')}:${createdAt.minute.toString().padLeft(2, '0')}";
+          final counterRef = _firestore.collection('ticket_counters').doc('${stationId}_$dateStr');
+          
+          final counterSnapshot = await transaction.get(counterRef);
+          int currentCount = 0;
+          if (counterSnapshot.exists) {
+            currentCount = counterSnapshot.data()?['lastValidated'] as int? ?? 0;
+          }
+          final nextCount = currentCount + 1;
+          transaction.set(counterRef, {
+            'lastValidated': nextCount,
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+          
+          updates['ticketNumber'] = "N°:${nextCount.toString().padLeft(3, '0')}-$dateStr-$timeStr";
         }
-        final nextCount = currentCount + 1;
-        transaction.set(counterRef, {
-          'lastValidated': nextCount,
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-        
-        updates['ticketNumber'] = "N°:${nextCount.toString().padLeft(3, '0')}-$dateStr-$timeStr";
       }
       
       transaction.update(docRef, updates);

@@ -37,6 +37,30 @@ class StockContainerBreakdown {
   });
 }
 
+class ConsumedContainerBreakdown {
+  final double consumedMl;
+  final double containerCapacityMl;
+  final int fullContainersConsumed;
+  final bool hasPartialConsumed;
+  final double partialConsumedMl;
+  final double partialConsumedPercent; // 0.0 to 100.0 %
+  final int totalContainersTouched;
+  final String displayText; // e.g. "2x Bidon(s) (10 000 ml) + 2500 ml / 5000 ml"
+  final String shortBadgeText; // e.g. "2500 ml / 5000 ml" or "2 Bidons + 2500ml/5000ml"
+
+  ConsumedContainerBreakdown({
+    required this.consumedMl,
+    required this.containerCapacityMl,
+    required this.fullContainersConsumed,
+    required this.hasPartialConsumed,
+    required this.partialConsumedMl,
+    required this.partialConsumedPercent,
+    required this.totalContainersTouched,
+    required this.displayText,
+    required this.shortBadgeText,
+  });
+}
+
 StockContainerBreakdown parseStockContainers(
   double quantity,
   String rawUnit, {
@@ -72,15 +96,12 @@ StockContainerBreakdown parseStockContainers(
   }
 
   // 2. LIQUID CONSUMABLES (Standard & Premium)
-  // Calculate total volume in ml
   double totalMl = quantity;
   if (unit == 'l' || unit == 'litre' || unit == 'litres') {
     totalMl = quantity * 1000.0;
   } else if (unit == 'cl' || unit == 'centilitre' || unit == 'centilitres') {
     totalMl = quantity * 10.0;
   } else if (unit == 'bidon' || unit == 'bidons') {
-    // If unit is "Bidon" in database but stock stored in ml (e.g. 5968 ml), use totalMl = quantity!
-    // Unless quantity is small (e.g. 1.19 bidons), in which case 1.19 * capacityMl = 5968 ml
     final capTest = (customCapacityMl > 0) ? customCapacityMl : 5000.0;
     if (quantity < 100 && quantity > 0) {
       totalMl = quantity * capTest;
@@ -150,5 +171,64 @@ StockContainerBreakdown parseStockContainers(
     openLabel: openStr,
     displayText: text,
     rawTotalText: 'Volume total brut : $totalMlStr ml',
+  );
+}
+
+ConsumedContainerBreakdown parseConsumedQuantity(
+  double consumedMl,
+  String rawUnit, {
+  double customCapacityMl = 0.0,
+}) {
+  final capacity = customCapacityMl > 0 ? customCapacityMl : 5000.0;
+  final capIntStr = capacity % 1 == 0 ? capacity.toInt().toString() : capacity.toStringAsFixed(0);
+
+  if (consumedMl <= 0) {
+    return ConsumedContainerBreakdown(
+      consumedMl: 0.0,
+      containerCapacityMl: capacity,
+      fullContainersConsumed: 0,
+      hasPartialConsumed: false,
+      partialConsumedMl: 0.0,
+      partialConsumedPercent: 0.0,
+      totalContainersTouched: 0,
+      displayText: 'Aucune consommation (0 ml)',
+      shortBadgeText: '0 ml',
+    );
+  }
+
+  final int fullCount = (consumedMl / capacity).floor();
+  final double remMl = consumedMl % capacity;
+  final bool hasPartial = remMl > 0.1;
+  final double partialPercent = hasPartial ? ((remMl / capacity) * 100.0).clamp(0.1, 99.9) : 0.0;
+  final int totalTouched = fullCount + (hasPartial ? 1 : 0);
+
+  final String remIntStr = remMl % 1 == 0 ? remMl.toInt().toString() : remMl.toStringAsFixed(0);
+  final String percentStr = partialPercent % 1 == 0 ? partialPercent.toInt().toString() : partialPercent.toStringAsFixed(1);
+  final String consumedIntStr = consumedMl % 1 == 0 ? consumedMl.toInt().toString() : consumedMl.toStringAsFixed(0);
+
+  String text;
+  String badge;
+
+  if (fullCount > 0 && hasPartial) {
+    text = '${fullCount}x Bidon${fullCount > 1 ? 's' : ''} + $remIntStr ml / $capIntStr ml ($percentStr% d\'un bidon)';
+    badge = '${fullCount}x Bidon${fullCount > 1 ? 's' : ''} + $remIntStr/$capIntStr ml';
+  } else if (fullCount > 0 && !hasPartial) {
+    text = '${fullCount}x Bidon${fullCount > 1 ? 's' : ''} Plein${fullCount > 1 ? 's' : ''} Consommé${fullCount > 1 ? 's' : ''} ($consumedIntStr ml)';
+    badge = '${fullCount}x Bidon${fullCount > 1 ? 's' : ''} ($consumedIntStr ml)';
+  } else {
+    text = '$remIntStr ml / $capIntStr ml ($percentStr% d\'un bidon)';
+    badge = '$remIntStr ml / $capIntStr ml';
+  }
+
+  return ConsumedContainerBreakdown(
+    consumedMl: consumedMl,
+    containerCapacityMl: capacity,
+    fullContainersConsumed: fullCount,
+    hasPartialConsumed: hasPartial,
+    partialConsumedMl: remMl,
+    partialConsumedPercent: partialPercent,
+    totalContainersTouched: totalTouched,
+    displayText: text,
+    shortBadgeText: badge,
   );
 }

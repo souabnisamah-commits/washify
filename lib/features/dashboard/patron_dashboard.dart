@@ -1701,19 +1701,27 @@ class _JerrycanGaugeWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final totalCapacity = (currentStock + consumedQuantity);
-    final fillRatio = totalCapacity > 0 ? (currentStock / totalCapacity).clamp(0.0, 1.0) : 1.0;
+    final cap = capacityMl > 0 ? capacityMl : 5000.0;
+    final consumedBreakdown = parseConsumedQuantity(consumedQuantity, unit, customCapacityMl: cap);
+    final stockBreakdown = parseStockContainers(currentStock, unit, customCapacityMl: cap);
+
     final isLowStock = currentStock <= minStock;
+    final capIntStr = cap % 1 == 0 ? cap.toInt().toString() : cap.toStringAsFixed(0);
+
+    // Fill ratio for open consumed bidon (e.g. 2500/5000 = 0.5)
+    final double consumedRatio = consumedBreakdown.hasPartialConsumed
+        ? (consumedBreakdown.partialConsumedPercent / 100.0)
+        : (consumedQuantity > 0 ? 1.0 : 0.0);
 
     return Container(
-      width: 290,
-      padding: const EdgeInsets.all(12),
+      width: 320,
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppTheme.surfaceCard,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isLowStock ? AppTheme.errorRed : themeColor.withValues(alpha: 0.3),
-          width: isLowStock ? 2 : 1,
+          color: isLowStock ? AppTheme.errorRed : themeColor.withValues(alpha: 0.35),
+          width: isLowStock ? 2 : 1.2,
         ),
         boxShadow: [
           BoxShadow(
@@ -1723,133 +1731,177 @@ class _JerrycanGaugeWidget extends StatelessWidget {
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Visual Jerrycan Graphic
-          Container(
-            width: 56,
-            height: 76,
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: themeColor.withValues(alpha: 0.5), width: 1.5),
-            ),
-            child: Stack(
-              alignment: Alignment.bottomCenter,
-              children: [
-                // Liquid Fill Level
-                FractionallySizedBox(
-                  heightFactor: fillRatio,
-                  widthFactor: 1.0,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          themeColor.withValues(alpha: 0.6),
-                          themeColor,
-                        ],
-                        begin: Alignment.bottomCenter,
-                        end: Alignment.topCenter,
-                      ),
-                      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(6)),
-                    ),
-                  ),
-                ),
-                // Cap visual
-                Positioned(
-                  top: 2,
-                  child: Container(
-                    width: 14,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[700],
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                // Fill Percentage Text
-                Center(
-                  child: Text(
-                    '${(fillRatio * 100).toInt()}%',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                      color: Colors.white,
-                      shadows: [Shadow(color: Colors.black, blurRadius: 4)],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-
-          // Product Details
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
+          // Header: Name & Family Badge
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
                   productName,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  familyLabel,
-                  style: TextStyle(fontSize: 10, color: themeColor, fontWeight: FontWeight.w600),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: themeColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(6),
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  'Référence Bidons / Stock:',
-                  style: const TextStyle(fontSize: 10, color: AppTheme.textHint),
+                child: Text(
+                  '1 Bidon = $capIntStr ml',
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: themeColor),
                 ),
-                Text(
-                  parseStockContainers(currentStock, unit, customCapacityMl: capacityMl).displayText,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w900,
-                    color: isLowStock ? AppTheme.errorRed : AppTheme.successGreen,
-                  ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          // Main Visual Row: Jerrycan Graphic + Consumed breakdown
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Visual Jerrycan Graphic for Consumed Volume
+              Container(
+                width: 58,
+                height: 78,
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.25),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: themeColor, width: 1.5),
                 ),
-                const SizedBox(height: 4),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Stack(
+                  alignment: Alignment.bottomCenter,
                   children: [
-                    Text(
-                      'Total brut: ${currentStock % 1 == 0 ? currentStock.toInt() : currentStock.toStringAsFixed(1)} $unit',
-                      style: const TextStyle(fontSize: 10, color: AppTheme.textHint),
+                    FractionallySizedBox(
+                      heightFactor: consumedRatio.clamp(0.04, 1.0),
+                      widthFactor: 1.0,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              themeColor.withValues(alpha: 0.6),
+                              themeColor,
+                            ],
+                            begin: Alignment.bottomCenter,
+                            end: Alignment.topCenter,
+                          ),
+                          borderRadius: const BorderRadius.vertical(bottom: Radius.circular(6)),
+                        ),
+                      ),
                     ),
-                    Text(
-                      'Consommé: ${consumedQuantity % 1 == 0 ? consumedQuantity.toInt() : consumedQuantity.toStringAsFixed(1)} $unit',
-                      style: const TextStyle(fontSize: 10, color: AppTheme.textHint),
+                    Positioned(
+                      top: 2,
+                      child: Container(
+                        width: 14,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[700],
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    Center(
+                      child: Text(
+                        consumedBreakdown.hasPartialConsumed
+                            ? '${consumedBreakdown.partialConsumedMl.toInt()}/${capIntStr}'
+                            : (consumedQuantity > 0 ? '${consumedQuantity.toInt()} ml' : '0 ml'),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 10,
+                          color: Colors.white,
+                          shadows: [Shadow(color: Colors.black, blurRadius: 4)],
+                        ),
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
-                // Stock Projection
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: themeColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.query_builder, size: 10, color: themeColor),
-                      const SizedBox(width: 4),
-                      Text(
-                        projectedWashes > 0 ? '~ $projectedWashes lavages autonomes' : 'Rupture imminente',
-                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: themeColor),
+              ),
+              const SizedBox(width: 12),
+
+              // Consumed Details Column
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.local_fire_department_rounded, size: 14, color: Colors.orange),
+                        const SizedBox(width: 4),
+                        const Text(
+                          'Quantité Consommée :',
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.textHint),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${consumedQuantity % 1 == 0 ? consumedQuantity.toInt() : consumedQuantity.toStringAsFixed(0)} ml',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Colors.orange),
+                    ),
+                    const SizedBox(height: 4),
+
+                    // Consumed Ratio Breakdown (e.g. 2x Bidon + 2500 ml / 5000 ml)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
                       ),
-                    ],
-                  ),
+                      child: Text(
+                        consumedBreakdown.displayText,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.orange.shade900,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
+          ),
+          const Divider(height: 16),
+
+          // Reserve Stock Reference Section
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Stock Restant en Réserve :', style: TextStyle(fontSize: 10, color: AppTheme.textHint)),
+                    Text(
+                      stockBreakdown.displayText,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: isLowStock ? AppTheme.errorRed : AppTheme.successGreen,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                decoration: BoxDecoration(
+                  color: themeColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  projectedWashes > 0 ? '~ $projectedWashes lavages' : 'Alerte stock',
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: themeColor),
+                ),
+              ),
+            ],
           ),
         ],
       ),

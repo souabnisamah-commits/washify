@@ -15,6 +15,7 @@ import 'package:washify/features/stock/models/stock.dart';
 import 'package:washify/features/products/models/product.dart';
 import 'package:washify/features/inventory/models/inventory.dart';
 import 'package:washify/features/inventory/widgets/liquid_inventory_input_card.dart';
+import 'package:washify/core/widgets/barcode_scan_button.dart';
 
 class InventoryFormScreen extends ConsumerStatefulWidget {
   const InventoryFormScreen({super.key});
@@ -489,7 +490,19 @@ class _InventoryCategoryTabViewState extends State<_InventoryCategoryTabView> {
                         setState(() => _searchQuery = '');
                       },
                     )
-                  : (isBoutique ? const Icon(Icons.qr_code_scanner, color: AppTheme.accentCyan, size: 20) : null),
+                  : (isBoutique
+                      ? Padding(
+                          padding: const EdgeInsets.only(right: 4),
+                          child: BarcodeScanButton(
+                            onScanned: (barcode) {
+                              _searchController.text = barcode;
+                              setState(() => _searchQuery = barcode);
+                            },
+                            iconSize: 20,
+                            iconColor: AppTheme.accentCyan,
+                          ),
+                        )
+                      : null),
               filled: true,
               fillColor: Theme.of(context).colorScheme.surface,
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),

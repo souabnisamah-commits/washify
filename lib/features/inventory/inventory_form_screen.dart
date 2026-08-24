@@ -27,6 +27,7 @@ class _InventoryFormScreenState extends ConsumerState<InventoryFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _notesController = TextEditingController();
   final Map<String, TextEditingController> _controllers = {};
+  final Set<String> _countedProductIds = {};
   bool _isSaving = false;
   bool _initialized = false;
 
@@ -246,8 +247,18 @@ class _InventoryFormScreenState extends ConsumerState<InventoryFormScreen> {
                               products: products,
                               stockLevels: stockLevels,
                               controllers: _controllers,
+                              countedProductIds: _countedProductIds,
                               stationId: stationId,
                               onChanged: () => setState(() {}),
+                              onToggleCounted: (id) {
+                                setState(() {
+                                  if (_countedProductIds.contains(id)) {
+                                    _countedProductIds.remove(id);
+                                  } else {
+                                    _countedProductIds.add(id);
+                                  }
+                                });
+                              },
                             ),
 
                             // Tab 2: Consommables Premium (Extra)
@@ -256,8 +267,18 @@ class _InventoryFormScreenState extends ConsumerState<InventoryFormScreen> {
                               products: products,
                               stockLevels: stockLevels,
                               controllers: _controllers,
+                              countedProductIds: _countedProductIds,
                               stationId: stationId,
                               onChanged: () => setState(() {}),
+                              onToggleCounted: (id) {
+                                setState(() {
+                                  if (_countedProductIds.contains(id)) {
+                                    _countedProductIds.remove(id);
+                                  } else {
+                                    _countedProductIds.add(id);
+                                  }
+                                });
+                              },
                             ),
 
                             // Tab 3: Consommables Standard
@@ -266,8 +287,18 @@ class _InventoryFormScreenState extends ConsumerState<InventoryFormScreen> {
                               products: products,
                               stockLevels: stockLevels,
                               controllers: _controllers,
+                              countedProductIds: _countedProductIds,
                               stationId: stationId,
                               onChanged: () => setState(() {}),
+                              onToggleCounted: (id) {
+                                setState(() {
+                                  if (_countedProductIds.contains(id)) {
+                                    _countedProductIds.remove(id);
+                                  } else {
+                                    _countedProductIds.add(id);
+                                  }
+                                });
+                              },
                             ),
                           ],
                         ),
@@ -340,16 +371,20 @@ class _InventoryCategoryTabView extends StatefulWidget {
   final List<Product> products;
   final List<StockLevel> stockLevels;
   final Map<String, TextEditingController> controllers;
+  final Set<String> countedProductIds;
   final String stationId;
   final VoidCallback onChanged;
+  final void Function(String productId) onToggleCounted;
 
   const _InventoryCategoryTabView({
     required this.family,
     required this.products,
     required this.stockLevels,
     required this.controllers,
+    required this.countedProductIds,
     required this.stationId,
     required this.onChanged,
+    required this.onToggleCounted,
   });
 
   @override
@@ -359,6 +394,7 @@ class _InventoryCategoryTabView extends StatefulWidget {
 class _InventoryCategoryTabViewState extends State<_InventoryCategoryTabView> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  int _filterMode = 0; // 0: Reste à compter, 1: Déjà comptés, 2: Tous
 
   @override
   void dispose() {
@@ -369,26 +405,74 @@ class _InventoryCategoryTabViewState extends State<_InventoryCategoryTabView> {
   @override
   Widget build(BuildContext context) {
     final isBoutique = widget.family == ProductFamily.revente;
+    final categoryProducts = widget.products.where((p) => p.family == widget.family).toList();
+    final totalCount = categoryProducts.length;
+    final countedCount = categoryProducts.where((p) => widget.countedProductIds.contains(p.id)).length;
+    final uncountedCount = totalCount - countedCount;
+    final double progress = totalCount > 0 ? (countedCount / totalCount) : 1.0;
 
-    final filteredProducts = widget.products.where((p) {
-      if (p.family != widget.family) return false;
-
+    final filteredProducts = categoryProducts.where((p) {
+      // Search Filter
       if (_searchQuery.trim().isNotEmpty) {
         final q = _searchQuery.trim().toLowerCase();
         final nameMatch = p.name.toLowerCase().contains(q);
         final barcodeMatch = p.barcode.toLowerCase().contains(q);
         final unitMatch = p.unit.toLowerCase().contains(q);
-        return nameMatch || barcodeMatch || unitMatch;
+        if (!nameMatch && !barcodeMatch && !unitMatch) return false;
       }
+
+      // Classification Filter Mode
+      final isCounted = widget.countedProductIds.contains(p.id);
+      if (_filterMode == 0 && isCounted) return false; // Reste à compter
+      if (_filterMode == 1 && !isCounted) return false; // Déjà comptés
 
       return true;
     }).toList();
 
     return Column(
       children: [
+        // Category Completion Progress Bar
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          color: Theme.of(context).colorScheme.surface,
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Avancement ${widget.family.label} :',
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    '$countedCount / $totalCount comptés (${(progress * 100).toInt()}%)',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: progress == 1.0 ? AppTheme.successGreen : AppTheme.primaryBlue,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 8,
+                  backgroundColor: Colors.grey.withValues(alpha: 0.2),
+                  valueColor: AlwaysStoppedAnimation(
+                    progress == 1.0 ? AppTheme.successGreen : AppTheme.accentCyan,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
         // Intelligent Search Bar
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
           child: TextField(
             controller: _searchController,
             onChanged: (val) => setState(() => _searchQuery = val),
@@ -408,54 +492,77 @@ class _InventoryCategoryTabViewState extends State<_InventoryCategoryTabView> {
                   : (isBoutique ? const Icon(Icons.qr_code_scanner, color: AppTheme.accentCyan, size: 20) : null),
               filled: true,
               fillColor: Theme.of(context).colorScheme.surface,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(color: AppTheme.accentCyan.withValues(alpha: 0.3)),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: AppTheme.accentCyan.withValues(alpha: 0.3)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppTheme.accentCyan, width: 2),
               ),
             ),
           ),
         ),
 
-        // Count Banner
+        // Filter Mode Segmented Chips
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 2),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                '${filteredProducts.length} produit(s) à compter',
-                style: const TextStyle(fontSize: 12, color: AppTheme.textHint, fontWeight: FontWeight.bold),
-              ),
+              _buildFilterChip(0, '⏳ Reste à compter ($uncountedCount)', Colors.orange),
+              const SizedBox(width: 6),
+              _buildFilterChip(1, '✅ Déjà comptés ($countedCount)', AppTheme.successGreen),
+              const SizedBox(width: 6),
+              _buildFilterChip(2, '📋 Tous ($totalCount)', AppTheme.primaryBlue),
             ],
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 4),
 
-        // Products List
+        // Products List or Completion Celebration Banner
         Expanded(
           child: filteredProducts.isEmpty
               ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(isBoutique ? Icons.shopping_bag_outlined : Icons.inventory_2_outlined, size: 48, color: AppTheme.textHint.withValues(alpha: 0.5)),
-                      const SizedBox(height: 12),
-                      Text(
-                        _searchQuery.isNotEmpty
-                            ? 'Aucun produit ne correspond à la recherche.'.tr
-                            : 'Aucun produit dans cette catégorie.'.tr,
-                        style: const TextStyle(color: AppTheme.textHint),
-                      ),
-                    ],
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (_filterMode == 0 && uncountedCount == 0 && totalCount > 0) ...[
+                          const Icon(Icons.stars_rounded, size: 64, color: AppTheme.successGreen),
+                          const SizedBox(height: 14),
+                          Text(
+                            '🎉 Félicitations !'.tr,
+                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppTheme.successGreen),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Tous les produits de la catégorie "${widget.family.label}" ont été inventoriés avec succès ($totalCount/$totalCount).'
+                                .tr,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(fontSize: 13, color: AppTheme.textHint, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 16),
+                          OutlinedButton.icon(
+                            onPressed: () => setState(() => _filterMode = 2),
+                            icon: const Icon(Icons.list_alt),
+                            label: Text('Revoir tous les produits comptés'.tr),
+                          ),
+                        ] else ...[
+                          Icon(
+                            isBoutique ? Icons.shopping_bag_outlined : Icons.inventory_2_outlined,
+                            size: 48,
+                            color: AppTheme.textHint.withValues(alpha: 0.5),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            _searchQuery.isNotEmpty
+                                ? 'Aucun produit ne correspond à la recherche.'.tr
+                                : (_filterMode == 1
+                                    ? 'Aucun produit encore compté dans cette catégorie.'.tr
+                                    : 'Aucun produit dans cette catégorie.'.tr),
+                            style: const TextStyle(color: AppTheme.textHint),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
                 )
               : ListView.builder(
@@ -478,13 +585,16 @@ class _InventoryCategoryTabViewState extends State<_InventoryCategoryTabView> {
 
                     final ctrl = widget.controllers[prod.id];
                     if (ctrl == null) return const SizedBox();
+                    final isCounted = widget.countedProductIds.contains(prod.id);
 
                     if (!isBoutique) {
                       return LiquidInventoryInputCard(
                         product: prod,
                         stock: stock,
                         controller: ctrl,
+                        isCounted: isCounted,
                         onChanged: widget.onChanged,
+                        onToggleCounted: () => widget.onToggleCounted(prod.id),
                       );
                     }
 
@@ -493,7 +603,13 @@ class _InventoryCategoryTabViewState extends State<_InventoryCategoryTabView> {
                     return Card(
                       margin: const EdgeInsets.only(bottom: 12),
                       elevation: 2,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(
+                          color: isCounted ? AppTheme.successGreen : Colors.grey.withValues(alpha: 0.3),
+                          width: isCounted ? 1.5 : 1,
+                        ),
+                      ),
                       child: Padding(
                         padding: const EdgeInsets.all(14.0),
                         child: Column(
@@ -530,12 +646,16 @@ class _InventoryCategoryTabViewState extends State<_InventoryCategoryTabView> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                   decoration: BoxDecoration(
-                                    color: AppTheme.accentCyan.withValues(alpha: 0.1),
+                                    color: (isCounted ? AppTheme.successGreen : AppTheme.accentCyan).withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(
-                                    prod.unit,
-                                    style: const TextStyle(color: AppTheme.accentCyan, fontWeight: FontWeight.bold, fontSize: 12),
+                                    isCounted ? '✅ Compté' : prod.unit,
+                                    style: TextStyle(
+                                      color: isCounted ? AppTheme.successGreen : AppTheme.accentCyan,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -547,13 +667,17 @@ class _InventoryCategoryTabViewState extends State<_InventoryCategoryTabView> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      const Text('Stock Théorique (Système)', style: TextStyle(fontSize: 11, color: AppTheme.textHint)),
+                                      const Text('Stock Théorique', style: TextStyle(fontSize: 11, color: AppTheme.textHint)),
                                       const SizedBox(height: 2),
                                       Text(
                                         stock.currentQuantity % 1 == 0
                                             ? '${stock.currentQuantity.toInt()}'
                                             : stock.currentQuantity.toStringAsFixed(1),
-                                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7)),
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -565,7 +689,7 @@ class _InventoryCategoryTabViewState extends State<_InventoryCategoryTabView> {
                                     controller: ctrl,
                                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                                     decoration: InputDecoration(
-                                      labelText: 'Quantité Physique Comptée'.tr,
+                                      labelText: 'Quantité Physique'.tr,
                                       isDense: true,
                                       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                                     ),
@@ -577,49 +701,24 @@ class _InventoryCategoryTabViewState extends State<_InventoryCategoryTabView> {
                                 ),
                               ],
                             ),
-
-                            // Live discrepancy display
-                            if (ctrl != null && ctrl.text.isNotEmpty && double.tryParse(ctrl.text) != null) ...[
-                              const SizedBox(height: 8),
-                              Builder(
-                                builder: (context) {
-                                  final actual = double.parse(ctrl.text);
-                                  final diff = actual - stock.currentQuantity;
-                                  if (diff == 0) {
-                                    return Row(
-                                      children: const [
-                                        Icon(Icons.check_circle_outline, size: 14, color: AppTheme.successGreen),
-                                        SizedBox(width: 4),
-                                        Text('Conforme (Stock exact)', style: TextStyle(color: AppTheme.successGreen, fontSize: 12, fontWeight: FontWeight.bold)),
-                                      ],
-                                    );
-                                  }
-
-                                  final diffText = diff > 0
-                                      ? '+${diff % 1 == 0 ? diff.toInt() : diff.toStringAsFixed(1)}'
-                                      : '${diff % 1 == 0 ? diff.toInt() : diff.toStringAsFixed(1)}';
-
-                                  return Row(
-                                    children: [
-                                      Icon(
-                                        diff > 0 ? Icons.trending_up : Icons.trending_down,
-                                        size: 16,
-                                        color: diff > 0 ? AppTheme.successGreen : AppTheme.errorRed,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        'Écart physique : $diffText ${prod.unit}',
-                                        style: TextStyle(
-                                          color: diff > 0 ? AppTheme.successGreen : AppTheme.errorRed,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ],
-                                  );
-                                },
+                            const SizedBox(height: 10),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 38,
+                              child: ElevatedButton.icon(
+                                onPressed: () => widget.onToggleCounted(prod.id),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: isCounted ? Colors.grey.shade700 : AppTheme.successGreen,
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                                icon: Icon(isCounted ? Icons.undo : Icons.check_circle_outline, size: 16),
+                                label: Text(
+                                  isCounted ? 'Rééditer / Démarquer'.tr : 'Valider & Classer (Masquer) ✅'.tr,
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                                ),
                               ),
-                            ],
+                            ),
                           ],
                         ),
                       ),
@@ -628,6 +727,33 @@ class _InventoryCategoryTabViewState extends State<_InventoryCategoryTabView> {
                 ),
         ),
       ],
+    );
+  }
+
+  Widget _buildFilterChip(int mode, String label, Color color) {
+    final isSelected = _filterMode == mode;
+    return Expanded(
+      child: InkWell(
+        onTap: () => setState(() => _filterMode = mode),
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 7),
+          decoration: BoxDecoration(
+            color: isSelected ? color : color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: color.withValues(alpha: 0.4)),
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: isSelected ? Colors.white : color,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

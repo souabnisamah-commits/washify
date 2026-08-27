@@ -35,6 +35,13 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
   final _modelController = TextEditingController();
   final Set<String> _addedBrands = {};
 
+  // Inline Brand Adding & Editing state (No popups/dialogs to prevent web overlays blocking!)
+  bool _showAddInline = false;
+  final _newBrandInputController = TextEditingController();
+
+  String? _editingBrand;
+  final _editBrandInputController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -75,6 +82,8 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
     _tuPart2Controller.dispose();
     _otherPlateController.dispose();
     _modelController.dispose();
+    _newBrandInputController.dispose();
+    _editBrandInputController.dispose();
     super.dispose();
   }
 
@@ -105,158 +114,74 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
     widget.onChanged(plate, brand, model);
   }
 
-  void _showAddNewBrandDialog() {
+  Future<void> _submitNewInlineBrand() async {
+    final bName = _newBrandInputController.text.trim();
+    if (bName.isEmpty) return;
+
     final user = ref.read(currentUserProvider);
     final stationId = user?.tenantId ?? '';
     final repo = ref.read(vehicleCatalogRepositoryProvider);
-    final newBrandController = TextEditingController();
 
-    showDialog(
-      context: context,
-      builder: (dialogCtx) => AlertDialog(
-        title: Row(
-          children: [
-            const Icon(Icons.add_circle_outline, color: AppTheme.accentCyan),
-            const SizedBox(width: 8),
-            Text('Ajouter une Nouvelle Marque'.tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Saisissez la marque (ex: Geely, BYD, Chery). Elle s\'ajoutera immédiatement à la liste et sera enregistrée pour la station :'.tr,
-              style: const TextStyle(fontSize: 12, color: AppTheme.textHint),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: newBrandController,
-              autofocus: true,
-              textCapitalization: TextCapitalization.words,
-              decoration: InputDecoration(
-                labelText: 'Nom de la Marque *'.tr,
-                hintText: 'ex: Geely, BYD, Chery',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx),
-            child: Text('Annuler'.tr),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.accentCyan, foregroundColor: Colors.white),
-            onPressed: () async {
-              final bName = newBrandController.text.trim();
-              if (bName.isNotEmpty) {
-                if (mounted) {
-                  setState(() {
-                    _addedBrands.add(bName);
-                    _selectedBrand = bName;
-                  });
-                  _notifyChange();
-                }
-                if (dialogCtx.mounted) Navigator.pop(dialogCtx);
+    setState(() {
+      _addedBrands.add(bName);
+      _selectedBrand = bName;
+      _showAddInline = false;
+      _newBrandInputController.clear();
+    });
+    _notifyChange();
 
-                if (stationId.isNotEmpty) {
-                  await repo.addBrand(stationId, bName);
-                  ref.invalidate(currentVehicleCatalogStreamProvider);
-                }
-              }
-            },
-            child: Text('Ajouter & Sélectionner'.tr),
-          ),
-        ],
-      ),
-    );
+    if (stationId.isNotEmpty) {
+      await repo.addBrand(stationId, bName);
+      ref.invalidate(currentVehicleCatalogStreamProvider);
+    }
   }
 
-  void _showEditDeleteBrandDialog(String currentBrand) {
+  Future<void> _submitEditBrand() async {
+    if (_editingBrand == null) return;
+    final oldB = _editingBrand!;
+    final newB = _editBrandInputController.text.trim();
+    if (newB.isEmpty) return;
+
     final user = ref.read(currentUserProvider);
     final stationId = user?.tenantId ?? '';
     final repo = ref.read(vehicleCatalogRepositoryProvider);
-    final editController = TextEditingController(text: currentBrand);
 
-    showDialog(
-      context: context,
-      builder: (dialogCtx) => AlertDialog(
-        title: Row(
-          children: [
-            const Icon(Icons.edit_note_rounded, color: AppTheme.accentCyan),
-            const SizedBox(width: 8),
-            Text('Gérer la marque "$currentBrand"'.tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Vous pouvez modifier le nom de la marque ou la supprimer définitivement du catalogue de la station :'.tr,
-              style: const TextStyle(fontSize: 12, color: AppTheme.textHint),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: editController,
-              textCapitalization: TextCapitalization.words,
-              decoration: InputDecoration(
-                labelText: 'Nouveau nom de la marque'.tr,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton.icon(
-            style: TextButton.styleFrom(foregroundColor: AppTheme.errorRed),
-            icon: const Icon(Icons.delete_outline, size: 18),
-            label: Text('Supprimer'.tr),
-            onPressed: () async {
-              if (stationId.isNotEmpty) {
-                await repo.deleteBrand(stationId, currentBrand);
-                _addedBrands.remove(currentBrand);
-                if (_selectedBrand.toLowerCase() == currentBrand.toLowerCase()) {
-                  _selectedBrand = '';
-                }
-                if (mounted) setState(() {});
-                _notifyChange();
-                ref.invalidate(currentVehicleCatalogStreamProvider);
-              }
-              if (dialogCtx.mounted) Navigator.pop(dialogCtx);
-            },
-          ),
-          const Spacer(),
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx),
-            child: Text('Annuler'.tr),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.accentCyan, foregroundColor: Colors.white),
-            onPressed: () async {
-              final newName = editController.text.trim();
-              if (newName.isNotEmpty && newName != currentBrand) {
-                if (stationId.isNotEmpty) {
-                  await repo.updateBrand(stationId, currentBrand, newName);
-                  _addedBrands.remove(currentBrand);
-                  _addedBrands.add(newName);
-                  if (_selectedBrand.toLowerCase() == currentBrand.toLowerCase()) {
-                    _selectedBrand = newName;
-                  }
-                  if (mounted) setState(() {});
-                  _notifyChange();
-                  ref.invalidate(currentVehicleCatalogStreamProvider);
-                }
-              }
-              if (dialogCtx.mounted) Navigator.pop(dialogCtx);
-            },
-            child: Text('Enregistrer'.tr),
-          ),
-        ],
-      ),
-    );
+    setState(() {
+      _addedBrands.remove(oldB);
+      _addedBrands.add(newB);
+      if (_selectedBrand.toLowerCase() == oldB.toLowerCase()) {
+        _selectedBrand = newB;
+      }
+      _editingBrand = null;
+    });
+    _notifyChange();
+
+    if (stationId.isNotEmpty && newB != oldB) {
+      await repo.updateBrand(stationId, oldB, newB);
+      ref.invalidate(currentVehicleCatalogStreamProvider);
+    }
+  }
+
+  Future<void> _submitDeleteBrand(String brandToDelete) async {
+    final user = ref.read(currentUserProvider);
+    final stationId = user?.tenantId ?? '';
+    final repo = ref.read(vehicleCatalogRepositoryProvider);
+
+    setState(() {
+      _addedBrands.remove(brandToDelete);
+      if (_selectedBrand.toLowerCase() == brandToDelete.toLowerCase()) {
+        _selectedBrand = '';
+      }
+      if (_editingBrand?.toLowerCase() == brandToDelete.toLowerCase()) {
+        _editingBrand = null;
+      }
+    });
+    _notifyChange();
+
+    if (stationId.isNotEmpty) {
+      await repo.deleteBrand(stationId, brandToDelete);
+      ref.invalidate(currentVehicleCatalogStreamProvider);
+    }
   }
 
   Widget _buildPlateSection() {
@@ -387,7 +312,7 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
             ),
             const SizedBox(height: 10),
 
-            // Brands Chips + Plus Button (+)
+            // Brands Chips Row + Plus Button (+)
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
@@ -441,7 +366,17 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
                               if (isCustom)
                                 InkWell(
                                   borderRadius: BorderRadius.circular(20),
-                                  onTap: () => _showEditDeleteBrandDialog(brand),
+                                  onTap: () {
+                                    setState(() {
+                                      if (_editingBrand == brand) {
+                                        _editingBrand = null;
+                                      } else {
+                                        _editingBrand = brand;
+                                        _editBrandInputController.text = brand;
+                                        _showAddInline = false;
+                                      }
+                                    });
+                                  },
                                   child: Padding(
                                     padding: const EdgeInsets.only(right: 8.0, left: 2.0, top: 6.0, bottom: 6.0),
                                     child: Container(
@@ -465,22 +400,145 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
                     );
                   }),
 
-                  // [+] Button to add a new brand instantly to the list!
+                  // [+] Button to add a new brand inline!
                   Padding(
                     padding: const EdgeInsets.only(right: 8.0),
                     child: ActionChip(
-                      avatar: const Icon(Icons.add, size: 18, color: Colors.white),
+                      avatar: Icon(
+                        _showAddInline ? Icons.close : Icons.add,
+                        size: 18,
+                        color: Colors.white,
+                      ),
                       label: Text(
-                        '+ Marque'.tr,
+                        _showAddInline ? 'Fermer'.tr : '+ Marque'.tr,
                         style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                       ),
-                      backgroundColor: AppTheme.accentCyan,
-                      onPressed: _showAddNewBrandDialog,
+                      backgroundColor: _showAddInline ? Colors.grey.shade600 : AppTheme.accentCyan,
+                      onPressed: () {
+                        setState(() {
+                          _showAddInline = !_showAddInline;
+                          _editingBrand = null;
+                          if (_showAddInline) {
+                            _newBrandInputController.clear();
+                          }
+                        });
+                      },
                     ),
                   ),
                 ],
               ),
             ),
+
+            // INLINE ADD BRAND FORM (0 dialogs, 0 popups, 100% fluid!)
+            if (_showAddInline) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppTheme.accentCyan.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppTheme.accentCyan.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _newBrandInputController,
+                        autofocus: true,
+                        textCapitalization: TextCapitalization.words,
+                        onSubmitted: (_) => _submitNewInlineBrand(),
+                        decoration: InputDecoration(
+                          hintText: 'Nom de la marque (ex: Geely, BYD, Chery) *'.tr,
+                          isDense: true,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.accentCyan,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      ),
+                      onPressed: _submitNewInlineBrand,
+                      icon: const Icon(Icons.check, size: 18),
+                      label: Text('Ajouter'.tr),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            // INLINE EDIT / DELETE BRAND FORM (0 dialogs, 0 popups, 100% fluid!)
+            if (_editingBrand != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Modifier ou Supprimer la marque "$_editingBrand" :',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, size: 18),
+                          onPressed: () => setState(() => _editingBrand = null),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _editBrandInputController,
+                            textCapitalization: TextCapitalization.words,
+                            onSubmitted: (_) => _submitEditBrand(),
+                            decoration: InputDecoration(
+                              labelText: 'Nouveau nom'.tr,
+                              isDense: true,
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.accentCyan,
+                            foregroundColor: Colors.white,
+                          ),
+                          onPressed: _submitEditBrand,
+                          icon: const Icon(Icons.save, size: 16),
+                          label: Text('Enregistrer'.tr),
+                        ),
+                        const SizedBox(width: 8),
+                        OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppTheme.errorRed,
+                            side: const BorderSide(color: AppTheme.errorRed),
+                          ),
+                          onPressed: () => _submitDeleteBrand(_editingBrand!),
+                          icon: const Icon(Icons.delete_outline, size: 16),
+                          label: Text('Supprimer'.tr),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
 
             if (_selectedBrand.isNotEmpty) ...[
               const SizedBox(height: 16),

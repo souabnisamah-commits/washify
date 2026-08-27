@@ -13,6 +13,7 @@ import 'package:washify/features/products/models/product.dart';
 import 'package:washify/providers/station_provider.dart';
 import 'package:washify/features/station/models/station.dart';
 import 'package:washify/repositories/station_repository.dart';
+import 'package:washify/core/widgets/barcode_scan_button.dart';
 
 class ServiceDefinitionsScreen extends ConsumerStatefulWidget {
   const ServiceDefinitionsScreen({super.key});
@@ -714,59 +715,25 @@ class _CarpetServiceConfigTabState extends ConsumerState<CarpetServiceConfigTab>
         return;
       }
 
-      Product? selectedProd = availableProducts.first;
-      final doseCtrl = TextEditingController(text: '50');
-
-      showDialog(
+      showModalBottomSheet(
         context: context,
-        builder: (dialogCtx) => StatefulBuilder(
-          builder: (dialogCtx, setDState) => AlertDialog(
-            title: Text('Lier un Produit Consommable'.tr),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                DropdownButtonFormField<Product>(
-                  value: selectedProd,
-                  decoration: InputDecoration(labelText: 'Produit'.tr),
-                  items: availableProducts.map((p) => DropdownMenuItem(
-                    value: p,
-                    child: Text('${p.name} (${p.unit})'),
-                  )).toList(),
-                  onChanged: (val) => setDState(() => selectedProd = val),
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: doseCtrl,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(
-                    labelText: 'Dose consommée par m² (ml ou g)'.tr,
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogCtx),
-                child: Text('Annuler'.tr),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  if (selectedProd != null) {
-                    final dose = double.tryParse(doseCtrl.text) ?? 50.0;
-                    setState(() {
-                      _carpetLinks.add(ServiceProductLink(
-                        productId: selectedProd!.id,
-                        productName: selectedProd!.name,
-                        consumptionPerUse: dose,
-                      ));
-                      _consumptionControllers[selectedProd!.id] = TextEditingController(text: dose.toString());
-                    });
-                    Navigator.pop(dialogCtx);
-                  }
-                },
-                child: Text('Ajouter'.tr),
-              ),
-            ],
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (ctx) => FractionallySizedBox(
+          heightFactor: 0.85,
+          child: _LinkProductModalSheet(
+            availableProducts: availableProducts,
+            onProductSelected: (prod) {
+              final double defaultDose = 50.0;
+              setState(() {
+                _carpetLinks.add(ServiceProductLink(
+                  productId: prod.id,
+                  productName: prod.name,
+                  consumptionPerUse: defaultDose,
+                ));
+                _consumptionControllers[prod.id] = TextEditingController(text: defaultDose.toString());
+              });
+            },
           ),
         ),
       );
@@ -1125,7 +1092,19 @@ class _LinkProductCategoryTabViewState extends State<_LinkProductCategoryTabView
                         setState(() => _searchQuery = '');
                       },
                     )
-                  : (isBoutique ? const Icon(Icons.qr_code_scanner, color: AppTheme.accentCyan, size: 20) : null),
+                  : (isBoutique
+                      ? Padding(
+                          padding: const EdgeInsets.only(right: 4),
+                          child: BarcodeScanButton(
+                            onScanned: (barcode) {
+                              _searchController.text = barcode;
+                              setState(() => _searchQuery = barcode);
+                            },
+                            iconSize: 20,
+                            iconColor: AppTheme.accentCyan,
+                          ),
+                        )
+                      : null),
               filled: true,
               fillColor: Theme.of(context).colorScheme.surface,
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

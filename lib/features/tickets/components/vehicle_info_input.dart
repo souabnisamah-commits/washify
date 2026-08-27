@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:washify/core/localization/app_localizations.dart';
-
 import 'package:washify/core/theme/app_theme.dart';
+import 'package:washify/providers/vehicle_catalog_provider.dart';
+import 'package:washify/features/tickets/models/vehicle_catalog.dart';
+import 'package:washify/providers/auth_provider.dart';
 
-class VehicleInfoInput extends StatefulWidget {
+class VehicleInfoInput extends ConsumerStatefulWidget {
   final Function(String plate, String brand, String model) onChanged;
   final String? initialPlate;
   final String? initialBrand;
   final String? initialModel;
 
   const VehicleInfoInput({
-    super.key, 
+    super.key,
     required this.onChanged,
     this.initialPlate,
     this.initialBrand,
@@ -18,20 +21,16 @@ class VehicleInfoInput extends StatefulWidget {
   });
 
   @override
-  State<VehicleInfoInput> createState() => VehicleInfoInputState();
+  ConsumerState<VehicleInfoInput> createState() => VehicleInfoInputState();
 }
 
-class VehicleInfoInputState extends State<VehicleInfoInput> {
+class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
   bool _isStandardPlate = true;
-  
+
   final _tuPart1Controller = TextEditingController();
   final _tuPart2Controller = TextEditingController();
   final _otherPlateController = TextEditingController();
-  
-  final List<String> _brands = [
-    'Peugeot', 'Citroën', 'Renault', 'VW', 'Dacia', 'Toyota', 
-    'Hyundai', 'Kia', 'Isuzu', 'BYD', 'Mercedes', 'BMW', 'Audi', 'MG', 'Chery', 'Autre'
-  ];
+
   String _selectedBrand = '';
   final _otherBrandController = TextEditingController();
   final _modelController = TextEditingController();
@@ -39,7 +38,7 @@ class VehicleInfoInputState extends State<VehicleInfoInput> {
   @override
   void initState() {
     super.initState();
-    
+
     // Initialize plate
     if (widget.initialPlate != null && widget.initialPlate!.isNotEmpty) {
       final parts = widget.initialPlate!.split(' TU ');
@@ -55,12 +54,7 @@ class VehicleInfoInputState extends State<VehicleInfoInput> {
 
     // Initialize brand
     if (widget.initialBrand != null && widget.initialBrand!.isNotEmpty) {
-      if (_brands.contains(widget.initialBrand)) {
-        _selectedBrand = widget.initialBrand!;
-      } else {
-        _selectedBrand = 'Autre';
-        _otherBrandController.text = widget.initialBrand!;
-      }
+      _selectedBrand = widget.initialBrand!;
     }
 
     // Initialize model
@@ -87,17 +81,13 @@ class VehicleInfoInputState extends State<VehicleInfoInput> {
 
   void updateFields(String brand, String model) {
     if (brand.isNotEmpty) {
-      if (_brands.contains(brand)) {
-        _selectedBrand = brand;
-      } else {
-        _selectedBrand = 'Autre';
-        _otherBrandController.text = brand;
-      }
+      _selectedBrand = brand;
     }
     if (model.isNotEmpty) {
       _modelController.text = model;
     }
-    setState(() {}); // Trigger rebuild to show the updated chips
+    setState(() {});
+    _notifyChange();
   }
 
   void _notifyChange() {
@@ -109,11 +99,109 @@ class VehicleInfoInputState extends State<VehicleInfoInput> {
     } else {
       plate = _otherPlateController.text.trim();
     }
-    
+
     String brand = _selectedBrand == 'Autre' ? _otherBrandController.text.trim() : _selectedBrand;
     String model = _modelController.text.trim();
-    
+
     widget.onChanged(plate, brand, model);
+  }
+
+  void _showBrandManagementDialog(VehicleCatalog catalog) {
+    final user = ref.read(currentUserProvider);
+    final stationId = user?.tenantId ?? '';
+    final repo = ref.read(vehicleCatalogRepositoryProvider);
+    final newBrandController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (dialogCtx, setDState) {
+          final customBrands = catalog.customBrands;
+
+          return AlertDialog(
+            title: Row(
+              children: [
+                const Icon(Icons.style, color: AppTheme.accentCyan),
+                const SizedBox(width: 8),
+                Text('Gestion des Marques'.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
+              ],
+            ),
+            content: SizedBox(
+              width: 450,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Ajouter ou gérer vos marques personnalisées de la station :'.tr,
+                    style: const TextStyle(fontSize: 12, color: AppTheme.textHint),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: newBrandController,
+                          decoration: InputDecoration(
+                            labelText: 'Nouvelle Marque (ex: BYD, Geely)'.tr,
+                            isDense: true,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: () async {
+                          final bName = newBrandController.text.trim();
+                          if (bName.isNotEmpty) {
+                            await repo.addBrand(stationId, bName);
+                            newBrandController.clear();
+                            if (dialogCtx.mounted) setDState(() {});
+                          }
+                        },
+                        child: Text('Ajouter'.tr),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  const Divider(),
+                  const Text('Marques Personnalisées :', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  const SizedBox(height: 8),
+                  if (customBrands.isEmpty)
+                    Text('Aucune marque personnalisée.'.tr, style: const TextStyle(fontSize: 12, color: AppTheme.textHint))
+                  else
+                    SizedBox(
+                      height: 180,
+                      child: ListView.builder(
+                        itemCount: customBrands.length,
+                        itemBuilder: (ctx, i) {
+                          final brandName = customBrands[i];
+                          return ListTile(
+                            dense: true,
+                            title: Text(brandName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.delete_outline, color: AppTheme.errorRed, size: 20),
+                              onPressed: () async {
+                                await repo.deleteBrand(stationId, brandName);
+                                if (dialogCtx.mounted) setDState(() {});
+                              },
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogCtx),
+                child: Text('Fermer'.tr),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 
   Widget _buildPlateSection() {
@@ -131,17 +219,17 @@ class VehicleInfoInputState extends State<VehicleInfoInput> {
         border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
       ),
       child: Padding(
-        padding: EdgeInsets.all(20),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Plaque d\'immatriculation', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                Text('Plaque d\'immatriculation'.tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 Row(
                   children: [
-                    Text('Standard (TU)', style: TextStyle(fontSize: 12)),
+                    Text('Standard (TU)'.tr, style: const TextStyle(fontSize: 12)),
                     Switch(
                       value: _isStandardPlate,
                       onChanged: (val) {
@@ -151,10 +239,10 @@ class VehicleInfoInputState extends State<VehicleInfoInput> {
                       activeThumbColor: AppTheme.accentCyan,
                     ),
                   ],
-                )
+                ),
               ],
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             if (_isStandardPlate)
               Row(
                 children: [
@@ -163,15 +251,15 @@ class VehicleInfoInputState extends State<VehicleInfoInput> {
                       controller: _tuPart1Controller,
                       keyboardType: TextInputType.number,
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: 2),
+                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: 2),
                       decoration: InputDecoration(
                         hintText: '1234',
-                        contentPadding: EdgeInsets.symmetric(vertical: 16),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 16),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                       ),
                     ),
                   ),
-                  Padding(
+                  const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16),
                     child: Text('TU', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: AppTheme.primaryBlue)),
                   ),
@@ -180,10 +268,10 @@ class VehicleInfoInputState extends State<VehicleInfoInput> {
                       controller: _tuPart2Controller,
                       keyboardType: TextInputType.number,
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: 2),
+                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: 2),
                       decoration: InputDecoration(
                         hintText: '56',
-                        contentPadding: EdgeInsets.symmetric(vertical: 16),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 16),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                       ),
                     ),
@@ -196,7 +284,7 @@ class VehicleInfoInputState extends State<VehicleInfoInput> {
                 decoration: InputDecoration(
                   labelText: 'Saisir la plaque'.tr,
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                  prefixIcon: Icon(Icons.directions_car),
+                  prefixIcon: const Icon(Icons.directions_car),
                 ),
               ),
           ],
@@ -205,7 +293,10 @@ class VehicleInfoInputState extends State<VehicleInfoInput> {
     );
   }
 
-  Widget _buildBrandSection() {
+  Widget _buildBrandSection(VehicleCatalog catalog) {
+    final availableBrands = catalog.allBrands;
+    final suggestedModels = catalog.getModelsForBrand(_selectedBrand);
+
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
@@ -220,24 +311,48 @@ class VehicleInfoInputState extends State<VehicleInfoInput> {
         border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
       ),
       child: Padding(
-        padding: EdgeInsets.all(20),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Marque et Modèle', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Marque et Modèle'.tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                IconButton(
+                  icon: const Icon(Icons.settings_suggest_rounded, color: AppTheme.accentCyan, size: 20),
+                  onPressed: () => _showBrandManagementDialog(catalog),
+                  tooltip: 'Gérer la liste des marques'.tr,
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+
+            // Brands Choice Chips
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
-                children: _brands.map((brand) {
+                children: availableBrands.map((brand) {
                   final isSelected = _selectedBrand == brand;
+                  final isCustom = catalog.customBrands.contains(brand);
+
                   return Padding(
-                    padding: EdgeInsets.only(right: 8.0),
+                    padding: const EdgeInsets.only(right: 8.0),
                     child: ChoiceChip(
-                      label: Text(brand, style: TextStyle(
-                        color: isSelected ? Colors.white : Colors.black87,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                      )),
+                      label: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (isCustom) const Icon(Icons.star, size: 12, color: Colors.amber),
+                          if (isCustom) const SizedBox(width: 4),
+                          Text(
+                            brand,
+                            style: TextStyle(
+                              color: isSelected ? Colors.white : Colors.black87,
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            ),
+                          ),
+                        ],
+                      ),
                       selected: isSelected,
                       showCheckmark: false,
                       selectedColor: AppTheme.accentCyan,
@@ -253,35 +368,105 @@ class VehicleInfoInputState extends State<VehicleInfoInput> {
                 }).toList(),
               ),
             ),
+
             if (_selectedBrand.isNotEmpty) ...[
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (_selectedBrand == 'Autre')
                     Expanded(
                       child: Padding(
-                        padding: EdgeInsets.only(right: 8.0),
+                        padding: const EdgeInsets.only(right: 8.0),
                         child: TextField(
                           controller: _otherBrandController,
                           decoration: InputDecoration(
-                            labelText: 'Préciser la marque'.tr,
+                            labelText: 'Préciser la marque (ex: BYD, Geely)'.tr,
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                           ),
                         ),
                       ),
                     ),
+
+                  // Model Input with Autocomplete Suggestions
                   Expanded(
-                    child: TextField(
-                      controller: _modelController,
-                      decoration: InputDecoration(
-                        labelText: 'Modèle (ex: 208, Clio)'.tr,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        return Autocomplete<String>(
+                          optionsBuilder: (TextEditingValue textEditingValue) {
+                            if (textEditingValue.text.isEmpty) {
+                              return suggestedModels.take(8);
+                            }
+                            final q = textEditingValue.text.toLowerCase();
+                            return suggestedModels.where((m) => m.toLowerCase().contains(q));
+                          },
+                          onSelected: (String selection) {
+                            _modelController.text = selection;
+                            _notifyChange();
+                          },
+                          fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
+                            // Sync with _modelController
+                            if (_modelController.text.isNotEmpty && textEditingController.text.isEmpty) {
+                              textEditingController.text = _modelController.text;
+                            }
+                            textEditingController.addListener(() {
+                              _modelController.text = textEditingController.text;
+                              _notifyChange();
+                            });
+
+                            return TextField(
+                              controller: textEditingController,
+                              focusNode: focusNode,
+                              decoration: InputDecoration(
+                                labelText: 'Modèle (ex: Golf 7, Tang, Clio)'.tr,
+                                hintText: 'Tapez pour autocompléter...'.tr,
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                suffixIcon: suggestedModels.isNotEmpty
+                                    ? const Icon(Icons.arrow_drop_down, color: AppTheme.accentCyan)
+                                    : null,
+                              ),
+                            );
+                          },
+                          optionsViewBuilder: (context, onSelected, options) {
+                            return Align(
+                              alignment: Alignment.topLeft,
+                              child: Material(
+                                elevation: 4,
+                                borderRadius: BorderRadius.circular(8),
+                                child: Container(
+                                  constraints: BoxConstraints(maxWidth: constraints.maxWidth, maxHeight: 200),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).cardColor,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: AppTheme.accentCyan.withValues(alpha: 0.3)),
+                                  ),
+                                  child: ListView.builder(
+                                    padding: EdgeInsets.zero,
+                                    shrinkWrap: true,
+                                    itemCount: options.length,
+                                    itemBuilder: (BuildContext context, int index) {
+                                      final option = options.elementAt(index);
+                                      return ListTile(
+                                        dense: true,
+                                        title: Text(
+                                          option,
+                                          style: const TextStyle(fontWeight: FontWeight.bold),
+                                        ),
+                                        onTap: () => onSelected(option),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      },
                     ),
                   ),
                 ],
               ),
-            ]
+            ],
           ],
         ),
       ),
@@ -290,12 +475,15 @@ class VehicleInfoInputState extends State<VehicleInfoInput> {
 
   @override
   Widget build(BuildContext context) {
+    final catalogAsync = ref.watch(currentVehicleCatalogStreamProvider);
+    final catalog = catalogAsync.value ?? VehicleCatalog.empty('');
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _buildPlateSection(),
-        SizedBox(height: 12),
-        _buildBrandSection(),
+        const SizedBox(height: 12),
+        _buildBrandSection(catalog),
       ],
     );
   }

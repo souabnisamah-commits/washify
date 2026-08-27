@@ -28,6 +28,7 @@ import 'package:washify/features/hr/models/attendance.dart';
 import 'package:washify/features/hr/models/shift.dart';
 import 'package:washify/core/widgets/barcode_scan_button.dart';
 import 'package:washify/providers/station_provider.dart';
+import 'package:washify/providers/vehicle_catalog_provider.dart';
 
 class NewTicketScreen extends ConsumerStatefulWidget {
   final Ticket? editTicket;
@@ -414,6 +415,15 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
         discountAmount: _operationType == 'moquette' && double.tryParse(_discountAmountController.text.trim()) != null ? double.tryParse(_discountAmountController.text.trim()) : null,
         discountReason: _operationType == 'moquette' && _discountReasonController.text.trim().isNotEmpty ? _discountReasonController.text.trim() : null,
       );
+
+      // Auto-learning: learn brand and model into station's vehicle catalog
+      if (_operationType == 'vehicule' && _vehicleBrand.trim().isNotEmpty) {
+        ref.read(vehicleCatalogRepositoryProvider).learnBrandAndModel(
+          user.stationId!,
+          _vehicleBrand.trim(),
+          _vehicleModel.trim(),
+        );
+      }
 
       // Auto-learning: add or update vehicle in B2B client's list (only for vehicle operations)
       if (_operationType == 'vehicule' && _selectedPaymentMethod == 'compte_client' && _selectedClient != null) {

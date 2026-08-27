@@ -33,6 +33,7 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
 
   String _selectedBrand = '';
   final _modelController = TextEditingController();
+  final Set<String> _addedBrands = {};
 
   @override
   void initState() {
@@ -54,6 +55,7 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
     // Initialize brand
     if (widget.initialBrand != null && widget.initialBrand!.isNotEmpty) {
       _selectedBrand = widget.initialBrand!;
+      _addedBrands.add(widget.initialBrand!);
     }
 
     // Initialize model
@@ -79,6 +81,7 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
   void updateFields(String brand, String model) {
     if (brand.isNotEmpty) {
       _selectedBrand = brand;
+      _addedBrands.add(brand);
     }
     if (model.isNotEmpty) {
       _modelController.text = model;
@@ -124,15 +127,17 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Saisissez le nom de la marque. Elle s\'ajoutera immédiatement à la liste et sera mémorisée pour la station :'.tr,
+              'Saisissez la marque (ex: Geely, BYD, Chery). Elle s\'ajoutera immédiatement à la liste et sera enregistrée pour la station :'.tr,
               style: const TextStyle(fontSize: 12, color: AppTheme.textHint),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: newBrandController,
               autofocus: true,
+              textCapitalization: TextCapitalization.words,
               decoration: InputDecoration(
-                labelText: 'Nom de la Marque (ex: Geely, BYD, Chery) *'.tr,
+                labelText: 'Nom de la Marque *'.tr,
+                hintText: 'ex: Geely, BYD, Chery',
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
               ),
             ),
@@ -148,14 +153,20 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
             onPressed: () async {
               final bName = newBrandController.text.trim();
               if (bName.isNotEmpty) {
-                await repo.addBrand(stationId, bName);
                 if (mounted) {
                   setState(() {
+                    _addedBrands.add(bName);
                     _selectedBrand = bName;
                   });
                   _notifyChange();
                 }
                 if (dialogCtx.mounted) Navigator.pop(dialogCtx);
+                
+                // Persist to station Firestore catalog
+                if (stationId.isNotEmpty) {
+                  await repo.addBrand(stationId, bName);
+                  ref.invalidate(currentVehicleCatalogStreamProvider);
+                }
               }
             },
             child: Text('Ajouter & Sélectionner'.tr),
@@ -255,7 +266,13 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
   }
 
   Widget _buildBrandSection(VehicleCatalog catalog) {
-    final availableBrands = catalog.allBrands;
+    // Combine catalog brands + locally added brands
+    final allBrandsSet = <String>{
+      ...VehicleCatalog.defaultBrands,
+      ...catalog.customBrands,
+      ..._addedBrands,
+    };
+    final availableBrands = allBrandsSet.toList()..sort();
 
     return Container(
       decoration: BoxDecoration(
@@ -285,7 +302,8 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
                 children: [
                   ...availableBrands.map((brand) {
                     final isSelected = _selectedBrand.toLowerCase() == brand.toLowerCase();
-                    final isCustom = catalog.customBrands.any((b) => b.toLowerCase() == brand.toLowerCase());
+                    final isCustom = catalog.customBrands.any((b) => b.toLowerCase() == brand.toLowerCase()) ||
+                        (_addedBrands.contains(brand) && !VehicleCatalog.defaultBrands.contains(brand));
 
                     return Padding(
                       padding: const EdgeInsets.only(right: 8.0),
@@ -324,7 +342,7 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
                     child: ActionChip(
                       avatar: const Icon(Icons.add, size: 18, color: Colors.white),
                       label: Text(
-                        '+ Autre Marque'.tr,
+                        '+ Marque'.tr,
                         style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                       ),
                       backgroundColor: AppTheme.accentCyan,

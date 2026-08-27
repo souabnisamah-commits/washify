@@ -295,16 +295,16 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
 
   Widget _buildBrandSection(VehicleCatalog catalog) {
     final availableBrands = catalog.allBrands;
-    final effectiveBrandName = _selectedBrand == 'Autre' ? _otherBrandController.text.trim() : _selectedBrand;
-    final allKnownModels = catalog.getModelsForBrand(effectiveBrandName);
 
-    // Filter matching models based on what user typed in _modelController
-    final modelInputText = _modelController.text.trim().toLowerCase();
-    final matchingModels = modelInputText.isEmpty
-        ? <String>[]
-        : allKnownModels
-            .where((m) => m.toLowerCase().contains(modelInputText))
-            .toList();
+    // Check if current _selectedBrand is not in availableBrands and not 'Autre'
+    bool isCustomUnlisted = _selectedBrand.isNotEmpty &&
+        _selectedBrand != 'Autre' &&
+        !availableBrands.contains(_selectedBrand);
+
+    if (isCustomUnlisted && _otherBrandController.text.isEmpty) {
+      _otherBrandController.text = _selectedBrand;
+      _selectedBrand = 'Autre';
+    }
 
     return Container(
       decoration: BoxDecoration(
@@ -337,7 +337,7 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
             ),
             const SizedBox(height: 10),
 
-            // All Brands Choice Chips (Includes newly learned custom brands!)
+            // All Brands Choice Chips (Includes newly saved custom brands!)
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
@@ -397,86 +397,12 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
                       ),
                     ),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        TextField(
-                          controller: _modelController,
-                          onChanged: (_) {
-                            setState(() {}); // Update matching autocomplete suggestions dynamically
-                          },
-                          decoration: InputDecoration(
-                            labelText: 'Modèle (ex: Golf 7, Tang, Q7)'.tr,
-                            hintText: 'Saisissez le modèle...'.tr,
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                            suffixIcon: matchingModels.isNotEmpty
-                                ? const Icon(Icons.auto_awesome, color: AppTheme.accentCyan, size: 20)
-                                : null,
-                          ),
-                        ),
-
-                        // Inline Autocomplete suggestion list if user types e.g. "Q" and "Q7" exists in history
-                        if (matchingModels.isNotEmpty &&
-                            !matchingModels.any((m) => m.toLowerCase() == modelInputText)) ...[
-                          const SizedBox(height: 6),
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: AppTheme.accentCyan.withValues(alpha: 0.08),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: AppTheme.accentCyan.withValues(alpha: 0.25)),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    const Icon(Icons.auto_awesome, size: 14, color: AppTheme.accentCyan),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      'Suggestions d\'autocomplétion :'.tr,
-                                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.accentCyan),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 6),
-                                Wrap(
-                                  spacing: 6,
-                                  runSpacing: 4,
-                                  children: matchingModels.take(5).map((m) {
-                                    return InkWell(
-                                      onTap: () {
-                                        _modelController.text = m;
-                                        setState(() {});
-                                        _notifyChange();
-                                      },
-                                      borderRadius: BorderRadius.circular(6),
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                        decoration: BoxDecoration(
-                                          color: AppTheme.accentCyan,
-                                          borderRadius: BorderRadius.circular(6),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Text(
-                                              m,
-                                              style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                                            ),
-                                            const SizedBox(width: 4),
-                                            const Icon(Icons.check_circle_outline, color: Colors.white, size: 13),
-                                          ],
-                                        ),
-                                      ),
-                                    );
-                                  }).toList(),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ],
+                    child: TextField(
+                      controller: _modelController,
+                      decoration: InputDecoration(
+                        labelText: 'Modèle (ex: 208, Clio, Golf)'.tr,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
                     ),
                   ),
                 ],

@@ -419,7 +419,7 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
       // Auto-learning: learn brand and model into station's vehicle catalog
       if (_operationType == 'vehicule' && _vehicleBrand.trim().isNotEmpty) {
         ref.read(vehicleCatalogRepositoryProvider).learnBrandAndModel(
-          user.stationId!,
+          user.tenantId,
           _vehicleBrand.trim(),
           _vehicleModel.trim(),
         );

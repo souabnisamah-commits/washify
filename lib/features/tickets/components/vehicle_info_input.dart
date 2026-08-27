@@ -32,7 +32,6 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
   final _otherPlateController = TextEditingController();
 
   String _selectedBrand = '';
-  final _otherBrandController = TextEditingController();
   final _modelController = TextEditingController();
 
   @override
@@ -65,7 +64,6 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
     _tuPart1Controller.addListener(_notifyChange);
     _tuPart2Controller.addListener(_notifyChange);
     _otherPlateController.addListener(_notifyChange);
-    _otherBrandController.addListener(_notifyChange);
     _modelController.addListener(_notifyChange);
   }
 
@@ -74,7 +72,6 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
     _tuPart1Controller.dispose();
     _tuPart2Controller.dispose();
     _otherPlateController.dispose();
-    _otherBrandController.dispose();
     _modelController.dispose();
     super.dispose();
   }
@@ -100,13 +97,13 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
       plate = _otherPlateController.text.trim();
     }
 
-    String brand = _selectedBrand == 'Autre' ? _otherBrandController.text.trim() : _selectedBrand;
+    String brand = _selectedBrand;
     String model = _modelController.text.trim();
 
     widget.onChanged(plate, brand, model);
   }
 
-  void _showBrandManagementDialog(VehicleCatalog catalog) {
+  void _showAddNewBrandDialog() {
     final user = ref.read(currentUserProvider);
     final stationId = user?.tenantId ?? '';
     final repo = ref.read(vehicleCatalogRepositoryProvider);
@@ -114,92 +111,56 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
 
     showDialog(
       context: context,
-      builder: (dialogCtx) => StatefulBuilder(
-        builder: (dialogCtx, setDState) {
-          final customBrands = catalog.customBrands;
-
-          return AlertDialog(
-            title: Row(
-              children: [
-                const Icon(Icons.style, color: AppTheme.accentCyan),
-                const SizedBox(width: 8),
-                Text('Gestion des Marques'.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
-              ],
+      builder: (dialogCtx) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.add_circle_outline, color: AppTheme.accentCyan),
+            const SizedBox(width: 8),
+            Text('Ajouter une Nouvelle Marque'.tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Saisissez le nom de la marque. Elle s\'ajoutera immédiatement à la liste et sera mémorisée pour la station :'.tr,
+              style: const TextStyle(fontSize: 12, color: AppTheme.textHint),
             ),
-            content: SizedBox(
-              width: 450,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'Ajouter ou gérer vos marques personnalisées de la station :'.tr,
-                    style: const TextStyle(fontSize: 12, color: AppTheme.textHint),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: newBrandController,
-                          decoration: InputDecoration(
-                            labelText: 'Nouvelle Marque (ex: BYD, Geely)'.tr,
-                            isDense: true,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      ElevatedButton(
-                        onPressed: () async {
-                          final bName = newBrandController.text.trim();
-                          if (bName.isNotEmpty) {
-                            await repo.addBrand(stationId, bName);
-                            newBrandController.clear();
-                            if (dialogCtx.mounted) setDState(() {});
-                          }
-                        },
-                        child: Text('Ajouter'.tr),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  const Divider(),
-                  const Text('Marques Personnalisées (Ajoutées) :', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                  const SizedBox(height: 8),
-                  if (customBrands.isEmpty)
-                    Text('Aucune marque personnalisée.'.tr, style: const TextStyle(fontSize: 12, color: AppTheme.textHint))
-                  else
-                    SizedBox(
-                      height: 180,
-                      child: ListView.builder(
-                        itemCount: customBrands.length,
-                        itemBuilder: (ctx, i) {
-                          final brandName = customBrands[i];
-                          return ListTile(
-                            dense: true,
-                            title: Text(brandName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.delete_outline, color: AppTheme.errorRed, size: 20),
-                              onPressed: () async {
-                                await repo.deleteBrand(stationId, brandName);
-                                if (dialogCtx.mounted) setDState(() {});
-                              },
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                ],
+            const SizedBox(height: 12),
+            TextField(
+              controller: newBrandController,
+              autofocus: true,
+              decoration: InputDecoration(
+                labelText: 'Nom de la Marque (ex: Geely, BYD, Chery) *'.tr,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
               ),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogCtx),
-                child: Text('Fermer'.tr),
-              ),
-            ],
-          );
-        },
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: Text('Annuler'.tr),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.accentCyan, foregroundColor: Colors.white),
+            onPressed: () async {
+              final bName = newBrandController.text.trim();
+              if (bName.isNotEmpty) {
+                await repo.addBrand(stationId, bName);
+                if (mounted) {
+                  setState(() {
+                    _selectedBrand = bName;
+                  });
+                  _notifyChange();
+                }
+                if (dialogCtx.mounted) Navigator.pop(dialogCtx);
+              }
+            },
+            child: Text('Ajouter & Sélectionner'.tr),
+          ),
+        ],
       ),
     );
   }
@@ -296,16 +257,6 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
   Widget _buildBrandSection(VehicleCatalog catalog) {
     final availableBrands = catalog.allBrands;
 
-    // Check if current _selectedBrand is not in availableBrands and not 'Autre'
-    bool isCustomUnlisted = _selectedBrand.isNotEmpty &&
-        _selectedBrand != 'Autre' &&
-        !availableBrands.contains(_selectedBrand);
-
-    if (isCustomUnlisted && _otherBrandController.text.isEmpty) {
-      _otherBrandController.text = _selectedBrand;
-      _selectedBrand = 'Autre';
-    }
-
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
@@ -327,75 +278,72 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
             Text('Marque et Modèle'.tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 10),
 
-            // All Brands Choice Chips (Includes newly saved custom brands!)
+            // Brands Choice Chips + Plus Button (+)
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
-                children: availableBrands.map((brand) {
-                  final isSelected = _selectedBrand == brand;
-                  final isCustom = catalog.customBrands.contains(brand);
+                children: [
+                  ...availableBrands.map((brand) {
+                    final isSelected = _selectedBrand.toLowerCase() == brand.toLowerCase();
+                    final isCustom = catalog.customBrands.any((b) => b.toLowerCase() == brand.toLowerCase());
 
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8.0),
-                    child: ChoiceChip(
-                      label: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (isCustom) const Icon(Icons.star, size: 12, color: Colors.amber),
-                          if (isCustom) const SizedBox(width: 4),
-                          Text(
-                            brand,
-                            style: TextStyle(
-                              color: isSelected ? Colors.white : Colors.black87,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: ChoiceChip(
+                        label: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (isCustom) const Icon(Icons.star, size: 12, color: Colors.amber),
+                            if (isCustom) const SizedBox(width: 4),
+                            Text(
+                              brand,
+                              style: TextStyle(
+                                color: isSelected ? Colors.white : Colors.black87,
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
+                        selected: isSelected,
+                        showCheckmark: false,
+                        selectedColor: AppTheme.accentCyan,
+                        backgroundColor: Colors.grey.shade200,
+                        onSelected: (selected) {
+                          if (selected) {
+                            setState(() => _selectedBrand = brand);
+                            _notifyChange();
+                          }
+                        },
                       ),
-                      selected: isSelected,
-                      showCheckmark: false,
-                      selectedColor: AppTheme.accentCyan,
-                      backgroundColor: Colors.grey.shade200,
-                      onSelected: (selected) {
-                        if (selected) {
-                          setState(() => _selectedBrand = brand);
-                          _notifyChange();
-                        }
-                      },
+                    );
+                  }),
+
+                  // [+] Button to add a new brand instantly to the list!
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: ActionChip(
+                      avatar: const Icon(Icons.add, size: 18, color: Colors.white),
+                      label: Text(
+                        '+ Autre Marque'.tr,
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
+                      backgroundColor: AppTheme.accentCyan,
+                      onPressed: _showAddNewBrandDialog,
                     ),
-                  );
-                }).toList(),
+                  ),
+                ],
               ),
             ),
 
             if (_selectedBrand.isNotEmpty) ...[
               const SizedBox(height: 16),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (_selectedBrand == 'Autre')
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 8.0),
-                        child: TextField(
-                          controller: _otherBrandController,
-                          decoration: InputDecoration(
-                            labelText: 'Préciser la marque (ex: BYD, Geely)'.tr,
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
-                        ),
-                      ),
-                    ),
-                  Expanded(
-                    child: TextField(
-                      controller: _modelController,
-                      decoration: InputDecoration(
-                        labelText: 'Modèle (ex: 208, Clio, Golf)'.tr,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                    ),
-                  ),
-                ],
+              TextField(
+                controller: _modelController,
+                decoration: InputDecoration(
+                  labelText: 'Modèle de la voiture (ex: Golf 7, Tang, Clio)'.tr,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  prefixIcon: const Icon(Icons.directions_car_filled, color: AppTheme.accentCyan),
+                ),
               ),
             ],
           ],

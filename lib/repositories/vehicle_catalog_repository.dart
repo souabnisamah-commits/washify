@@ -44,6 +44,42 @@ class VehicleCatalogRepository {
     }
   }
 
+  /// Add a brand manually and persist to customBrands
+  Future<void> addBrand(String stationId, String brandName) async {
+    final brand = brandName.trim();
+    if (stationId.isEmpty || brand.isEmpty) return;
+
+    try {
+      final docRef = _catalogRef.doc(stationId);
+      final snapshot = await docRef.get();
+
+      if (!snapshot.exists || snapshot.data() == null) {
+        final newCatalog = VehicleCatalog(
+          id: stationId,
+          tenantId: stationId,
+          customBrands: [brand],
+          brandModels: {},
+          updatedAt: DateTime.now(),
+        );
+        await docRef.set(newCatalog.toJson());
+      } else {
+        final catalog = VehicleCatalog.fromJson(snapshot.data() as Map<String, dynamic>, snapshot.id);
+        final List<String> customBrands = List.from(catalog.customBrands);
+
+        if (!customBrands.any((b) => b.toLowerCase() == brand.toLowerCase())) {
+          customBrands.add(brand);
+          await docRef.set({
+            'tenantId': stationId,
+            'customBrands': customBrands,
+            'updatedAt': Timestamp.fromDate(DateTime.now()),
+          }, SetOptions(merge: true));
+        }
+      }
+    } catch (e) {
+      print('Error addBrand: $e');
+    }
+  }
+
   /// Automatically learns brand and model from a ticket creation/validation
   Future<void> learnBrandAndModel(String stationId, String rawBrand, String rawModel) async {
     final brand = rawBrand.trim();
@@ -82,8 +118,9 @@ class VehicleCatalogRepository {
         bool needsUpdate = false;
 
         final isCustom = customBrands.any((b) => b.toLowerCase() == brand.toLowerCase());
+        final isDefault = VehicleCatalog.defaultBrands.any((b) => b.toLowerCase() == brand.toLowerCase());
 
-        if (!isCustom) {
+        if (!isCustom && !isDefault) {
           customBrands.add(brand);
           needsUpdate = true;
         }
@@ -118,28 +155,6 @@ class VehicleCatalogRepository {
       }
     } catch (e) {
       print('Error learning vehicle brand/model: $e');
-    }
-  }
-
-  /// Add a brand manually
-  Future<void> addBrand(String stationId, String brandName) async {
-    final brand = brandName.trim();
-    if (stationId.isEmpty || brand.isEmpty) return;
-
-    try {
-      final catalog = await getVehicleCatalog(stationId);
-      final customBrands = List<String>.from(catalog.customBrands);
-      if (!customBrands.any((b) => b.toLowerCase() == brand.toLowerCase()) &&
-          !VehicleCatalog.defaultBrands.any((b) => b.toLowerCase() == brand.toLowerCase())) {
-        customBrands.add(brand);
-        await _catalogRef.doc(stationId).set({
-          'tenantId': stationId,
-          'customBrands': customBrands,
-          'updatedAt': Timestamp.fromDate(DateTime.now()),
-        }, SetOptions(merge: true));
-      }
-    } catch (e) {
-      print('Error addBrand: $e');
     }
   }
 

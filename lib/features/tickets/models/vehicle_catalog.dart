@@ -15,19 +15,15 @@ class VehicleCatalog {
     'Hyundai',
     'Kia',
     'Isuzu',
-    'BYD',
     'Mercedes',
     'BMW',
     'Audi',
-    'MG',
-    'Chery',
     'Ford',
     'Fiat',
     'Nissan',
     'Skoda',
     'Seat',
     'Suzuki',
-    'Autre',
   ];
 
   VehicleCatalog({
@@ -40,13 +36,12 @@ class VehicleCatalog {
 
   List<String> get allBrands {
     final set = <String>{...defaultBrands, ...customBrands};
-    final list = set.where((b) => b != 'Autre').toList()..sort();
-    list.add('Autre');
+    final list = set.toList()..sort();
     return list;
   }
 
   List<String> getModelsForBrand(String brand) {
-    if (brand.isEmpty || brand == 'Autre') {
+    if (brand.isEmpty) {
       final allModels = <String>{};
       for (final models in brandModels.values) {
         allModels.addAll(models);

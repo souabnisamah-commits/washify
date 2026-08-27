@@ -388,80 +388,55 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
                       ),
                     ),
 
-                  // Model Input with Autocomplete Suggestions
+                  // Model Text Field
                   Expanded(
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        return Autocomplete<String>(
-                          initialValue: TextEditingValue(text: _modelController.text),
-                          optionsBuilder: (TextEditingValue textEditingValue) {
-                            if (textEditingValue.text.isEmpty) {
-                              return suggestedModels.take(8);
-                            }
-                            final q = textEditingValue.text.toLowerCase();
-                            return suggestedModels.where((m) => m.toLowerCase().contains(q));
-                          },
-                          onSelected: (String selection) {
-                            _modelController.text = selection;
-                            _notifyChange();
-                          },
-                          fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
-                            return TextField(
-                              controller: textEditingController,
-                              focusNode: focusNode,
-                              onChanged: (val) {
-                                _modelController.text = val;
-                                _notifyChange();
-                              },
-                              decoration: InputDecoration(
-                                labelText: 'Modèle (ex: Golf 7, Tang, Clio)'.tr,
-                                hintText: 'Tapez pour autocompléter...'.tr,
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                                suffixIcon: suggestedModels.isNotEmpty
-                                    ? const Icon(Icons.arrow_drop_down, color: AppTheme.accentCyan)
-                                    : null,
-                              ),
-                            );
-                          },
-                          optionsViewBuilder: (context, onSelected, options) {
-                            return Align(
-                              alignment: Alignment.topLeft,
-                              child: Material(
-                                elevation: 4,
-                                borderRadius: BorderRadius.circular(8),
-                                child: Container(
-                                  constraints: BoxConstraints(maxWidth: constraints.maxWidth, maxHeight: 200),
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).cardColor,
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(color: AppTheme.accentCyan.withValues(alpha: 0.3)),
-                                  ),
-                                  child: ListView.builder(
-                                    padding: EdgeInsets.zero,
-                                    shrinkWrap: true,
-                                    itemCount: options.length,
-                                    itemBuilder: (BuildContext context, int index) {
-                                      final option = options.elementAt(index);
-                                      return ListTile(
-                                        dense: true,
-                                        title: Text(
-                                          option,
-                                          style: const TextStyle(fontWeight: FontWeight.bold),
-                                        ),
-                                        onTap: () => onSelected(option),
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        );
-                      },
+                    child: TextField(
+                      controller: _modelController,
+                      decoration: InputDecoration(
+                        labelText: 'Modèle (ex: Golf 7, Tang, Clio)'.tr,
+                        hintText: 'Saisir ou sélectionner un modèle...'.tr,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
                     ),
                   ),
                 ],
               ),
+
+              // Clickable suggested models chips below the Model field
+              if (suggestedModels.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Text(
+                  'Modèles enregistrés pour $_selectedBrand :'.tr,
+                  style: const TextStyle(fontSize: 12, color: AppTheme.textHint, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: suggestedModels.map((m) {
+                    final isModelSelected = _modelController.text.trim().toLowerCase() == m.toLowerCase();
+                    return ChoiceChip(
+                      label: Text(m),
+                      selected: isModelSelected,
+                      showCheckmark: false,
+                      selectedColor: AppTheme.primaryBlue,
+                      labelStyle: TextStyle(
+                        fontSize: 12,
+                        color: isModelSelected ? Colors.white : Colors.black87,
+                        fontWeight: isModelSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                      backgroundColor: AppTheme.primaryBlue.withValues(alpha: 0.1),
+                      onSelected: (selected) {
+                        if (selected) {
+                          _modelController.text = m;
+                          setState(() {});
+                          _notifyChange();
+                        }
+                      },
+                    );
+                  }).toList(),
+                ),
+              ],
             ],
           ],
         ),

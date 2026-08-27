@@ -161,8 +161,7 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
                   _notifyChange();
                 }
                 if (dialogCtx.mounted) Navigator.pop(dialogCtx);
-                
-                // Persist to station Firestore catalog
+
                 if (stationId.isNotEmpty) {
                   await repo.addBrand(stationId, bName);
                   ref.invalidate(currentVehicleCatalogStreamProvider);
@@ -170,6 +169,91 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
               }
             },
             child: Text('Ajouter & Sélectionner'.tr),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditDeleteBrandDialog(String currentBrand) {
+    final user = ref.read(currentUserProvider);
+    final stationId = user?.tenantId ?? '';
+    final repo = ref.read(vehicleCatalogRepositoryProvider);
+    final editController = TextEditingController(text: currentBrand);
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.edit_note_rounded, color: AppTheme.accentCyan),
+            const SizedBox(width: 8),
+            Text('Gérer la marque "$currentBrand"'.tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Vous pouvez modifier le nom de la marque ou la supprimer définitivement du catalogue de la station :'.tr,
+              style: const TextStyle(fontSize: 12, color: AppTheme.textHint),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: editController,
+              textCapitalization: TextCapitalization.words,
+              decoration: InputDecoration(
+                labelText: 'Nouveau nom de la marque'.tr,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton.icon(
+            style: TextButton.styleFrom(foregroundColor: AppTheme.errorRed),
+            icon: const Icon(Icons.delete_outline, size: 18),
+            label: Text('Supprimer'.tr),
+            onPressed: () async {
+              if (stationId.isNotEmpty) {
+                await repo.deleteBrand(stationId, currentBrand);
+                _addedBrands.remove(currentBrand);
+                if (_selectedBrand.toLowerCase() == currentBrand.toLowerCase()) {
+                  _selectedBrand = '';
+                }
+                if (mounted) setState(() {});
+                _notifyChange();
+                ref.invalidate(currentVehicleCatalogStreamProvider);
+              }
+              if (dialogCtx.mounted) Navigator.pop(dialogCtx);
+            },
+          ),
+          const Spacer(),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: Text('Annuler'.tr),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.accentCyan, foregroundColor: Colors.white),
+            onPressed: () async {
+              final newName = editController.text.trim();
+              if (newName.isNotEmpty && newName != currentBrand) {
+                if (stationId.isNotEmpty) {
+                  await repo.updateBrand(stationId, currentBrand, newName);
+                  _addedBrands.remove(currentBrand);
+                  _addedBrands.add(newName);
+                  if (_selectedBrand.toLowerCase() == currentBrand.toLowerCase()) {
+                    _selectedBrand = newName;
+                  }
+                  if (mounted) setState(() {});
+                  _notifyChange();
+                  ref.invalidate(currentVehicleCatalogStreamProvider);
+                }
+              }
+              if (dialogCtx.mounted) Navigator.pop(dialogCtx);
+            },
+            child: Text('Enregistrer'.tr),
           ),
         ],
       ),
@@ -292,7 +376,16 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Marque et Modèle'.tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Marque et Modèle'.tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const Text(
+                  '⭐ = Marque ajoutée (cliquer ✏️ pour modifier/supprimer)',
+                  style: TextStyle(fontSize: 11, color: AppTheme.textHint),
+                ),
+              ],
+            ),
             const SizedBox(height: 10),
 
             // Brands Choice Chips + Plus Button (+)
@@ -307,31 +400,45 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
 
                     return Padding(
                       padding: const EdgeInsets.only(right: 8.0),
-                      child: ChoiceChip(
-                        label: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (isCustom) const Icon(Icons.star, size: 12, color: Colors.amber),
-                            if (isCustom) const SizedBox(width: 4),
-                            Text(
-                              brand,
-                              style: TextStyle(
-                                color: isSelected ? Colors.white : Colors.black87,
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      child: GestureDetector(
+                        onLongPress: isCustom ? () => _showEditDeleteBrandDialog(brand) : null,
+                        child: ChoiceChip(
+                          label: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (isCustom) const Icon(Icons.star, size: 12, color: Colors.amber),
+                              if (isCustom) const SizedBox(width: 4),
+                              Text(
+                                brand,
+                                style: TextStyle(
+                                  color: isSelected ? Colors.white : Colors.black87,
+                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                ),
                               ),
-                            ),
-                          ],
+                              if (isCustom) ...[
+                                const SizedBox(width: 6),
+                                InkWell(
+                                  onTap: () => _showEditDeleteBrandDialog(brand),
+                                  child: Icon(
+                                    Icons.edit_outlined,
+                                    size: 14,
+                                    color: isSelected ? Colors.white : AppTheme.primaryBlue,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          selected: isSelected,
+                          showCheckmark: false,
+                          selectedColor: AppTheme.accentCyan,
+                          backgroundColor: Colors.grey.shade200,
+                          onSelected: (selected) {
+                            if (selected) {
+                              setState(() => _selectedBrand = brand);
+                              _notifyChange();
+                            }
+                          },
                         ),
-                        selected: isSelected,
-                        showCheckmark: false,
-                        selectedColor: AppTheme.accentCyan,
-                        backgroundColor: Colors.grey.shade200,
-                        onSelected: (selected) {
-                          if (selected) {
-                            setState(() => _selectedBrand = brand);
-                            _notifyChange();
-                          }
-                        },
                       ),
                     );
                   }),

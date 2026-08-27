@@ -4,6 +4,7 @@ import 'package:washify/core/localization/app_localizations.dart';
 import 'package:washify/core/theme/app_theme.dart';
 import 'package:washify/providers/vehicle_catalog_provider.dart';
 import 'package:washify/features/tickets/models/vehicle_catalog.dart';
+import 'package:washify/providers/auth_provider.dart';
 
 class VehicleInfoInput extends ConsumerStatefulWidget {
   final Function(String plate, String brand, String model) onChanged;
@@ -30,31 +31,6 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
   final _tuPart2Controller = TextEditingController();
   final _otherPlateController = TextEditingController();
 
-  final List<String> _brands = [
-    'Peugeot',
-    'Citroën',
-    'Renault',
-    'VW',
-    'Dacia',
-    'Toyota',
-    'Hyundai',
-    'Kia',
-    'Isuzu',
-    'BYD',
-    'Mercedes',
-    'BMW',
-    'Audi',
-    'MG',
-    'Chery',
-    'Ford',
-    'Fiat',
-    'Nissan',
-    'Skoda',
-    'Seat',
-    'Suzuki',
-    'Autre',
-  ];
-
   String _selectedBrand = '';
   final _otherBrandController = TextEditingController();
   final _modelController = TextEditingController();
@@ -78,12 +54,7 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
 
     // Initialize brand
     if (widget.initialBrand != null && widget.initialBrand!.isNotEmpty) {
-      if (_brands.contains(widget.initialBrand)) {
-        _selectedBrand = widget.initialBrand!;
-      } else {
-        _selectedBrand = 'Autre';
-        _otherBrandController.text = widget.initialBrand!;
-      }
+      _selectedBrand = widget.initialBrand!;
     }
 
     // Initialize model
@@ -110,12 +81,7 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
 
   void updateFields(String brand, String model) {
     if (brand.isNotEmpty) {
-      if (_brands.contains(brand)) {
-        _selectedBrand = brand;
-      } else {
-        _selectedBrand = 'Autre';
-        _otherBrandController.text = brand;
-      }
+      _selectedBrand = brand;
     }
     if (model.isNotEmpty) {
       _modelController.text = model;
@@ -138,6 +104,104 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
     String model = _modelController.text.trim();
 
     widget.onChanged(plate, brand, model);
+  }
+
+  void _showBrandManagementDialog(VehicleCatalog catalog) {
+    final user = ref.read(currentUserProvider);
+    final stationId = user?.tenantId ?? '';
+    final repo = ref.read(vehicleCatalogRepositoryProvider);
+    final newBrandController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (dialogCtx, setDState) {
+          final customBrands = catalog.customBrands;
+
+          return AlertDialog(
+            title: Row(
+              children: [
+                const Icon(Icons.style, color: AppTheme.accentCyan),
+                const SizedBox(width: 8),
+                Text('Gestion des Marques'.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
+              ],
+            ),
+            content: SizedBox(
+              width: 450,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Ajouter ou gérer vos marques personnalisées de la station :'.tr,
+                    style: const TextStyle(fontSize: 12, color: AppTheme.textHint),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: newBrandController,
+                          decoration: InputDecoration(
+                            labelText: 'Nouvelle Marque (ex: BYD, Geely)'.tr,
+                            isDense: true,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: () async {
+                          final bName = newBrandController.text.trim();
+                          if (bName.isNotEmpty) {
+                            await repo.addBrand(stationId, bName);
+                            newBrandController.clear();
+                            if (dialogCtx.mounted) setDState(() {});
+                          }
+                        },
+                        child: Text('Ajouter'.tr),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  const Divider(),
+                  const Text('Marques Personnalisées (Ajoutées) :', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  const SizedBox(height: 8),
+                  if (customBrands.isEmpty)
+                    Text('Aucune marque personnalisée.'.tr, style: const TextStyle(fontSize: 12, color: AppTheme.textHint))
+                  else
+                    SizedBox(
+                      height: 180,
+                      child: ListView.builder(
+                        itemCount: customBrands.length,
+                        itemBuilder: (ctx, i) {
+                          final brandName = customBrands[i];
+                          return ListTile(
+                            dense: true,
+                            title: Text(brandName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.delete_outline, color: AppTheme.errorRed, size: 20),
+                              onPressed: () async {
+                                await repo.deleteBrand(stationId, brandName);
+                                if (dialogCtx.mounted) setDState(() {});
+                              },
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogCtx),
+                child: Text('Fermer'.tr),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 
   Widget _buildPlateSection() {
@@ -230,6 +294,7 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
   }
 
   Widget _buildBrandSection(VehicleCatalog catalog) {
+    final availableBrands = catalog.allBrands;
     final effectiveBrandName = _selectedBrand == 'Autre' ? _otherBrandController.text.trim() : _selectedBrand;
     final allKnownModels = catalog.getModelsForBrand(effectiveBrandName);
 
@@ -259,24 +324,43 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Marque et Modèle'.tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Marque et Modèle'.tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                IconButton(
+                  icon: const Icon(Icons.settings_suggest_rounded, color: AppTheme.accentCyan, size: 20),
+                  onPressed: () => _showBrandManagementDialog(catalog),
+                  tooltip: 'Gérer la liste des marques'.tr,
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
 
-            // Standard clean brands list with 'Autre' at the end
+            // All Brands Choice Chips (Includes newly learned custom brands!)
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
-                children: _brands.map((brand) {
+                children: availableBrands.map((brand) {
                   final isSelected = _selectedBrand == brand;
+                  final isCustom = catalog.customBrands.contains(brand);
+
                   return Padding(
                     padding: const EdgeInsets.only(right: 8.0),
                     child: ChoiceChip(
-                      label: Text(
-                        brand,
-                        style: TextStyle(
-                          color: isSelected ? Colors.white : Colors.black87,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                        ),
+                      label: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (isCustom) const Icon(Icons.star, size: 12, color: Colors.amber),
+                          if (isCustom) const SizedBox(width: 4),
+                          Text(
+                            brand,
+                            style: TextStyle(
+                              color: isSelected ? Colors.white : Colors.black87,
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            ),
+                          ),
+                        ],
                       ),
                       selected: isSelected,
                       showCheckmark: false,
@@ -319,7 +403,7 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
                         TextField(
                           controller: _modelController,
                           onChanged: (_) {
-                            setState(() {}); // Rebuild to update matching autocomplete suggestions
+                            setState(() {}); // Update matching autocomplete suggestions dynamically
                           },
                           decoration: InputDecoration(
                             labelText: 'Modèle (ex: Golf 7, Tang, Q7)'.tr,

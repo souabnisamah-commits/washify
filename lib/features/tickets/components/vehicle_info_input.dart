@@ -388,7 +388,7 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
             ),
             const SizedBox(height: 10),
 
-            // Brands Choice Chips + Plus Button (+)
+            // Brands Chips + Plus Button (+)
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
@@ -400,44 +400,67 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
 
                     return Padding(
                       padding: const EdgeInsets.only(right: 8.0),
-                      child: GestureDetector(
-                        onLongPress: isCustom ? () => _showEditDeleteBrandDialog(brand) : null,
-                        child: ChoiceChip(
-                          label: Row(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: isSelected ? AppTheme.accentCyan : Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(20),
+                          border: isSelected ? Border.all(color: AppTheme.primaryBlue, width: 1.5) : null,
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              if (isCustom) const Icon(Icons.star, size: 12, color: Colors.amber),
-                              if (isCustom) const SizedBox(width: 4),
-                              Text(
-                                brand,
-                                style: TextStyle(
-                                  color: isSelected ? Colors.white : Colors.black87,
-                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                ),
-                              ),
-                              if (isCustom) ...[
-                                const SizedBox(width: 6),
-                                InkWell(
-                                  onTap: () => _showEditDeleteBrandDialog(brand),
-                                  child: Icon(
-                                    Icons.edit_outlined,
-                                    size: 14,
-                                    color: isSelected ? Colors.white : AppTheme.primaryBlue,
+                              // Brand Selection Target
+                              InkWell(
+                                borderRadius: BorderRadius.circular(20),
+                                onTap: () {
+                                  setState(() => _selectedBrand = brand);
+                                  _notifyChange();
+                                },
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (isCustom) const Icon(Icons.star, size: 12, color: Colors.amber),
+                                      if (isCustom) const SizedBox(width: 4),
+                                      Text(
+                                        brand,
+                                        style: TextStyle(
+                                          color: isSelected ? Colors.white : Colors.black87,
+                                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              ],
+                              ),
+
+                              // Independent Edit Pencil Button Target (for custom brands)
+                              if (isCustom)
+                                InkWell(
+                                  borderRadius: BorderRadius.circular(20),
+                                  onTap: () => _showEditDeleteBrandDialog(brand),
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(right: 8.0, left: 2.0, top: 6.0, bottom: 6.0),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: BoxDecoration(
+                                        color: isSelected ? Colors.white.withValues(alpha: 0.25) : Colors.black.withValues(alpha: 0.08),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        Icons.edit_rounded,
+                                        size: 13,
+                                        color: isSelected ? Colors.white : AppTheme.primaryBlue,
+                                      ),
+                                    ),
+                                  ),
+                                ),
                             ],
                           ),
-                          selected: isSelected,
-                          showCheckmark: false,
-                          selectedColor: AppTheme.accentCyan,
-                          backgroundColor: Colors.grey.shade200,
-                          onSelected: (selected) {
-                            if (selected) {
-                              setState(() => _selectedBrand = brand);
-                              _notifyChange();
-                            }
-                          },
                         ),
                       ),
                     );

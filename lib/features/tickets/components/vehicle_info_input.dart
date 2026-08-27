@@ -324,17 +324,7 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Marque et Modèle'.tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                IconButton(
-                  icon: const Icon(Icons.settings_suggest_rounded, color: AppTheme.accentCyan, size: 20),
-                  onPressed: () => _showBrandManagementDialog(catalog),
-                  tooltip: 'Gérer la liste des marques'.tr,
-                ),
-              ],
-            ),
+            Text('Marque et Modèle'.tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 10),
 
             // All Brands Choice Chips (Includes newly saved custom brands!)

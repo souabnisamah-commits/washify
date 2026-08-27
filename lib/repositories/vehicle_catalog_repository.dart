@@ -81,10 +81,9 @@ class VehicleCatalogRepository {
 
         bool needsUpdate = false;
 
-        final isDefault = VehicleCatalog.defaultBrands.any((b) => b.toLowerCase() == brand.toLowerCase());
         final isCustom = customBrands.any((b) => b.toLowerCase() == brand.toLowerCase());
 
-        if (!isDefault && !isCustom) {
+        if (!isCustom) {
           customBrands.add(brand);
           needsUpdate = true;
         }

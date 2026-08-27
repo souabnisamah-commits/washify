@@ -87,7 +87,6 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
       _modelController.text = model;
     }
     if (mounted) setState(() {});
-    _notifyChange();
   }
 
   void _notifyChange() {

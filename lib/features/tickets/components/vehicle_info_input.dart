@@ -86,7 +86,7 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
     if (model.isNotEmpty) {
       _modelController.text = model;
     }
-    setState(() {});
+    if (mounted) setState(() {});
     _notifyChange();
   }
 
@@ -393,6 +393,7 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
                     child: LayoutBuilder(
                       builder: (context, constraints) {
                         return Autocomplete<String>(
+                          initialValue: TextEditingValue(text: _modelController.text),
                           optionsBuilder: (TextEditingValue textEditingValue) {
                             if (textEditingValue.text.isEmpty) {
                               return suggestedModels.take(8);
@@ -405,18 +406,13 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
                             _notifyChange();
                           },
                           fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
-                            // Sync with _modelController
-                            if (_modelController.text.isNotEmpty && textEditingController.text.isEmpty) {
-                              textEditingController.text = _modelController.text;
-                            }
-                            textEditingController.addListener(() {
-                              _modelController.text = textEditingController.text;
-                              _notifyChange();
-                            });
-
                             return TextField(
                               controller: textEditingController,
                               focusNode: focusNode,
+                              onChanged: (val) {
+                                _modelController.text = val;
+                                _notifyChange();
+                              },
                               decoration: InputDecoration(
                                 labelText: 'Modèle (ex: Golf 7, Tang, Clio)'.tr,
                                 hintText: 'Tapez pour autocompléter...'.tr,

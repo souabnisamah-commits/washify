@@ -68,22 +68,28 @@ class VehicleCatalog {
   factory VehicleCatalog.fromJson(Map<String, dynamic> json, String docId) {
     List<String> brands = [];
     if (json['customBrands'] is List) {
-      brands = List<String>.from(json['customBrands']);
+      brands = List<String>.from((json['customBrands'] as List).map((e) => e.toString()));
     }
 
     Map<String, List<String>> modelsMap = {};
     if (json['brandModels'] is Map) {
-      final rawMap = json['brandModels'] as Map<String, dynamic>;
+      final rawMap = json['brandModels'] as Map;
       rawMap.forEach((key, value) {
         if (value is List) {
-          modelsMap[key] = List<String>.from(value);
+          modelsMap[key.toString()] = List<String>.from(value.map((e) => e.toString()));
         }
       });
     }
 
     DateTime updated = DateTime.now();
     if (json['updatedAt'] != null) {
-      updated = DateTime.tryParse(json['updatedAt'].toString()) ?? DateTime.now();
+      try {
+        if (json['updatedAt'] is String) {
+          updated = DateTime.tryParse(json['updatedAt']) ?? DateTime.now();
+        } else if (json['updatedAt'].toDate != null) {
+          updated = json['updatedAt'].toDate();
+        }
+      } catch (_) {}
     }
 
     return VehicleCatalog(

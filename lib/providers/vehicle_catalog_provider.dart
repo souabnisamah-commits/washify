@@ -8,6 +8,7 @@ final vehicleCatalogRepositoryProvider = Provider<VehicleCatalogRepository>((ref
 });
 
 final vehicleCatalogStreamProvider = StreamProvider.family<VehicleCatalog, String>((ref, stationId) {
+  if (stationId.isEmpty) return Stream.value(VehicleCatalog.empty(''));
   final repository = ref.watch(vehicleCatalogRepositoryProvider);
   return repository.watchVehicleCatalog(stationId);
 });
@@ -15,6 +16,7 @@ final vehicleCatalogStreamProvider = StreamProvider.family<VehicleCatalog, Strin
 final currentVehicleCatalogStreamProvider = StreamProvider<VehicleCatalog>((ref) {
   final user = ref.watch(currentUserProvider);
   final stationId = user?.tenantId ?? '';
+  if (stationId.isEmpty) return Stream.value(VehicleCatalog.empty(''));
   final repository = ref.watch(vehicleCatalogRepositoryProvider);
   return repository.watchVehicleCatalog(stationId);
 });

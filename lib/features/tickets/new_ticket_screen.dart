@@ -291,7 +291,7 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
     }
 
     final user = ref.read(currentUserProvider);
-    if (user == null || user.stationId == null) return;
+    if (user == null || user.tenantId.isEmpty) return;
 
     setState(() {
       _isSaving = true;
@@ -299,10 +299,10 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
 
     try {
       final repo = ref.read(ticketRepositoryProvider);
-      final stationAsync = ref.read(stationByIdProvider(user.stationId!));
+      final stationAsync = ref.read(stationByIdProvider(user.tenantId));
       final double pricePerMeter = stationAsync.value?.carpetPricePerMeter ?? 0.0;
 
-      final ticketNum = await repo.getProvisionalTicketNumber(user.stationId!);
+      final ticketNum = await repo.getProvisionalTicketNumber(user.tenantId);
 
       final Map<String, dynamic> servicePrices = {};
       final List<TicketService> ticketServices = [];
@@ -383,7 +383,7 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
 
       final newTicket = Ticket(
         id: widget.editTicket?.id ?? '',
-        tenantId: user.stationId!,
+        tenantId: user.tenantId,
         ticketNumber: widget.editTicket?.ticketNumber ?? ticketNum,
         createdBy: widget.editTicket?.createdBy ?? user.name,
         paidBy: widget.editTicket?.paidBy ?? user.name,
@@ -473,7 +473,7 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
       } else {
         await repo.createTicket(newTicket);
       }
-      ref.invalidate(todayTicketsStreamProvider(user.stationId!));
+      ref.invalidate(todayTicketsStreamProvider(user.tenantId));
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -497,7 +497,7 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(currentUserProvider);
-    if (user == null || user.stationId == null) {
+    if (user == null || user.tenantId.isEmpty) {
       return Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
@@ -510,7 +510,7 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
     final now = DateTime.now();
     final attendancesAsync = ref.watch(attendancesStreamProvider((stationId: user.tenantId, date: DateTime(now.year, now.month, now.day))));
     final shiftsAsync = ref.watch(shiftsStreamProvider(user.tenantId));
-    final stationAsync = ref.watch(stationByIdProvider(user.stationId!));
+    final stationAsync = ref.watch(stationByIdProvider(user.tenantId));
     final double pricePerMeter = stationAsync.valueOrNull?.carpetPricePerMeter ?? 0.0;
 
     if (widget.editTicket != null && !_initialized &&

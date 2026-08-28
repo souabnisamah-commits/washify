@@ -1023,49 +1023,152 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
     ))]);
   }
 
+  int _getTicketCountForVehicle(String vehiclePlate, List<Ticket> tickets) {
+    final cleanPlate = vehiclePlate.replaceAll(' ', '').toUpperCase();
+    if (cleanPlate.isEmpty) return 0;
+    return tickets.where((t) {
+      if (t.status == TicketStatus.annule || t.status == TicketStatus.efface) return false;
+      final tPlate = (t.vehiclePlate ?? '').replaceAll(' ', '').toUpperCase();
+      return tPlate == cleanPlate;
+    }).length;
+  }
+
   Widget _buildVehiclesTab(WidgetRef ref) {
     final vehicles = _currentClient.vehicles;
+    final ticketsAsync = ref.watch(clientTicketsProvider(_currentClient.id));
+    final tickets = ticketsAsync.value ?? [];
+
     return Column(
       children: [
         Padding(
-          padding: EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(16.0),
           child: Row(
             children: [
               Expanded(
                 child: Text(
-                  '${vehicles.length} véhicule(s) enregistré(s)',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  '${vehicles.length} véhicule(s) dans la flotte B2B'.tr,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
               ),
               ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.accentCyan, foregroundColor: Colors.white),
                 onPressed: _showAddVehicleDialog,
-                icon: Icon(Icons.add),
+                icon: const Icon(Icons.add),
                 label: Text('Ajouter'.tr),
               ),
             ],
           ),
         ),
         if (vehicles.isEmpty)
-          Expanded(child: Center(child: Text('Aucun véhicule enregistré.'.tr)))
+          Expanded(child: Center(child: Text('Aucun véhicule enregistré pour ce client.'.tr)))
         else
           Expanded(
             child: ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: vehicles.length,
               itemBuilder: (context, index) {
                 final vehicle = vehicles[index];
+                final ticketCount = _getTicketCountForVehicle(vehicle.plate, tickets);
+                final isLocked = ticketCount > 0;
+
                 return Card(
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  child: ListTile(
-                    leading: Icon(Icons.directions_car, color: AppTheme.primaryBlue),
-                    title: Text(vehicle.plate, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    subtitle: vehicle.brand.isNotEmpty || vehicle.model.isNotEmpty 
-                        ? Text('${vehicle.brand} ${vehicle.model}'.trim(), style: TextStyle(color: AppTheme.textHint))
-                        : null,
-                    trailing: IconButton(
-                      icon: Icon(Icons.delete, color: AppTheme.errorRed),
-                      onPressed: () => _deleteVehicle(index),
+                  margin: const EdgeInsets.symmetric(vertical: 6),
+                  elevation: 1.5,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 20,
+                          backgroundColor: isLocked
+                              ? AppTheme.warningOrange.withValues(alpha: 0.15)
+                              : AppTheme.accentCyan.withValues(alpha: 0.15),
+                          child: Icon(
+                            Icons.directions_car_filled,
+                            color: isLocked ? AppTheme.warningOrange : AppTheme.accentCyan,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    vehicle.plate,
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: isLocked
+                                          ? AppTheme.warningOrange.withValues(alpha: 0.15)
+                                          : AppTheme.successGreen.withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          isLocked ? Icons.lock : Icons.check_circle,
+                                          size: 11,
+                                          color: isLocked ? AppTheme.warningOrange : AppTheme.successGreen,
+                                        ),
+                                        const SizedBox(width: 3),
+                                        Text(
+                                          isLocked ? '$ticketCount ticket(s)'.tr : 'Modifiable'.tr,
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                            color: isLocked ? AppTheme.warningOrange : AppTheme.successGreen,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                vehicle.brand.isNotEmpty || vehicle.model.isNotEmpty
+                                    ? '${vehicle.brand} ${vehicle.model}'.trim()
+                                    : 'Marque/Modèle non renseigné'.tr,
+                                style: const TextStyle(fontSize: 12, color: AppTheme.textHint),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: Icon(
+                                Icons.edit_outlined,
+                                color: isLocked ? Colors.grey.shade400 : AppTheme.primaryBlue,
+                              ),
+                              tooltip: isLocked
+                                  ? 'Modification verrouillée (attaché à des tickets)'
+                                  : 'Modifier',
+                              onPressed: () => _showEditVehicleDialog(vehicle, index, ticketCount),
+                            ),
+                            IconButton(
+                              icon: Icon(
+                                Icons.delete_outline,
+                                color: isLocked ? Colors.grey.shade400 : AppTheme.errorRed,
+                              ),
+                              tooltip: isLocked
+                                  ? 'Suppression verrouillée (attaché à des tickets)'
+                                  : 'Supprimer',
+                              onPressed: () => _deleteVehicle(index, ticketCount),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                    onTap: () => _showEditVehicleDialog(vehicle, index),
                   ),
                 );
               },
@@ -1170,7 +1273,18 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
     );
   }
 
-  void _showEditVehicleDialog(ClientVehicle vehicle, int index) {
+  void _showEditVehicleDialog(ClientVehicle vehicle, int index, int ticketCount) {
+    if (ticketCount > 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Impossible de modifier le véhicule ${vehicle.plate} car il possède $ticketCount ticket(s) rattaché(s).'.tr),
+          backgroundColor: AppTheme.warningOrange,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
     final formKey = GlobalKey<FormState>();
     String newPlate = vehicle.plate;
     String newBrand = vehicle.brand;
@@ -1278,8 +1392,20 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
     );
   }
 
-  void _deleteVehicle(int index) async {
+  void _deleteVehicle(int index, int ticketCount) async {
     final vehicle = _currentClient.vehicles[index];
+
+    if (ticketCount > 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Impossible de supprimer le véhicule ${vehicle.plate} car il possède $ticketCount ticket(s) rattaché(s).'.tr),
+          backgroundColor: AppTheme.warningOrange,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(

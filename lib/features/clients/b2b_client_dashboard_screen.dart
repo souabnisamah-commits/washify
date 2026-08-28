@@ -5,10 +5,14 @@ import 'package:washify/core/localization/app_localizations.dart';
 import 'package:washify/core/theme/app_theme.dart';
 import 'package:washify/features/clients/models/client.dart';
 import 'package:washify/features/clients/models/client_payment.dart';
+import 'package:washify/features/clients/models/client_vehicle.dart';
 import 'package:washify/features/clients/utils/b2b_pdf_generator.dart';
+import 'package:washify/features/services/models/vehicle_category.dart';
+import 'package:washify/features/tickets/components/vehicle_info_input.dart';
 import 'package:washify/features/tickets/models/ticket.dart';
 import 'package:washify/providers/auth_provider.dart';
 import 'package:washify/providers/station_provider.dart';
+import 'package:washify/providers/vehicle_category_provider.dart';
 import 'package:washify/repositories/client_repository.dart';
 import 'package:washify/repositories/ticket_repository.dart';
 import 'package:printing/printing.dart';
@@ -59,6 +63,318 @@ class _B2BClientDashboardScreenState extends ConsumerState<B2BClientDashboardScr
     );
   }
 
+  int _getTicketCountForVehicle(String vehiclePlate, List<Ticket> tickets) {
+    final cleanPlate = vehiclePlate.replaceAll(' ', '').toUpperCase();
+    if (cleanPlate.isEmpty) return 0;
+    return tickets.where((t) {
+      if (t.status == TicketStatus.annule || t.status == TicketStatus.efface) return false;
+      final tPlate = (t.vehiclePlate ?? '').replaceAll(' ', '').toUpperCase();
+      return tPlate == cleanPlate;
+    }).length;
+  }
+
+  void _showAddVehicleDialog(BuildContext context, Client client) {
+    String newPlate = '';
+    String newBrand = '';
+    String newModel = '';
+    String newCategoryId = '';
+
+    final user = ref.read(currentUserProvider);
+    if (user == null) return;
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              const Icon(Icons.add_circle_outline, color: AppTheme.accentCyan),
+              const SizedBox(width: 8),
+              Text('Ajouter un Véhicule'.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                VehicleInfoInput(
+                  onChanged: (plate, brand, model) {
+                    newPlate = plate.trim().toUpperCase();
+                    newBrand = brand.trim();
+                    newModel = model.trim();
+                  },
+                ),
+                const SizedBox(height: 16),
+                Consumer(
+                  builder: (context, ref, child) {
+                    final categoriesAsync = ref.watch(vehicleCategoriesStreamProvider(user.tenantId));
+                    return categoriesAsync.when(
+                      data: (categories) {
+                        if (categories.isEmpty) return const SizedBox();
+                        return DropdownButtonFormField<String>(
+                          decoration: InputDecoration(
+                            labelText: 'Catégorie de véhicule'.tr,
+                            prefixIcon: const Icon(Icons.category, color: AppTheme.accentCyan),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          initialValue: newCategoryId.isEmpty ? null : newCategoryId,
+                          items: categories.map((c) => DropdownMenuItem(value: c.id, child: Text(c.name))).toList(),
+                          onChanged: (val) {
+                            if (val != null) newCategoryId = val;
+                          },
+                        );
+                      },
+                      loading: () => const CircularProgressIndicator(),
+                      error: (e, s) => Text('Erreur: $e'.tr),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('Annuler'.tr),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.accentCyan, foregroundColor: Colors.white),
+              onPressed: () async {
+                if (newPlate.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Veuillez saisir une immatriculation valide.'.tr)),
+                  );
+                  return;
+                }
+                if (client.vehicles.any((v) => v.plate.replaceAll(' ', '').toUpperCase() == newPlate.replaceAll(' ', '').toUpperCase())) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Ce véhicule existe déjà dans votre flotte.'.tr)),
+                  );
+                  return;
+                }
+
+                final updatedVehicles = List<ClientVehicle>.from(client.vehicles);
+                updatedVehicles.add(ClientVehicle(
+                  plate: newPlate,
+                  brand: newBrand,
+                  model: newModel,
+                  categoryId: newCategoryId,
+                ));
+
+                final updatedClient = client.copyWith(
+                  vehicles: updatedVehicles,
+                  updatedAt: DateTime.now(),
+                );
+
+                await ref.read(clientRepositoryProvider).updateClient(updatedClient);
+
+                if (context.mounted) {
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Véhicule $newPlate ajouté à votre flotte.'.tr),
+                      backgroundColor: AppTheme.successGreen,
+                    ),
+                  );
+                }
+              },
+              child: Text('Ajouter au parc'.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showEditVehicleDialog(BuildContext context, Client client, ClientVehicle vehicle, int index, int ticketCount) {
+    if (ticketCount > 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Impossible de modifier le véhicule ${vehicle.plate} car il possède $ticketCount ticket(s) rattaché(s).'.tr),
+          backgroundColor: AppTheme.warningOrange,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
+    String newPlate = vehicle.plate;
+    String newBrand = vehicle.brand;
+    String newModel = vehicle.model;
+    String newCategoryId = vehicle.categoryId;
+
+    final user = ref.read(currentUserProvider);
+    if (user == null) return;
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              const Icon(Icons.edit_note, color: AppTheme.accentCyan),
+              const SizedBox(width: 8),
+              Text('Modifier le Véhicule'.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                VehicleInfoInput(
+                  initialPlate: newPlate,
+                  initialBrand: newBrand,
+                  initialModel: newModel,
+                  onChanged: (plate, brand, model) {
+                    newPlate = plate.trim().toUpperCase();
+                    newBrand = brand.trim();
+                    newModel = model.trim();
+                  },
+                ),
+                const SizedBox(height: 16),
+                Consumer(
+                  builder: (context, ref, child) {
+                    final categoriesAsync = ref.watch(vehicleCategoriesStreamProvider(user.tenantId));
+                    return categoriesAsync.when(
+                      data: (categories) {
+                        if (categories.isEmpty) return const SizedBox();
+                        if (newCategoryId.isNotEmpty && !categories.any((c) => c.id == newCategoryId)) {
+                          newCategoryId = '';
+                        }
+                        return DropdownButtonFormField<String>(
+                          decoration: InputDecoration(
+                            labelText: 'Catégorie de véhicule'.tr,
+                            prefixIcon: const Icon(Icons.category, color: AppTheme.accentCyan),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          initialValue: newCategoryId.isEmpty ? null : newCategoryId,
+                          items: categories.map((c) => DropdownMenuItem(value: c.id, child: Text(c.name))).toList(),
+                          onChanged: (val) {
+                            if (val != null) newCategoryId = val;
+                          },
+                        );
+                      },
+                      loading: () => const CircularProgressIndicator(),
+                      error: (e, s) => Text('Erreur: $e'.tr),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('Annuler'.tr),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.accentCyan, foregroundColor: Colors.white),
+              onPressed: () async {
+                if (newPlate.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Veuillez saisir une immatriculation valide.'.tr)),
+                  );
+                  return;
+                }
+
+                final updatedVehicles = List<ClientVehicle>.from(client.vehicles);
+
+                if (newPlate != vehicle.plate &&
+                    updatedVehicles.any((v) => v.plate.replaceAll(' ', '').toUpperCase() == newPlate.replaceAll(' ', '').toUpperCase())) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Un autre véhicule possède déjà cette immatriculation.'.tr)),
+                  );
+                  return;
+                }
+
+                updatedVehicles[index] = ClientVehicle(
+                  plate: newPlate,
+                  brand: newBrand,
+                  model: newModel,
+                  categoryId: newCategoryId,
+                );
+
+                final updatedClient = client.copyWith(
+                  vehicles: updatedVehicles,
+                  updatedAt: DateTime.now(),
+                );
+
+                await ref.read(clientRepositoryProvider).updateClient(updatedClient);
+
+                if (context.mounted) {
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Véhicule mis à jour.'.tr),
+                      backgroundColor: AppTheme.successGreen,
+                    ),
+                  );
+                }
+              },
+              child: Text('Enregistrer'.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showDeleteVehicleDialog(BuildContext context, Client client, ClientVehicle vehicle, int index, int ticketCount) async {
+    if (ticketCount > 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Impossible de supprimer le véhicule ${vehicle.plate} car il possède $ticketCount ticket(s) rattaché(s).'.tr),
+          backgroundColor: AppTheme.warningOrange,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: AppTheme.errorRed),
+            const SizedBox(width: 8),
+            Text('Supprimer du parc ?'.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Text('Voulez-vous vraiment retirer le véhicule ${vehicle.plate} de votre flotte B2B ?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Annuler'.tr)),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.errorRed, foregroundColor: Colors.white),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('Supprimer'.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    final updatedVehicles = List<ClientVehicle>.from(client.vehicles);
+    updatedVehicles.removeAt(index);
+
+    final updatedClient = client.copyWith(
+      vehicles: updatedVehicles,
+      updatedAt: DateTime.now(),
+    );
+
+    await ref.read(clientRepositoryProvider).updateClient(updatedClient);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Véhicule ${vehicle.plate} retiré de la flotte.'.tr)),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(currentUserProvider);
@@ -99,136 +415,40 @@ class _B2BClientDashboardScreenState extends ConsumerState<B2BClientDashboardScr
           actions: [
             IconButton(
               icon: const Icon(Icons.logout, color: Colors.white),
-              tooltip: 'Déconnexion'.tr,
+              tooltip: 'Se déconnecter'.tr,
               onPressed: _logout,
             ),
           ],
           bottom: TabBar(
-            indicatorColor: AppTheme.accentCyan,
             labelColor: Colors.white,
             unselectedLabelColor: Colors.white70,
+            indicatorColor: AppTheme.accentCyan,
             tabs: [
-              Tab(icon: const Icon(Icons.receipt_long, size: 18), text: 'Détail Solde'.tr),
-              Tab(icon: const Icon(Icons.history, size: 18), text: 'Paiements'.tr),
-              Tab(icon: const Icon(Icons.directions_car, size: 18), text: 'Flotte Véhicules'.tr),
+              Tab(
+                icon: const Icon(Icons.receipt_long_outlined, size: 20),
+                text: 'Tickets & Conso'.tr,
+              ),
+              Tab(
+                icon: const Icon(Icons.history_outlined, size: 20),
+                text: 'Historique Paiements'.tr,
+              ),
+              Tab(
+                icon: const Icon(Icons.directions_car_outlined, size: 20),
+                text: 'Flotte Véhicules'.tr,
+              ),
             ],
           ),
         ),
         body: clientAsync.when(
           data: (client) {
-            if (client == null || !client.hasAppAccess || client.accessStatus == 'blocked') {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.block, size: 54, color: AppTheme.errorRed),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Accès suspendu ou désactivé par le lavoir.'.tr,
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Veuillez contacter le patron de la station pour régulariser l\'accès à votre compte.'.tr,
-                        style: const TextStyle(color: AppTheme.textHint, fontSize: 13),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 20),
-                      ElevatedButton(
-                        onPressed: _logout,
-                        child: Text('Déconnexion'.tr),
-                      ),
-                    ],
-                  ),
-                ),
-              );
+            if (client == null) {
+              return Center(child: Text('Compte B2B introuvable.'.tr));
             }
-
-            final isOverThreshold = client.alertThreshold > 0 && client.currentBalance >= client.alertThreshold;
-
-            return Column(
+            return TabBarView(
               children: [
-                // Warning Banner if Threshold Exceeded
-                if (isOverThreshold)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    color: AppTheme.errorRed,
-                    child: Row(
-                      children: [
-                        const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 26),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Alerte : Seuil de crédit dépassé !'.tr,
-                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-                              ),
-                              Text(
-                                'Votre solde (${currencyFormat.format(client.currentBalance)}) a dépassé le seuil autorisé (${currencyFormat.format(client.alertThreshold)}). Veuillez effectuer un règlement auprès du lavoir.'.tr,
-                                style: const TextStyle(color: Colors.white, fontSize: 11),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                // Strategic Summary Cards
-                Container(
-                  color: Theme.of(context).colorScheme.surface,
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: _buildMetricCard(
-                          context,
-                          'Solde À Payer'.tr,
-                          currencyFormat.format(client.currentBalance),
-                          Icons.account_balance_wallet_outlined,
-                          client.currentBalance > 0 ? AppTheme.errorRed : AppTheme.successGreen,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildMetricCard(
-                          context,
-                          'Seuil Autorisé'.tr,
-                          currencyFormat.format(client.alertThreshold),
-                          Icons.security_outlined,
-                          AppTheme.accentCyan,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildMetricCard(
-                          context,
-                          'Véhicules'.tr,
-                          '${client.vehicles.length}',
-                          Icons.directions_car_outlined,
-                          Colors.purple,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Main Tab Views
-                Expanded(
-                  child: TabBarView(
-                    children: [
-                      _buildTicketsTab(context, client),
-                      _buildPaymentsTab(context, client),
-                      _buildVehiclesTab(context, client),
-                    ],
-                  ),
-                ),
+                _buildTicketsTab(context, client),
+                _buildPaymentsTab(context, client),
+                _buildVehiclesTab(context, client),
               ],
             );
           },
@@ -239,264 +459,255 @@ class _B2BClientDashboardScreenState extends ConsumerState<B2BClientDashboardScr
     );
   }
 
-  Widget _buildMetricCard(BuildContext context, String title, String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: color, size: 18),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(fontSize: 10, color: AppTheme.textHint, fontWeight: FontWeight.bold),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: color),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildTicketsTab(BuildContext context, Client client) {
     final ticketsAsync = ref.watch(b2bClientTicketsProvider(client.id));
+
     return ticketsAsync.when(
       data: (tickets) {
-        if (tickets.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.receipt_long_outlined, size: 48, color: AppTheme.textHint),
-                const SizedBox(height: 12),
-                Text('Aucun ticket enregistré pour le moment.'.tr, style: const TextStyle(color: AppTheme.textHint)),
-              ],
-            ),
-          );
-        }
-
-        // Calculate FIFO Unpaid tickets making up the current balance
-        final Set<String> unpaidTicketIds = {};
+        // Filter out cancelled/deleted tickets for financial calculations
         final validTickets = tickets.where((t) => t.status != TicketStatus.annule && t.status != TicketStatus.efface).toList();
-        
-        double remBalance = client.currentBalance;
-        for (final t in validTickets) {
-          if (remBalance <= 0.01) break;
-          unpaidTicketIds.add(t.id);
-          remBalance -= t.montant;
+
+        final unpaidTickets = validTickets.where((t) => t.status == TicketStatus.enAttente || t.paymentMethod == 'compte_client').toList();
+        final paidTickets = validTickets.where((t) => t.status == TicketStatus.paye && t.paymentMethod != 'compte_client').toList();
+
+        final List<Ticket> filteredTickets;
+        if (_ticketFilter == 'unpaid') {
+          filteredTickets = unpaidTickets;
+        } else if (_ticketFilter == 'paid') {
+          filteredTickets = paidTickets;
+        } else {
+          filteredTickets = validTickets;
         }
 
-        final unpaidCount = tickets.where((t) => unpaidTicketIds.contains(t.id)).length;
-        final paidCount = tickets.where((t) => !unpaidTicketIds.contains(t.id) && t.status != TicketStatus.annule && t.status != TicketStatus.efface).length;
-
-        final filtered = tickets.where((t) {
-          final isUnpaid = unpaidTicketIds.contains(t.id);
-          final isCancelled = t.status == TicketStatus.annule || t.status == TicketStatus.efface;
-          final isPaid = !isUnpaid && !isCancelled;
-
-          if (_ticketFilter == 'unpaid' && !isUnpaid) return false;
-          if (_ticketFilter == 'paid' && !isPaid) return false;
-          return true;
-        }).toList();
+        final isOverThreshold = client.alertThreshold > 0 && client.currentBalance >= client.alertThreshold;
 
         return Column(
           children: [
-            // Export Button & Filter Chips Header
+            // Solde & Alert Threshold Banner
+            Container(
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: isOverThreshold
+                      ? [const Color(0xFFD32F2F), const Color(0xFFC62828)]
+                      : [AppTheme.primaryBlue, const Color(0xFF1976D2)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: (isOverThreshold ? Colors.red : AppTheme.primaryBlue).withValues(alpha: 0.3),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Solde encours (À Régler)'.tr,
+                            style: const TextStyle(color: Colors.white70, fontSize: 13),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            currencyFormat.format(client.currentBalance),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 26,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (client.alertThreshold > 0)
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              'Plafond autorisé'.tr,
+                              style: const TextStyle(color: Colors.white70, fontSize: 12),
+                            ),
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: isOverThreshold
+                                    ? Colors.white
+                                    : Colors.white.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                currencyFormat.format(client.alertThreshold),
+                                style: TextStyle(
+                                  color: isOverThreshold ? AppTheme.errorRed : Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
+                  if (isOverThreshold) ...[
+                    const Divider(color: Colors.white30, height: 20),
+                    Row(
+                      children: [
+                        const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Attention : Vous avez atteint votre plafond d\'encours autorisé.'.tr,
+                            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+
+            // Export PDF & Filter Row
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    '${filtered.length} ticket(s)',
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.textHint),
+                  // Filter Chips
+                  Row(
+                    children: [
+                      FilterChip(
+                        label: Text('Tous (${validTickets.length})'.tr),
+                        selected: _ticketFilter == 'all',
+                        onSelected: (val) => setState(() => _ticketFilter = 'all'),
+                        selectedColor: AppTheme.accentCyan.withValues(alpha: 0.2),
+                        checkmarkColor: AppTheme.accentCyan,
+                      ),
+                      const SizedBox(width: 8),
+                      FilterChip(
+                        label: Text('À régler'.tr),
+                        selected: _ticketFilter == 'unpaid',
+                        onSelected: (val) => setState(() => _ticketFilter = 'unpaid'),
+                        selectedColor: AppTheme.errorRed.withValues(alpha: 0.2),
+                        checkmarkColor: AppTheme.errorRed,
+                      ),
+                    ],
                   ),
+                  // PDF Export Button
                   ElevatedButton.icon(
-                    onPressed: () => _exportPdf(client, tickets),
-                    icon: const Icon(Icons.picture_as_pdf, size: 16),
-                    label: Text('Télécharger Relevé B2B'.tr, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    onPressed: () => _exportPdf(client, validTickets),
+                    icon: const Icon(Icons.picture_as_pdf, size: 18),
+                    label: Text('Relevé PDF'.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryBlue,
+                      backgroundColor: AppTheme.accentCyan,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     ),
                   ),
                 ],
               ),
             ),
+            const SizedBox(height: 10),
 
-            // Filter Chips Bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    FilterChip(
-                      label: Text('Tous (${tickets.length})'.tr),
-                      selected: _ticketFilter == 'all',
-                      onSelected: (_) => setState(() => _ticketFilter = 'all'),
-                    ),
-                    const SizedBox(width: 8),
-                    FilterChip(
-                      avatar: const Icon(Icons.warning_amber_rounded, size: 14, color: AppTheme.warningOrange),
-                      label: Text('Solde En Cours ($unpaidCount)'.tr),
-                      selected: _ticketFilter == 'unpaid',
-                      selectedColor: AppTheme.warningOrange.withValues(alpha: 0.25),
-                      onSelected: (_) => setState(() => _ticketFilter = 'unpaid'),
-                    ),
-                    const SizedBox(width: 8),
-                    FilterChip(
-                      avatar: const Icon(Icons.check_circle_outline, size: 14, color: AppTheme.successGreen),
-                      label: Text('Archivés / Réglés ($paidCount)'.tr),
-                      selected: _ticketFilter == 'paid',
-                      selectedColor: AppTheme.successGreen.withValues(alpha: 0.25),
-                      onSelected: (_) => setState(() => _ticketFilter = 'paid'),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 6),
-
-            // Tickets ListView
+            // Tickets List
             Expanded(
-              child: filtered.isEmpty
+              child: filteredTickets.isEmpty
                   ? Center(
-                      child: Text('Aucun ticket ne correspond au filtre.'.tr, style: const TextStyle(color: AppTheme.textHint)),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.receipt_long_outlined, size: 48, color: AppTheme.textHint),
+                          const SizedBox(height: 12),
+                          Text('Aucun ticket trouvé.'.tr, style: const TextStyle(color: AppTheme.textHint)),
+                        ],
+                      ),
                     )
                   : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      itemCount: filtered.length,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      itemCount: filteredTickets.length,
                       itemBuilder: (context, index) {
-                        final t = filtered[index];
-                        final isUnpaid = unpaidTicketIds.contains(t.id);
+                        final t = filteredTickets[index];
+                        final isUnpaid = t.status == TicketStatus.enAttente || t.paymentMethod == 'compte_client';
                         final isCancelled = t.status == TicketStatus.annule || t.status == TicketStatus.efface;
 
                         return Card(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          elevation: isUnpaid ? 3 : 1.5,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            side: isUnpaid
-                                ? BorderSide(color: AppTheme.warningOrange.withValues(alpha: 0.6), width: 1.5)
-                                : BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.2)),
-                          ),
+                          margin: const EdgeInsets.only(bottom: 10),
+                          elevation: 1.5,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           child: Padding(
-                            padding: const EdgeInsets.all(14.0),
+                            padding: const EdgeInsets.all(14),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // Top Row: Ticket Number Badge & Status Pill
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
+                                    // Ticket Number & Plate
+                                    Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: AppTheme.primaryBlue.withValues(alpha: 0.1),
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: Text(
+                                            '#${t.ticketNumber}',
+                                            style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryBlue),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Text(
+                                          t.vehiclePlate ?? '',
+                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                        ),
+                                      ],
+                                    ),
+
+                                    // Status Badge
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                       decoration: BoxDecoration(
-                                        color: AppTheme.accentCyan.withValues(alpha: 0.15),
-                                        borderRadius: BorderRadius.circular(6),
+                                        color: isCancelled
+                                            ? Colors.grey.withValues(alpha: 0.2)
+                                            : (isUnpaid ? AppTheme.errorRed.withValues(alpha: 0.15) : AppTheme.successGreen.withValues(alpha: 0.15)),
+                                        borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: Text(
-                                        'Ticket ${t.ticketNumber}',
-                                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.accentCyan),
-                                      ),
-                                    ),
-
-                                    // Status Pill
-                                    if (isCancelled)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                        decoration: BoxDecoration(
-                                          color: AppTheme.textHint.withValues(alpha: 0.15),
-                                          borderRadius: BorderRadius.circular(6),
-                                        ),
-                                        child: Text(
-                                          'Annulé'.tr,
-                                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.textHint),
-                                        ),
-                                      )
-                                    else if (isUnpaid)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                        decoration: BoxDecoration(
-                                          color: AppTheme.warningOrange.withValues(alpha: 0.15),
-                                          borderRadius: BorderRadius.circular(6),
-                                          border: Border.all(color: AppTheme.warningOrange.withValues(alpha: 0.4)),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            const Icon(Icons.warning_amber_rounded, size: 12, color: AppTheme.warningOrange),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              'Solde non réglé'.tr,
-                                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.warningOrange),
-                                            ),
-                                          ],
-                                        ),
-                                      )
-                                    else
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                        decoration: BoxDecoration(
-                                          color: AppTheme.successGreen.withValues(alpha: 0.15),
-                                          borderRadius: BorderRadius.circular(6),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            const Icon(Icons.check_circle_outline, size: 12, color: AppTheme.successGreen),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              'Réglé / Archivé'.tr,
-                                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.successGreen),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                                const SizedBox(height: 10),
-
-                                // Vehicle Plate & Service Name
-                                Row(
-                                  children: [
-                                    Icon(
-                                      t.operationType == 'moquette' ? Icons.layers : Icons.directions_car,
-                                      color: isCancelled ? AppTheme.textHint : AppTheme.accentCyan,
-                                      size: 20,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        (t.vehiclePlate != null && t.vehiclePlate!.isNotEmpty) ? t.vehiclePlate! : 'Moquette'.tr,
+                                        isCancelled
+                                            ? 'Annulé'.tr
+                                            : (isUnpaid ? 'Compte B2B'.tr : 'Réglé'.tr),
                                         style: TextStyle(
+                                          fontSize: 11,
                                           fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                          decoration: isCancelled ? TextDecoration.lineThrough : null,
+                                          color: isCancelled
+                                              ? AppTheme.textHint
+                                              : (isUnpaid ? AppTheme.errorRed : AppTheme.successGreen),
                                         ),
                                       ),
                                     ),
                                   ],
                                 ),
+                                const SizedBox(height: 8),
+
+                                // Vehicle Details (Brand, Model, Category)
+                                if (t.vehicleBrand != null && t.vehicleBrand!.isNotEmpty) ...[
+                                  Text(
+                                    '${t.vehicleBrand} ${t.vehicleModel ?? ''} (${t.vehicleType})'.trim(),
+                                    style: const TextStyle(fontSize: 13, color: AppTheme.textHint),
+                                  ),
+                                ],
+
+                                // Service Name
                                 if (t.serviceName != null && t.serviceName!.isNotEmpty) ...[
                                   const SizedBox(height: 4),
                                   Text(
@@ -599,39 +810,209 @@ class _B2BClientDashboardScreenState extends ConsumerState<B2BClientDashboardScr
   }
 
   Widget _buildVehiclesTab(BuildContext context, Client client) {
-    if (client.vehicles.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.directions_car_outlined, size: 48, color: AppTheme.textHint),
-            const SizedBox(height: 12),
-            Text('Aucun véhicule enregistré dans la flotte.'.tr, style: const TextStyle(color: AppTheme.textHint)),
-          ],
-        ),
-      );
-    }
+    final user = ref.watch(currentUserProvider);
+    final ticketsAsync = ref.watch(b2bClientTicketsProvider(client.id));
+    final tickets = ticketsAsync.value ?? [];
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: client.vehicles.length,
-      itemBuilder: (context, index) {
-        final v = client.vehicles[index];
-        return Card(
-          margin: const EdgeInsets.only(bottom: 10),
-          elevation: 1.5,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          child: ListTile(
-            leading: const CircleAvatar(
-              backgroundColor: Color(0x2000BCD4),
-              child: Icon(Icons.directions_car, color: AppTheme.accentCyan),
-            ),
-            title: Text(v.plate, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            subtitle: Text('Véhicule autorisé de la flotte B2B'.tr, style: const TextStyle(fontSize: 12, color: AppTheme.textHint)),
-            trailing: const Icon(Icons.verified, color: AppTheme.successGreen, size: 20),
+    return Column(
+      children: [
+        // Header Banner with Fleet count & Add button
+        Container(
+          margin: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppTheme.accentCyan.withValues(alpha: 0.3)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-        );
-      },
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.directions_car, color: AppTheme.accentCyan, size: 22),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${client.vehicles.length} véhicule(s) dans la flotte'.tr,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                  ),
+                ],
+              ),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.accentCyan,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                onPressed: () => _showAddVehicleDialog(context, client),
+                icon: const Icon(Icons.add, size: 18),
+                label: Text('Ajouter Véhicule'.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        ),
+
+        if (client.vehicles.isEmpty)
+          Expanded(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.directions_car_outlined, size: 48, color: AppTheme.textHint),
+                  const SizedBox(height: 12),
+                  Text('Aucun véhicule enregistré dans votre flotte B2B.'.tr, style: const TextStyle(color: AppTheme.textHint)),
+                  const SizedBox(height: 12),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(backgroundColor: AppTheme.accentCyan, foregroundColor: Colors.white),
+                    onPressed: () => _showAddVehicleDialog(context, client),
+                    icon: const Icon(Icons.add),
+                    label: Text('Ajouter votre premier véhicule'.tr),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: client.vehicles.length,
+              itemBuilder: (context, index) {
+                final v = client.vehicles[index];
+                final ticketCount = _getTicketCountForVehicle(v.plate, tickets);
+                final isLocked = ticketCount > 0;
+
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  elevation: 1.5,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 22,
+                          backgroundColor: isLocked
+                              ? AppTheme.warningOrange.withValues(alpha: 0.15)
+                              : AppTheme.accentCyan.withValues(alpha: 0.15),
+                          child: Icon(
+                            Icons.directions_car_filled,
+                            color: isLocked ? AppTheme.warningOrange : AppTheme.accentCyan,
+                            size: 22,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    v.plate,
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  // Status Badge
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: isLocked
+                                          ? AppTheme.warningOrange.withValues(alpha: 0.15)
+                                          : AppTheme.successGreen.withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          isLocked ? Icons.lock : Icons.check_circle,
+                                          size: 12,
+                                          color: isLocked ? AppTheme.warningOrange : AppTheme.successGreen,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          isLocked
+                                              ? 'Attaché à $ticketCount ticket(s)'.tr
+                                              : 'Libre (Modifiable)'.tr,
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                            color: isLocked ? AppTheme.warningOrange : AppTheme.successGreen,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                (v.brand.isNotEmpty || v.model.isNotEmpty)
+                                    ? '${v.brand} ${v.model}'.trim()
+                                    : 'Marque/Modèle non spécifié'.tr,
+                                style: const TextStyle(fontSize: 13, color: AppTheme.textHint),
+                              ),
+                              if (v.categoryId.isNotEmpty && user?.tenantId != null) ...[
+                                Consumer(
+                                  builder: (context, ref, child) {
+                                     final catAsync = ref.watch(vehicleCategoriesStreamProvider(user!.tenantId));
+                                     final catList = catAsync.value ?? [];
+                                     final cat = catList.where((c) => c.id == v.categoryId).firstOrNull;
+                                     final catName = cat?.name ?? '';
+                                     if (catName.isEmpty) return const SizedBox();
+                                    return Text(
+                                      'Catégorie : $catName'.tr,
+                                      style: const TextStyle(fontSize: 11, color: AppTheme.primaryBlue, fontWeight: FontWeight.w500),
+                                    );
+                                  },
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+
+                        // Action Buttons: Edit ✏️ and Delete 🗑️
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: Icon(
+                                Icons.edit_outlined,
+                                color: isLocked ? Colors.grey.shade400 : AppTheme.primaryBlue,
+                              ),
+                              tooltip: isLocked
+                                  ? 'Modification verrouillée (véhicule déjà attaché à des tickets)'
+                                  : 'Modifier ce véhicule',
+                              onPressed: () => _showEditVehicleDialog(context, client, v, index, ticketCount),
+                            ),
+                            IconButton(
+                              icon: Icon(
+                                Icons.delete_outline,
+                                color: isLocked ? Colors.grey.shade400 : AppTheme.errorRed,
+                              ),
+                              tooltip: isLocked
+                                  ? 'Suppression verrouillée (véhicule déjà attaché à des tickets)'
+                                  : 'Supprimer ce véhicule',
+                              onPressed: () => _showDeleteVehicleDialog(context, client, v, index, ticketCount),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+      ],
     );
   }
 }

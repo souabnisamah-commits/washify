@@ -1,4 +1,4 @@
-// File generated for dev test environment: washify-7638b
+// Development / Test Firebase Options for project: washify-7638b
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
@@ -31,7 +31,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyD2Q_i8Zp0zpQnC6tCR4KKDe0NOI1njeYI',
-    appId: '1:453613002299:android:ea9920a66d03d3f27e061e',
+    appId: '1:453613002299:android:a4e40e2d3dfddaa47e061e',
     messagingSenderId: '453613002299',
     projectId: 'washify-7638b',
     storageBucket: 'washify-7638b.firebasestorage.app',
@@ -39,10 +39,10 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyD2Q_i8Zp0zpQnC6tCR4KKDe0NOI1njeYI',
-    appId: '1:453613002299:ios:ea9920a66d03d3f27e061e',
+    appId: '1:453613002299:ios:a4e40e2d3dfddaa47e061e',
     messagingSenderId: '453613002299',
     projectId: 'washify-7638b',
     storageBucket: 'washify-7638b.firebasestorage.app',
-    iosBundleId: 'com.example.washify',
+    iosBundleId: 'com.washify.app',
   );
 }

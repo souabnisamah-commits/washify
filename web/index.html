@@ -18,44 +18,30 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="Washify Application Management.">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="washify">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Washify">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>washify</title>
+  <title>Washify</title>
   <link rel="manifest" href="manifest.json">
   <script>
+    // Silently log non-fatal warnings without displaying intrusive error boxes on iOS PWA
     window.addEventListener('error', function(e) {
-      console.error('GLOBAL ERROR:', e.message, e.filename, e.lineno, e.colno, e.error);
-      var div = document.createElement('div');
-      div.style.color = 'red';
-      div.style.padding = '20px';
-      div.style.backgroundColor = 'black';
-      div.style.position = 'absolute';
-      div.style.zIndex = '9999';
-      div.innerHTML = '<h2>Unhandled Error!</h2>' + 
-                      '<p>' + e.message + '</p>' +
-                      '<pre>' + (e.error ? e.error.stack : '') + '</pre>';
-      document.body.appendChild(div);
+      if (e.message === 'Script error.' || !e.message) {
+        return; // Cross-origin script error on iOS Safari - non-fatal
+      }
+      console.error('GLOBAL ERROR:', e.message, e.filename, e.lineno);
     });
     window.addEventListener('unhandledrejection', function(e) {
-      console.error('UNHANDLED PROMISE REJECTION:', e.reason);
-      var div = document.createElement('div');
-      div.style.color = 'yellow';
-      div.style.padding = '20px';
-      div.style.backgroundColor = 'black';
-      div.style.position = 'absolute';
-      div.style.zIndex = '9999';
-      div.innerHTML = '<h2>Unhandled Promise Rejection!</h2>' + 
-                      '<pre>' + e.reason + '</pre>';
-      document.body.appendChild(div);
+      console.warn('UNHANDLED PROMISE REJECTION:', e.reason);
     });
   </script>
 </head>

@@ -22,14 +22,17 @@ void main() async {
     );
     print('TRACE: Firebase initialized');
     
-    // Étape 1 : Activation du mode hors-ligne pour un chargement instantané
-    FirebaseFirestore.instance.settings = const Settings(
-      persistenceEnabled: true,
-      cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
-    );
-    print('TRACE: Firestore offline persistence enabled');
+    try {
+      FirebaseFirestore.instance.settings = const Settings(
+        persistenceEnabled: true,
+        cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+      );
+      print('TRACE: Firestore offline persistence enabled');
+    } catch (e) {
+      debugPrint("Firestore persistence skipped on iOS/Web: $e");
+    }
   } catch (e) {
-    debugPrint("Firebase initialization or persistence skipped/failed: $e");
+    debugPrint("Firebase initialization failed: $e");
   }
 
   print('TRACE: Calling SessionService.init');

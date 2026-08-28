@@ -377,19 +377,19 @@ class _TicketsTableModalState extends ConsumerState<TicketsTableModal> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   FilterChip(
-                    label: Text('Tous (${widget.tickets.length})'.tr),
+                    label: Text('${'Tous'.tr} (${widget.tickets.length})'),
                     selected: _filterType == 'all',
                     onSelected: (_) => setState(() => _filterType = 'all'),
                   ),
                   const SizedBox(width: 8),
                   FilterChip(
-                    label: Text('Véhicules (${widget.tickets.where((t) => t.operationType == 'vehicule').length})'.tr),
+                    label: Text('${'Véhicules'.tr} (${widget.tickets.where((t) => t.operationType == 'vehicule').length})'),
                     selected: _filterType == 'vehicule',
                     onSelected: (_) => setState(() => _filterType = 'vehicule'),
                   ),
                   const SizedBox(width: 8),
                   FilterChip(
-                    label: Text('Moquettes (${widget.tickets.where((t) => t.operationType == 'moquette').length})'.tr),
+                    label: Text('${'Moquettes'.tr} (${widget.tickets.where((t) => t.operationType == 'moquette').length})'),
                     selected: _filterType == 'moquette',
                     onSelected: (_) => setState(() => _filterType = 'moquette'),
                   ),
@@ -430,7 +430,7 @@ class _TicketsTableModalState extends ConsumerState<TicketsTableModal> {
                         items: [
                           DropdownMenuItem(
                             value: 'all',
-                            child: Text('Tous les Ouvriers (${widget.tickets.length})'.tr),
+                            child: Text('${'Tous les Ouvriers'.tr} (${widget.tickets.length})'),
                           ),
                           ...workerList.map((w) {
                             final count = widget.tickets.where((t) {
@@ -439,9 +439,10 @@ class _TicketsTableModalState extends ConsumerState<TicketsTableModal> {
                                   : 'Non assigné';
                               return name == w;
                             }).length;
+                            final displayW = w == 'Non assigné' ? 'Non assigné'.tr : w;
                             return DropdownMenuItem(
                               value: w,
-                              child: Text('$w ($count)'),
+                              child: Text('$displayW ($count)'),
                             );
                           }),
                         ],
@@ -640,7 +641,7 @@ class _TicketsTableModalState extends ConsumerState<TicketsTableModal> {
                                   }).toList();
 
                                   final serviceDisplay = isMoquette
-                                      ? 'Moquette (${((ticket.carpetMeters ?? 0) * (ticket.carpetUnitPrice ?? 0)).toStringAsFixed(1)} DT)'
+                                      ? '${'Moquette'.tr} (${((ticket.carpetMeters ?? 0) * (ticket.carpetUnitPrice ?? 0)).toStringAsFixed(1)} DT)'
                                       : (washServices.isNotEmpty
                                           ? washServices.map((s) => '${s.serviceName} (${s.price.toStringAsFixed(1)} DT)').join('\n')
                                           : (ticket.servicesSelected.isNotEmpty ? '${ticket.servicesSelected.first.serviceName} (${ticket.servicesSelected.first.price.toStringAsFixed(1)} DT)' : '-'));
@@ -680,7 +681,7 @@ class _TicketsTableModalState extends ConsumerState<TicketsTableModal> {
 
                                   final List<String> boutiqueLines = boutiqueProducts.map((p) {
                                     final prod = productMap[p.productId];
-                                    final barcodeStr = (prod != null && prod.barcode.isNotEmpty) ? ' [Code: ${prod.barcode}]' : '';
+                                    final barcodeStr = (prod != null && prod.barcode.isNotEmpty) ? ' [${'Code'.tr}: ${prod.barcode}]' : '';
                                     return '${p.productName}$barcodeStr x${p.quantity} (${p.total.toStringAsFixed(1)} DT)';
                                   }).toList();
                                   final boutiqueDisplay = boutiqueLines.isEmpty ? '-' : boutiqueLines.join('\n');
@@ -708,7 +709,7 @@ class _TicketsTableModalState extends ConsumerState<TicketsTableModal> {
                                             ),
                                             if (isDeleted)
                                               Text(
-                                                'Effacé: ${ticket.deleteReason ?? ''}'.tr,
+                                                '${'Effacé:'.tr} ${ticket.deleteReason ?? ''}',
                                                 style: const TextStyle(fontSize: 10, color: AppTheme.errorRed, fontStyle: FontStyle.italic),
                                               ),
                                           ],
@@ -792,7 +793,7 @@ class _TicketsTableModalState extends ConsumerState<TicketsTableModal> {
                                       // Caissier
                                       DataCell(Text(ticket.paidBy ?? ticket.createdBy)),
                                       // Ouvrier
-                                      DataCell(Text(ticket.assignedWorkerName ?? 'Non assigné'.tr)),
+                                      DataCell(Text((ticket.assignedWorkerName != null && ticket.assignedWorkerName!.trim().isNotEmpty && ticket.assignedWorkerName != 'Non assigné') ? ticket.assignedWorkerName! : 'Non assigné'.tr)),
                                       // Mode Paiement & Client
                                       DataCell(
                                         Builder(

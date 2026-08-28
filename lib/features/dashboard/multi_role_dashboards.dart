@@ -325,7 +325,7 @@ class _WorkerCashierDashboardState extends ConsumerState<WorkerCashierDashboard>
                                                 if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Ticket annulé'.tr)));
                                                 if (context.mounted) Navigator.pop(context); // Fermer le bottom sheet pour rafraîchir
                                               } catch (e) {
-                                                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e'.tr)));
+                                                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${'Erreur'.tr}: $e')));
                                               }
                                             }
                                           },
@@ -343,7 +343,7 @@ class _WorkerCashierDashboardState extends ConsumerState<WorkerCashierDashboard>
                                               if (context.mounted) Navigator.pop(context);
                                               if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Ticket validé'.tr)));
                                             } catch (e) {
-                                              if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e'.tr)));
+                                              if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${'Erreur'.tr}: $e')));
                                             }
                                           },
                                           style: ElevatedButton.styleFrom(

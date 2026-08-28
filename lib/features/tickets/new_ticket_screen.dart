@@ -484,7 +484,7 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur: $e'.tr)),
+        SnackBar(content: Text('${'Erreur'.tr}: $e')),
       );
     } finally {
       if (mounted) {
@@ -1684,11 +1684,11 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
                                 }
                                 setState(() => _selectedClient = val);
                               },
-                              validator: (v) => v == null ? 'Veuillez sélectionner un compte' : null,
+                              validator: (v) => v == null ? 'Sélectionner le compte client *'.tr : null,
                             );
                           },
                           loading: () => CircularProgressIndicator(),
-                          error: (e, _) => Text('Erreur: $e'.tr),
+                          error: (e, _) => Text('${'Erreur'.tr}: $e'),
                         ),
                         SizedBox(height: 12),
                       ],

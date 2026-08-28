@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:collection/collection.dart';
 import 'package:washify/core/localization/app_localizations.dart';
+import 'package:washify/core/localization/language_selector_button.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:washify/core/theme/app_theme.dart';
@@ -600,6 +601,9 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.editTicket != null ? 'Modifier le Ticket'.tr : 'Nouveau Ticket'.tr),
+        actions: const [
+          LanguageSelectorButton(),
+        ],
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(16.0),

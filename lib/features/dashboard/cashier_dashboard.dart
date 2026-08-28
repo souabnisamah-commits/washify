@@ -15,7 +15,7 @@ import 'package:washify/providers/wallet_provider.dart';
 import 'package:washify/features/tickets/models/ticket.dart';
 import 'package:washify/core/localization/app_localizations.dart';
 import 'package:washify/features/auth/widgets/change_pin_dialog.dart';
-import 'package:washify/core/widgets/language_toggle_button.dart';
+import 'package:washify/core/localization/language_selector_button.dart';
 
 import 'package:intl/intl.dart';
 import 'package:washify/providers/theme_provider.dart';
@@ -278,7 +278,7 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
             icon: Icon(ref.watch(themeProvider) == ThemeMode.light ? Icons.dark_mode_outlined : Icons.light_mode_outlined),
             onPressed: () => ref.read(themeProvider.notifier).toggleTheme(),
           ),
-          const LanguageToggleButton(),
+          const LanguageSelectorButton(),
           IconButton(
             icon: const Icon(Icons.lock_outline),
             onPressed: () {

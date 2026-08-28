@@ -897,6 +897,26 @@ class _B2BClientDashboardScreenState extends ConsumerState<B2BClientDashboardScr
                                     : 'Marque/Modèle non spécifié'.tr,
                                 style: const TextStyle(fontSize: 13, color: AppTheme.textHint),
                               ),
+                              const SizedBox(height: 2),
+                              if (v.categoryId.isNotEmpty && user?.tenantId != null)
+                                Consumer(
+                                  builder: (context, ref, child) {
+                                    final catAsync = ref.watch(vehicleCategoriesStreamProvider(user!.tenantId));
+                                    final catList = catAsync.value ?? [];
+                                    final cat = catList.where((c) => c.id == v.categoryId).firstOrNull;
+                                    final catName = cat?.name ?? '';
+                                    if (catName.isEmpty) return const SizedBox();
+                                    return Text(
+                                      'Catégorie : $catName'.tr,
+                                      style: const TextStyle(fontSize: 11, color: AppTheme.primaryBlue, fontWeight: FontWeight.bold),
+                                    );
+                                  },
+                                )
+                              else
+                                Text(
+                                  'ℹ️ Catégorie attribuée lors du premier lavage'.tr,
+                                  style: const TextStyle(fontSize: 10, color: AppTheme.textHint, fontStyle: FontStyle.italic),
+                                ),
                             ],
                           ),
                         ),

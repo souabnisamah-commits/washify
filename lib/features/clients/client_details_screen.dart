@@ -1139,6 +1139,29 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
                                     : 'Marque/Modèle non renseigné'.tr,
                                 style: const TextStyle(fontSize: 12, color: AppTheme.textHint),
                               ),
+                              const SizedBox(height: 2),
+                              Consumer(
+                                builder: (context, ref, child) {
+                                  final user = ref.watch(currentUserProvider);
+                                  if (user == null) return const SizedBox();
+                                  final catAsync = ref.watch(vehicleCategoriesStreamProvider(user.tenantId));
+                                  final catList = catAsync.value ?? [];
+                                  final cat = catList.where((c) => c.id == vehicle.categoryId).firstOrNull;
+                                  final catName = cat?.name ?? '';
+
+                                  if (catName.isNotEmpty) {
+                                    return Text(
+                                      'Catégorie : $catName'.tr,
+                                      style: const TextStyle(fontSize: 11, color: AppTheme.primaryBlue, fontWeight: FontWeight.bold),
+                                    );
+                                  } else {
+                                    return Text(
+                                      '⚠️ Catégorie à définir'.tr,
+                                      style: const TextStyle(fontSize: 11, color: AppTheme.warningOrange, fontWeight: FontWeight.w500),
+                                    );
+                                  }
+                                },
+                              ),
                             ],
                           ),
                         ),
@@ -1196,12 +1219,42 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
           content: Form(
             key: formKey,
             child: SingleChildScrollView(
-              child: VehicleInfoInput(
-                onChanged: (plate, brand, model) {
-                  newPlate = plate.trim().toUpperCase();
-                  newBrand = brand.trim();
-                  newModel = model.trim();
-                },
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  VehicleInfoInput(
+                    onChanged: (plate, brand, model) {
+                      newPlate = plate.trim().toUpperCase();
+                      newBrand = brand.trim();
+                      newModel = model.trim();
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final categoriesAsync = ref.watch(vehicleCategoriesStreamProvider(user.tenantId));
+                      return categoriesAsync.when(
+                        data: (categories) {
+                          if (categories.isEmpty) return const SizedBox();
+                          return DropdownButtonFormField<String>(
+                            decoration: InputDecoration(
+                              labelText: 'Catégorie de véhicule (optionnelle)'.tr,
+                              prefixIcon: const Icon(Icons.category, color: AppTheme.primaryBlue),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                            initialValue: newCategoryId.isEmpty ? null : newCategoryId,
+                            items: categories.map((c) => DropdownMenuItem(value: c.id, child: Text(c.name))).toList(),
+                            onChanged: (val) {
+                              if (val != null) newCategoryId = val;
+                            },
+                          );
+                        },
+                        loading: () => const CircularProgressIndicator(),
+                        error: (e, s) => Text('Erreur: $e'.tr),
+                      );
+                    },
+                  ),
+                ],
               ),
             ),
           ),
@@ -1273,15 +1326,48 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
           content: Form(
             key: formKey,
             child: SingleChildScrollView(
-              child: VehicleInfoInput(
-                initialPlate: newPlate,
-                initialBrand: newBrand,
-                initialModel: newModel,
-                onChanged: (plate, brand, model) {
-                  newPlate = plate.trim().toUpperCase();
-                  newBrand = brand.trim();
-                  newModel = model.trim();
-                },
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  VehicleInfoInput(
+                    initialPlate: newPlate,
+                    initialBrand: newBrand,
+                    initialModel: newModel,
+                    onChanged: (plate, brand, model) {
+                      newPlate = plate.trim().toUpperCase();
+                      newBrand = brand.trim();
+                      newModel = model.trim();
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final categoriesAsync = ref.watch(vehicleCategoriesStreamProvider(user.tenantId));
+                      return categoriesAsync.when(
+                        data: (categories) {
+                          if (categories.isEmpty) return const SizedBox();
+                          if (newCategoryId.isNotEmpty && !categories.any((c) => c.id == newCategoryId)) {
+                            newCategoryId = '';
+                          }
+                          return DropdownButtonFormField<String>(
+                            decoration: InputDecoration(
+                              labelText: 'Catégorie de véhicule (Assigner/Modifier)'.tr,
+                              prefixIcon: const Icon(Icons.category, color: AppTheme.primaryBlue),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                            initialValue: newCategoryId.isEmpty ? null : newCategoryId,
+                            items: categories.map((c) => DropdownMenuItem(value: c.id, child: Text(c.name))).toList(),
+                            onChanged: (val) {
+                              if (val != null) newCategoryId = val;
+                            },
+                          );
+                        },
+                        loading: () => const CircularProgressIndicator(),
+                        error: (e, s) => Text('Erreur: $e'.tr),
+                      );
+                    },
+                  ),
+                ],
               ),
             ),
           ),

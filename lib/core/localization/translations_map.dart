@@ -1,5 +1,11 @@
 // Complete Tunisian Arabic translations dictionary for Washify (Cashier & Worker roles)
 const Map<String, String> translationsMap = {
+  // Strict Currency & Country Units
+  'TU': 'تونس',
+  'DT': 'دينار',
+  'DT/m²': 'دينار / م²',
+  'DT / m²': 'دينار / م²',
+
   // Cashier Core & Header
   'Bienvenue': 'مرحباً بك',
   'dans votre Espace': 'في فضائك',
@@ -76,6 +82,15 @@ const Map<String, String> translationsMap = {
   'Saisie moquette': 'إدخال غسيل السجاد',
   'Prix unitaire fixe de lavage :': 'سعر الغسيل القار للمتر المربع :',
   'Prix unitaire fixe de lavage': 'سعر الغسيل القار للمتر المربع',
+  'Surface totale (m²) *': 'المساحة الجملية (م²) *',
+  'Surface totale (m²)': 'المساحة الجملية (م²)',
+  'Surface totale': 'المساحة الجملية',
+  'Surface total': 'المساحة الجملية',
+  'Surface total (m²)': 'المساحة الجملية (م²)',
+  'Notes (options, état véhicule...)': 'ملاحظات (خيارات، حالة السيارة...)',
+  'Note (option, état,véhicule)': 'ملاحظة (خيارات، حالة السيارة)',
+  'Note (option, état, véhicule)': 'ملاحظة (خيارات، حالة السيارة)',
+  'Notes (options, état véhicule)': 'ملاحظات (خيارات، حالة السيارة)',
   'Plaque d\'immatriculation': 'رقم السيارة (الماتريكول)',
   'Standard (TU)': 'تسجيل تونس العادي (123 تونس 456)',
   'Autre immatriculation': 'تسجيل آخر (دبلوماسي/خارجي)',

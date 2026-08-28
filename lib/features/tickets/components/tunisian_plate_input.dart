@@ -119,7 +119,7 @@ class _TunisianPlateInputState extends State<TunisianPlateInput> {
                 ),
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16),
-                  child: Text('TU', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: AppTheme.primaryBlue)),
+                  child: Text('TU'.tr, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.primaryBlue)),
                 ),
                 Expanded(
                   child: TextField(

@@ -74,7 +74,7 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
                     upcoming.sort((a, b) => a.date.compareTo(b.date));
                     
                     if (upcoming.isEmpty) {
-                      return const Center(child: Text('Aucune planification à venir.'));
+                      return Center(child: Text('Aucune planification à venir.'.tr));
                     }
                     
                     return ListView.builder(
@@ -90,17 +90,17 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
                               leading: const Icon(Icons.calendar_month, color: Colors.blueAccent),
                               title: Text(dateStr, style: const TextStyle(fontWeight: FontWeight.bold)),
                               subtitle: Text('${shift.name} (${shift.startTime} - ${shift.endTime})'),
-                              trailing: Text(a.status == AttendanceStatus.planned ? 'Planifié' : 'Présent', style: TextStyle(color: a.status == AttendanceStatus.planned ? Colors.orange : Colors.green)),
+                              trailing: Text(a.status == AttendanceStatus.planned ? 'Planifié'.tr : 'Présent'.tr, style: TextStyle(color: a.status == AttendanceStatus.planned ? Colors.orange : Colors.green)),
                             );
                           },
-                          loading: () => const ListTile(title: Text('Chargement...')),
-                          error: (e, s) => const ListTile(title: Text('Erreur...')),
+                          loading: () => ListTile(title: Text('Chargement...'.tr)),
+                          error: (e, s) => ListTile(title: Text('Erreur...'.tr)),
                         );
                       },
                     );
                   },
                   loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (e, s) => const Center(child: Text('Erreur...')),
+                  error: (e, s) => Center(child: Text('Erreur...'.tr)),
                 ),
               ),
             ],
@@ -139,7 +139,7 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
                           children: [
                             Icon(Icons.receipt_long, size: 64, color: AppTheme.textHint.withValues(alpha: 0.3)),
                             SizedBox(height: 16),
-                            Text('Aucun ticket aujourd\'hui', style: TextStyle(color: AppTheme.textHint)),
+                            Text('Aucun ticket aujourd\'hui'.tr, style: TextStyle(color: AppTheme.textHint)),
                           ],
                         ),
                       )
@@ -164,6 +164,7 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
                               break;
                           }
 
+                          final workerName = ticket.assignedWorkerName ?? ticket.workerName ?? "Non assigné".tr;
                           return Card(
                             margin: EdgeInsets.only(bottom: 12),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -172,8 +173,8 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
                                 backgroundColor: statusColor.withValues(alpha: 0.1),
                                 child: Icon(Icons.receipt_long, color: statusColor),
                               ),
-                              title: Text(ticket.vehiclePlate ?? 'Véhicule', style: TextStyle(fontWeight: FontWeight.bold)),
-                              subtitle: Text('${ticket.serviceName} • $dateStr\nLaveur: ${ticket.assignedWorkerName ?? ticket.workerName ?? "Non assigné"}'),
+                              title: Text(ticket.vehiclePlate ?? 'Lavage Véhicule'.tr, style: TextStyle(fontWeight: FontWeight.bold)),
+                              subtitle: Text('${ticket.serviceName} • $dateStr\n${'Ouvrier'.tr}: $workerName'),
                               trailing: ticket.status == TicketStatus.enAttente 
                                   ? Row(
                                       mainAxisSize: MainAxisSize.min,

@@ -144,7 +144,7 @@ class _TicketsTableModalState extends ConsumerState<TicketsTableModal> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Voulez-vous vraiment effacer le ticket ${ticket.ticketNumber} ? Son solde sera déduit de la recette et le stock sera restauré.'.tr),
+            Text('${'Voulez-vous vraiment supprimer ce ticket en attente ?'.tr} (${ticket.ticketNumber})'),
             const SizedBox(height: 12),
             TextField(
               controller: reasonController,
@@ -468,30 +468,39 @@ class _TicketsTableModalState extends ConsumerState<TicketsTableModal> {
                   const SizedBox(width: 6),
                   FilterChip(
                     avatar: const Icon(Icons.payments_outlined, size: 16, color: AppTheme.successGreen),
-                    label: Text('Espèces (${widget.tickets.where((t) {
-                      final pm = t.paymentMethod?.toLowerCase() ?? '';
-                      return !pm.contains('compte') && !pm.contains('b2b') && !pm.contains('tpe') && !pm.contains('carte');
-                    }).length})'.tr),
+                    label: Builder(builder: (_) {
+                      final count = widget.tickets.where((t) {
+                        final pm = t.paymentMethod?.toLowerCase() ?? '';
+                        return !pm.contains('compte') && !pm.contains('b2b') && !pm.contains('tpe') && !pm.contains('carte');
+                      }).length;
+                      return Text('${'Espèces (Cash)'.tr} ($count)');
+                    }),
                     selected: _filterPayment == 'especes',
                     onSelected: (_) => setState(() => _filterPayment = 'especes'),
                   ),
                   const SizedBox(width: 6),
                   FilterChip(
                     avatar: const Icon(Icons.credit_card, size: 16, color: Colors.purple),
-                    label: Text('Compte Client (${widget.tickets.where((t) {
-                      final pm = t.paymentMethod?.toLowerCase() ?? '';
-                      return pm.contains('compte') || pm.contains('b2b');
-                    }).length})'.tr),
+                    label: Builder(builder: (_) {
+                      final count = widget.tickets.where((t) {
+                        final pm = t.paymentMethod?.toLowerCase() ?? '';
+                        return pm.contains('compte') || pm.contains('b2b');
+                      }).length;
+                      return Text('${'Compte Client B2B'.tr} ($count)');
+                    }),
                     selected: _filterPayment == 'compte_client',
                     onSelected: (_) => setState(() => _filterPayment = 'compte_client'),
                   ),
                   const SizedBox(width: 6),
                   FilterChip(
                     avatar: const Icon(Icons.contactless, size: 16, color: AppTheme.primaryBlue),
-                    label: Text('TPE (${widget.tickets.where((t) {
-                      final pm = t.paymentMethod?.toLowerCase() ?? '';
-                      return pm.contains('tpe') || pm.contains('carte');
-                    }).length})'.tr),
+                    label: Builder(builder: (_) {
+                      final count = widget.tickets.where((t) {
+                        final pm = t.paymentMethod?.toLowerCase() ?? '';
+                        return pm.contains('tpe') || pm.contains('carte');
+                      }).length;
+                      return Text('${'TPE'.tr} ($count)');
+                    }),
                     selected: _filterPayment == 'tpe',
                     onSelected: (_) => setState(() => _filterPayment = 'tpe'),
                   ),

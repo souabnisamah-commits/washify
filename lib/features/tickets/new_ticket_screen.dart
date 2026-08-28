@@ -1223,7 +1223,7 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text('Boutique (Revente)', style: Theme.of(context).textTheme.titleMedium),
+                      Text('Boutique (Revente)'.tr, style: Theme.of(context).textTheme.titleMedium),
                       SizedBox(height: 8),
                       TextFormField(
                         controller: _productSearchController,
@@ -1291,7 +1291,7 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
                                   } else {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
-                                        content: Text('Aucun produit trouvé pour ce code-barres'),
+                                        content: Text('Aucun produit trouvé pour ce code-barres'.tr),
                                         backgroundColor: AppTheme.errorRed,
                                       ),
                                     );
@@ -1604,7 +1604,7 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Paiement & Client', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      Text('Paiement & Client'.tr, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                       SizedBox(height: 16),
                       DropdownButtonFormField<String>(
                         initialValue: _selectedPaymentMethod,
@@ -1654,7 +1654,7 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
                       if (_selectedPaymentMethod == 'compte_client') ...[
                         clientsAsync.when(
                           data: (clients) {
-                            if (clients.isEmpty) return Text('Aucun client B2B trouvé. Créez-en un dans l\'espace Patron.', style: TextStyle(color: AppTheme.warningOrange));
+                            if (clients.isEmpty) return Text('Aucun client B2B trouvé. Créez-en un dans l\'espace Patron.'.tr, style: TextStyle(color: AppTheme.warningOrange));
                             return DropdownButtonFormField<Client>(
                               initialValue: _selectedClient,
                               decoration: InputDecoration(labelText: 'Sélectionner le compte client *'.tr, prefixIcon: Icon(Icons.business, color: AppTheme.primaryBlue)),

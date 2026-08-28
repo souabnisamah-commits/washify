@@ -72,7 +72,7 @@ class _WorkerDashboardState extends ConsumerState<WorkerDashboard> {
                     upcoming.sort((a, b) => a.date.compareTo(b.date));
                     
                     if (upcoming.isEmpty) {
-                      return const Center(child: Text('Aucune planification à venir.'));
+                      return Center(child: Text('Aucune planification à venir.'.tr));
                     }
                     
                     return ListView.builder(
@@ -88,17 +88,17 @@ class _WorkerDashboardState extends ConsumerState<WorkerDashboard> {
                               leading: const Icon(Icons.calendar_month, color: Colors.blueAccent),
                               title: Text(dateStr, style: const TextStyle(fontWeight: FontWeight.bold)),
                               subtitle: Text('${shift.name} (${shift.startTime} - ${shift.endTime})'),
-                              trailing: Text(a.status == AttendanceStatus.planned ? 'Planifié' : 'Présent', style: TextStyle(color: a.status == AttendanceStatus.planned ? Colors.orange : Colors.green)),
+                              trailing: Text(a.status == AttendanceStatus.planned ? 'Planifié'.tr : 'Présent'.tr, style: TextStyle(color: a.status == AttendanceStatus.planned ? Colors.orange : Colors.green)),
                             );
                           },
-                          loading: () => const ListTile(title: Text('Chargement...')),
-                          error: (e, s) => const ListTile(title: Text('Erreur...')),
+                          loading: () => ListTile(title: Text('Chargement...'.tr)),
+                          error: (e, s) => ListTile(title: Text('Erreur...'.tr)),
                         );
                       },
                     );
                   },
                   loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (e, s) => const Center(child: Text('Erreur...')),
+                  error: (e, s) => Center(child: Text('Erreur...'.tr)),
                 ),
               ),
             ],
@@ -125,7 +125,7 @@ class _WorkerDashboardState extends ConsumerState<WorkerDashboard> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Mes Tâches du Jour',
+                'Mes Tâches du Jour'.tr,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 16),
@@ -137,7 +137,7 @@ class _WorkerDashboardState extends ConsumerState<WorkerDashboard> {
                           children: [
                             Icon(Icons.assignment_turned_in, size: 64, color: AppTheme.textHint.withValues(alpha: 0.3)),
                             SizedBox(height: 16),
-                            Text('Aucune tâche pour le moment', style: TextStyle(color: AppTheme.textHint)),
+                            Text('Aucune tâche pour le moment'.tr, style: TextStyle(color: AppTheme.textHint)),
                           ],
                         ),
                       )

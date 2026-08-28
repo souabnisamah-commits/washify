@@ -835,7 +835,7 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
                   );
                 },
                 loading: () => Center(child: CircularProgressIndicator()),
-                error: (e, s) => Text('Erreur catégories: $e', style: TextStyle(color: AppTheme.errorRed)),
+                error: (e, s) => Text('Erreur catégories: $e'.tr, style: TextStyle(color: AppTheme.errorRed)),
               ),
               SizedBox(height: 16),
 
@@ -1110,7 +1110,7 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
                   );
                 },
                 loading: () => Center(child: CircularProgressIndicator()),
-                error: (e, s) => Text('Erreur services: $e', style: TextStyle(color: AppTheme.errorRed)),
+                error: (e, s) => Text('Erreur services: $e'.tr, style: TextStyle(color: AppTheme.errorRed)),
               ),
               SizedBox(height: 16),
 
@@ -1256,7 +1256,7 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
                                     setState(() => _productSearchQuery = '');
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
-                                        content: Text('${matchedProduct.first.name} ajouté'),
+                                        content: Text('${matchedProduct.first.name} ${'ajouté'.tr}'),
                                         duration: const Duration(seconds: 1),
                                         backgroundColor: AppTheme.successGreen,
                                       ),
@@ -1278,7 +1278,7 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
                                               setState(() => _productSearchQuery = '');
                                               ScaffoldMessenger.of(context).showSnackBar(
                                                 SnackBar(
-                                                  content: Text('${p.name} ajouté'),
+                                                  content: Text('${p.name} ${'ajouté'.tr}'),
                                                   duration: const Duration(seconds: 1),
                                                   backgroundColor: AppTheme.successGreen,
                                                 ),
@@ -1317,7 +1317,7 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
                               });
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text('${filteredBoutique.first.name} ajouté'),
+                                  content: Text('${filteredBoutique.first.name} ${'ajouté'.tr}'),
                                   duration: const Duration(seconds: 1),
                                   backgroundColor: AppTheme.successGreen,
                                 ),
@@ -1398,7 +1398,7 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
                   );
                 },
                 loading: () => Center(child: CircularProgressIndicator()),
-                error: (e, s) => Text('Erreur produits: $e', style: TextStyle(color: AppTheme.errorRed)),
+                error: (e, s) => Text('Erreur produits: $e'.tr, style: TextStyle(color: AppTheme.errorRed)),
               ),
 
               // Selected Products List

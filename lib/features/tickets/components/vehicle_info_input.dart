@@ -304,9 +304,9 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('Marque et Modèle'.tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                const Text(
-                  '⭐ = Marque ajoutée (cliquer ✏️ pour modifier/supprimer)',
-                  style: TextStyle(fontSize: 11, color: AppTheme.textHint),
+                Text(
+                  '⭐ = Marque ajoutée (cliquer ✏️ pour modifier/supprimer)'.tr,
+                  style: const TextStyle(fontSize: 11, color: AppTheme.textHint),
                 ),
               ],
             ),
@@ -488,7 +488,7 @@ class VehicleInfoInputState extends ConsumerState<VehicleInfoInput> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Modifier ou Supprimer la marque "$_editingBrand" :',
+                          '${'Modifier ou Supprimer la marque'.tr} "$_editingBrand" :',
                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                         ),
                         IconButton(

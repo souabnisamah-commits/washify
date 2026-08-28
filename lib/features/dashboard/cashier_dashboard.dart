@@ -63,7 +63,7 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Ma Planification',
+                'Ma Planification'.tr,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
@@ -85,7 +85,7 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
                         
                         return shiftsAsync.when(
                           data: (shifts) {
-                            final shift = shifts.firstWhere((s) => s.id == a.shiftId, orElse: () => Shift(id: '', stationId: '', name: 'Inconnu', startTime: '', endTime: '', createdAt: DateTime.now()));
+                            final shift = shifts.firstWhere((s) => s.id == a.shiftId, orElse: () => Shift(id: '', stationId: '', name: 'Inconnu'.tr, startTime: '', endTime: '', createdAt: DateTime.now()));
                             return ListTile(
                               leading: const Icon(Icons.calendar_month, color: Colors.blueAccent),
                               title: Text(dateStr, style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -127,7 +127,7 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Tickets Équipe du Jour',
+                'Tickets Équipe du Jour'.tr,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 16),

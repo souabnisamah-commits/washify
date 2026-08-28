@@ -360,7 +360,7 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
                               ],
                             ),
                             Text(
-                              '${'Solde :'.tr} ${calculatedCash.toStringAsFixed(2)} DT',
+                              '${'Solde :'.tr} ${calculatedCash.toStringAsFixed(2)} ${'DT'.tr}',
                               style: const TextStyle(fontWeight: FontWeight.w900, color: AppTheme.successGreen, fontSize: 16),
                             ),
                           ],
@@ -455,12 +455,12 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
                 return _buildActionCard(
                   context,
                   title: 'Mes recettes'.tr,
-                  value: '${total.toStringAsFixed(1)} DT',
+                  value: '${total.toStringAsFixed(1)} ${'DT'.tr}',
                   icon: Icons.payments,
                   color: Colors.orange,
                   onTap: () => showTicketsDetailsDialog(
                     context,
-                    '${'Mes recettes'.tr} (${total.toStringAsFixed(1)} DT)',
+                    '${'Mes recettes'.tr} (${total.toStringAsFixed(1)} ${'DT'.tr})',
                     tickets,
                   ),
                 );
@@ -482,12 +482,12 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
                 return _buildActionCard(
                   context,
                   title: 'Recette équipe'.tr,
-                  value: '${total.toStringAsFixed(1)} DT',
+                  value: '${total.toStringAsFixed(1)} ${'DT'.tr}',
                   icon: Icons.groups,
                   color: Colors.orange,
                   onTap: () => showTicketsDetailsDialog(
                     context,
-                    '${'Recette équipe'.tr} (${total.toStringAsFixed(1)} DT)',
+                    '${'Recette équipe'.tr} (${total.toStringAsFixed(1)} ${'DT'.tr})',
                     tickets,
                   ),
                 );
@@ -739,7 +739,7 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
         Text(label, style: const TextStyle(color: Colors.white60, fontSize: 11)),
         const SizedBox(height: 4),
         Text(
-          '${value.toStringAsFixed(1)} DT',
+          '${value.toStringAsFixed(1)} ${'DT'.tr}',
           style: TextStyle(
             color: color ?? Colors.white,
             fontWeight: FontWeight.bold,

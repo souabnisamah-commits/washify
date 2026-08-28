@@ -474,7 +474,7 @@ class _WorkerCashierDashboardState extends ConsumerState<WorkerCashierDashboard>
                               ],
                             ),
                             Text(
-                              '${'Solde :'.tr} ${calculatedCash.toStringAsFixed(2)} DT',
+                              '${'Solde :'.tr} ${calculatedCash.toStringAsFixed(2)} ${'DT'.tr}',
                               style: const TextStyle(fontWeight: FontWeight.w900, color: AppTheme.successGreen, fontSize: 16),
                             ),
                           ],
@@ -538,7 +538,7 @@ class _WorkerCashierDashboardState extends ConsumerState<WorkerCashierDashboard>
                 return _buildActionCard(
                   context,
                   title: 'Mon Solde Actuel'.tr,
-                  value: '${balance.toStringAsFixed(1)} DT',
+                  value: '${balance.toStringAsFixed(1)} ${'DT'.tr}',
                   icon: Icons.account_balance_wallet,
                   color: AppTheme.successGreen,
                   onTap: () {},
@@ -576,10 +576,10 @@ class _WorkerCashierDashboardState extends ConsumerState<WorkerCashierDashboard>
                 return _buildActionCard(
                   context,
                   title: 'Mes Recettes'.tr,
-                  value: '${total.toStringAsFixed(1)} DT',
+                  value: '${total.toStringAsFixed(1)} ${'DT'.tr}',
                   icon: Icons.person,
                   color: Colors.deepPurpleAccent,
-                  onTap: () => showTicketsDetailsDialog(context, '${'Mes recettes'.tr} (${total.toStringAsFixed(1)} DT)', tickets),
+                  onTap: () => showTicketsDetailsDialog(context, '${'Mes recettes'.tr} (${total.toStringAsFixed(1)} ${'DT'.tr})', tickets),
                 );
               },
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -599,10 +599,10 @@ class _WorkerCashierDashboardState extends ConsumerState<WorkerCashierDashboard>
                 return _buildActionCard(
                   context,
                   title: 'Recettes Équipe'.tr,
-                  value: '${total.toStringAsFixed(1)} DT',
+                  value: '${total.toStringAsFixed(1)} ${'DT'.tr}',
                   icon: Icons.groups,
                   color: Colors.orange,
-                  onTap: () => showTicketsDetailsDialog(context, '${'Recettes Équipe'.tr} (${total.toStringAsFixed(1)} DT)', tickets),
+                  onTap: () => showTicketsDetailsDialog(context, '${'Recettes Équipe'.tr} (${total.toStringAsFixed(1)} ${'DT'.tr})', tickets),
                 );
               },
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -691,7 +691,7 @@ class _WorkerCashierDashboardState extends ConsumerState<WorkerCashierDashboard>
         Text(label, style: const TextStyle(color: Colors.white60, fontSize: 11)),
         const SizedBox(height: 4),
         Text(
-          '${value.toStringAsFixed(1)} DT',
+          '${value.toStringAsFixed(1)} ${'DT'.tr}',
           style: TextStyle(
             color: color ?? Colors.white,
             fontWeight: FontWeight.bold,

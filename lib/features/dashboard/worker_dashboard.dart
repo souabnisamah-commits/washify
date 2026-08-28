@@ -15,7 +15,7 @@ import 'package:washify/providers/wallet_provider.dart';
 import 'package:washify/features/tickets/models/ticket.dart';
 import 'package:washify/core/localization/app_localizations.dart';
 import 'package:washify/features/auth/widgets/change_pin_dialog.dart';
-import 'package:washify/core/widgets/language_toggle_button.dart';
+import 'package:washify/core/localization/language_selector_button.dart';
 
 import 'package:intl/intl.dart';
 import 'package:washify/providers/theme_provider.dart';
@@ -192,7 +192,7 @@ class _WorkerDashboardState extends ConsumerState<WorkerDashboard> {
             icon: Icon(ref.watch(themeProvider) == ThemeMode.light ? Icons.dark_mode_outlined : Icons.light_mode_outlined),
             onPressed: () => ref.read(themeProvider.notifier).toggleTheme(),
           ),
-          const LanguageToggleButton(),
+          const LanguageSelectorButton(),
           IconButton(
             icon: const Icon(Icons.lock_outline),
             onPressed: () {
@@ -219,7 +219,7 @@ class _WorkerDashboardState extends ConsumerState<WorkerDashboard> {
                 final balance = wallet?.balance ?? 0;
                 return _buildActionCard(
                   context,
-                  title: 'Solde Actuel',
+                  title: 'Solde Actuel'.tr,
                   value: '${balance.toStringAsFixed(1)} DT',
                   icon: Icons.account_balance_wallet,
                   color: AppTheme.successGreen,
@@ -234,8 +234,8 @@ class _WorkerDashboardState extends ConsumerState<WorkerDashboard> {
             // 2. Planification
             _buildActionCard(
               context,
-              title: 'Planification',
-              value: 'Voir Planning',
+              title: 'Planification'.tr,
+              value: 'Voir planning'.tr,
               icon: Icons.calendar_month,
               color: AppTheme.primaryBlue,
               onTap: () {
@@ -268,7 +268,7 @@ class _WorkerDashboardState extends ConsumerState<WorkerDashboard> {
 
                 return _buildActionCard(
                   context,
-                  title: 'Mes Recettes',
+                  title: 'Mes recettes'.tr,
                   value: '$ticketsCount Ticket(s) • ${commission.toStringAsFixed(1)} DT',
                   icon: Icons.payments,
                   color: Colors.orange,

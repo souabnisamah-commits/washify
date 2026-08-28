@@ -39,6 +39,8 @@ class WashifyApp extends ConsumerWidget {
       ],
       supportedLocales: const [
         Locale('fr', 'FR'),
+        Locale('ar', 'TN'),
+        Locale('ar'),
       ],
     );
   }

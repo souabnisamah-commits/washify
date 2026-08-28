@@ -430,8 +430,8 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
             // 3. Planification
             _buildActionCard(
               context,
-              title: 'Planification',
-              value: 'Voir Planning',
+              title: 'Planification'.tr,
+              value: 'Voir planning'.tr,
               icon: Icons.calendar_month,
               color: AppTheme.primaryBlue,
               onTap: () {
@@ -453,13 +453,13 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
                 }
                 return _buildActionCard(
                   context,
-                  title: 'Mes Recettes',
+                  title: 'Mes recettes'.tr,
                   value: '${total.toStringAsFixed(1)} DT',
                   icon: Icons.payments,
                   color: Colors.orange,
                   onTap: () => showTicketsDetailsDialog(
                     context,
-                    'Mes Recettes (${total.toStringAsFixed(1)} DT)',
+                    '${'Mes recettes'.tr} (${total.toStringAsFixed(1)} DT)',
                     tickets,
                   ),
                 );
@@ -480,13 +480,13 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
                 }
                 return _buildActionCard(
                   context,
-                  title: 'Recettes Équipe',
+                  title: 'Recette équipe'.tr,
                   value: '${total.toStringAsFixed(1)} DT',
                   icon: Icons.groups,
                   color: Colors.orange,
                   onTap: () => showTicketsDetailsDialog(
                     context,
-                    'Recettes Équipe (${total.toStringAsFixed(1)} DT)',
+                    '${'Recette équipe'.tr} (${total.toStringAsFixed(1)} DT)',
                     tickets,
                   ),
                 );

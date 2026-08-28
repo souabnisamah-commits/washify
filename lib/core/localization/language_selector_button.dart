@@ -9,7 +9,7 @@ class LanguageSelectorButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentLocale = ref.watch(localeProvider);
-    final isTounsi = currentLocale.languageCode == 'tn';
+    final isArabic = currentLocale.languageCode == 'ar' || currentLocale.languageCode == 'tn';
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
@@ -19,14 +19,14 @@ class LanguageSelectorButton extends ConsumerWidget {
         },
         borderRadius: BorderRadius.circular(20),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: isTounsi
+            color: isArabic
                 ? AppTheme.accentCyan.withValues(alpha: 0.25)
                 : Colors.white.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: isTounsi ? AppTheme.accentCyan : Colors.white54,
+              color: isArabic ? AppTheme.accentCyan : Colors.white54,
               width: 1.2,
             ),
           ),
@@ -34,16 +34,16 @@ class LanguageSelectorButton extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                isTounsi ? '🇹🇳' : '🇫🇷',
+                isArabic ? '🇹🇳' : '🇫🇷',
                 style: const TextStyle(fontSize: 14),
               ),
               const SizedBox(width: 6),
               Text(
-                isTounsi ? 'تونسية' : 'Tounsi',
-                style: TextStyle(
+                isArabic ? 'العربية' : 'Français',
+                style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
-                  fontSize: 12,
+                  fontSize: 13,
                 ),
               ),
             ],

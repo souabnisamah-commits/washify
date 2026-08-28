@@ -10,12 +10,14 @@ final localeProvider = StateNotifierProvider<LocaleNotifier, Locale>((ref) {
 // Singleton to access the current language code synchronously anywhere without ref
 class LocaleManager {
   static String currentLang = 'fr';
+
+  static bool get isRtl => currentLang == 'ar' || currentLang == 'tn';
 }
 
 class LocaleNotifier extends StateNotifier<Locale> {
   static const _langKey = 'app_lang';
 
-  LocaleNotifier() : super(const Locale('fr')) {
+  LocaleNotifier() : super(const Locale('fr', 'FR')) {
     _loadLocale();
   }
 
@@ -23,15 +25,26 @@ class LocaleNotifier extends StateNotifier<Locale> {
     final prefs = await SharedPreferences.getInstance();
     final lang = prefs.getString(_langKey) ?? 'fr';
     LocaleManager.currentLang = lang;
-    state = Locale(lang);
+    if (lang == 'ar' || lang == 'tn') {
+      state = const Locale('ar', 'TN');
+    } else {
+      state = const Locale('fr', 'FR');
+    }
   }
 
   Future<void> toggleLocale() async {
-    final newLang = state.languageCode == 'fr' ? 'tn' : 'fr';
-    LocaleManager.currentLang = newLang;
-    state = Locale(newLang);
+    final isFr = state.languageCode == 'fr';
+    final newLangCode = isFr ? 'ar' : 'fr';
+    LocaleManager.currentLang = newLangCode;
+    
+    if (isFr) {
+      state = const Locale('ar', 'TN');
+    } else {
+      state = const Locale('fr', 'FR');
+    }
+
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_langKey, newLang);
+    await prefs.setString(_langKey, newLangCode);
   }
 }
 

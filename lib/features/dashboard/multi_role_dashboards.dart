@@ -355,7 +355,7 @@ class _WorkerCashierDashboardState extends ConsumerState<WorkerCashierDashboard>
                                         ),
                                       ],
                                     )
-                                  : Text('${ticket.totalAmount.toStringAsFixed(2)} DT', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                  : Text('${ticket.totalAmount.toStringAsFixed(2)} ${'DT'.tr}', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                               isThreeLine: true,
                             ),
                           );

@@ -656,7 +656,7 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  '${'Prix unitaire fixe de lavage :'.tr} ${pricePerMeter.toStringAsFixed(1)} DT / m²',
+                                  '${'Prix unitaire fixe de lavage :'.tr} ${pricePerMeter.toStringAsFixed(1)} ${'DT/m²'.tr}',
                                   style: const TextStyle(fontWeight: FontWeight.w600, color: AppTheme.primaryBlue),
                                 ),
                                 const SizedBox(height: 16),
@@ -980,7 +980,7 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
                                       ),
                                       SizedBox(height: 4),
                                       Text(
-                                        '${o.offerPrice.toStringAsFixed(0)} DT',
+                                        '${o.offerPrice.toStringAsFixed(0)} ${'DT'.tr}',
                                         style: TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w900,
@@ -1089,7 +1089,7 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
                                         ),
                                         SizedBox(height: 4),
                                         Text(
-                                          '${price.toStringAsFixed(0)} DT',
+                                          '${price.toStringAsFixed(0)} ${'DT'.tr}',
                                           style: TextStyle(
                                             color: isSelected ? Colors.white70 : AppTheme.primaryBlue,
                                             fontWeight: FontWeight.w900,
@@ -1190,7 +1190,7 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
                                           ),
                                           SizedBox(height: 4),
                                           Text(
-                                            isIncludedInOffer ? 'Inclus dans l\'offre' : '+${price.toStringAsFixed(0)} DT',
+                                            isIncludedInOffer ? 'Inclus dans l\'offre' : '+${price.toStringAsFixed(0)} ${'DT'.tr}',
                                             style: TextStyle(
                                               color: isSelected ? Colors.white70 : AppTheme.primaryBlue,
                                               fontWeight: FontWeight.w900,
@@ -1270,7 +1270,7 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
                                           mainAxisSize: MainAxisSize.min,
                                           children: matchedProduct.map((p) => ListTile(
                                             title: Text(p.name),
-                                            subtitle: Text('${p.unitPrice} DT'),
+                                            subtitle: Text('${p.unitPrice} ${'DT'.tr}'),
                                             onTap: () {
                                               _addProduct(p);
                                               Navigator.of(dialogContext).pop();
@@ -1373,7 +1373,7 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
                                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                           children: [
                                             Text(
-                                              '${product.unitPrice} DT',
+                                              '${product.unitPrice} ${'DT'.tr}',
                                               style: TextStyle(fontSize: 11, color: AppTheme.accentCyan, fontWeight: FontWeight.bold),
                                             ),
                                             Container(
@@ -1417,12 +1417,12 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
                       String priceText;
                       if (freeQuota > 0) {
                         if (billedQuantity > 0) {
-                          priceText = '${freeQuota.toStringAsFixed(0)} Inclus + ${billedQuantity.toStringAsFixed(0)} Facturé(s) = ${displayTotal.toStringAsFixed(2)} DT';
+                          priceText = '${freeQuota.toStringAsFixed(0)} Inclus + ${billedQuantity.toStringAsFixed(0)} Facturé(s) = ${displayTotal.toStringAsFixed(2)} ${'DT'.tr}';
                         } else {
-                          priceText = 'Inclus (${freeQuota.toStringAsFixed(0)} max) - 0.00 DT';
+                          priceText = 'Inclus (${freeQuota.toStringAsFixed(0)} max) - 0.00 ${'DT'.tr}';
                         }
                       } else {
-                        priceText = '${item.quantity} x ${item.unitPrice.toStringAsFixed(2)} DT = ${displayTotal.toStringAsFixed(2)} DT';
+                        priceText = '${item.quantity} x ${item.unitPrice.toStringAsFixed(2)} ${'DT'.tr} = ${displayTotal.toStringAsFixed(2)} ${'DT'.tr}';
                       }
 
                       return ListTile(
@@ -1754,7 +1754,7 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey.shade700),
                       ),
                       Text(
-                        '${total.toStringAsFixed(2)} DT',
+                        '${total.toStringAsFixed(2)} ${'DT'.tr}',
                         style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: AppTheme.successGreen),
                       ),
                     ],

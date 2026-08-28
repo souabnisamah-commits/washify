@@ -12,6 +12,8 @@ _$ClientVehicleImpl _$$ClientVehicleImplFromJson(Map<String, dynamic> json) =>
       brand: json['brand'] as String? ?? '',
       model: json['model'] as String? ?? '',
       categoryId: json['categoryId'] as String? ?? '',
+      isBlocked: json['isBlocked'] as bool? ?? false,
+      blockedReason: json['blockedReason'] as String? ?? '',
     );
 
 Map<String, dynamic> _$$ClientVehicleImplToJson(_$ClientVehicleImpl instance) =>
@@ -20,4 +22,6 @@ Map<String, dynamic> _$$ClientVehicleImplToJson(_$ClientVehicleImpl instance) =>
       'brand': instance.brand,
       'model': instance.model,
       'categoryId': instance.categoryId,
+      'isBlocked': instance.isBlocked,
+      'blockedReason': instance.blockedReason,
     };

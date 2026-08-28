@@ -1612,6 +1612,32 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
                           DropdownMenuItem(value: 'compte_client', child: Text('Compte Client B2B'.tr)),
                         ],
                         onChanged: (val) {
+                          if (val == 'compte_client') {
+                            final plateUpper = _vehiclePlate.trim().toUpperCase();
+                            final client = _selectedClient;
+                            final matchedVehicle = client?.vehicles.where((v) => v.plate.replaceAll(' ', '').toUpperCase() == plateUpper.replaceAll(' ', '').toUpperCase()).firstOrNull;
+
+                            if (client != null && client.accessStatus == 'blocked') {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('🔴 Le compte B2B "${client.companyName}" est suspendu pour impayés. Prise en charge sur compte interdite.'.tr),
+                                  backgroundColor: AppTheme.errorRed,
+                                ),
+                              );
+                              setState(() { _selectedPaymentMethod = 'cash'; });
+                              return;
+                            }
+                            if (matchedVehicle != null && matchedVehicle.isBlocked) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('🚫 Le véhicule "${matchedVehicle.plate}" est retiré/bloqué de la flotte B2B. Prise en charge sur compte interdite.'.tr),
+                                  backgroundColor: AppTheme.errorRed,
+                                ),
+                              );
+                              setState(() { _selectedPaymentMethod = 'cash'; });
+                              return;
+                            }
+                          }
                           setState(() {
                             _selectedPaymentMethod = val!;
                             if (val != 'compte_client') {
@@ -1628,8 +1654,32 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
                             return DropdownButtonFormField<Client>(
                               initialValue: _selectedClient,
                               decoration: InputDecoration(labelText: 'Sélectionner le compte client *'.tr, prefixIcon: Icon(Icons.business, color: AppTheme.primaryBlue)),
-                              items: clients.map((c) => DropdownMenuItem(value: c, child: Text(c.companyName))).toList(),
-                              onChanged: (val) => setState(() => _selectedClient = val),
+                              items: clients.map((c) => DropdownMenuItem(
+                                value: c,
+                                child: Text(
+                                  c.accessStatus == 'blocked' ? '${c.companyName} 🔴 (Suspendu pour impayés)' : c.companyName,
+                                  style: TextStyle(
+                                    color: c.accessStatus == 'blocked' ? AppTheme.errorRed : null,
+                                    fontWeight: c.accessStatus == 'blocked' ? FontWeight.bold : null,
+                                  ),
+                                ),
+                              )).toList(),
+                              onChanged: (val) {
+                                if (val != null && val.accessStatus == 'blocked') {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('🔴 Le compte B2B "${val.companyName}" est suspendu pour impayés. Prise en charge sur compte interdite.'.tr),
+                                      backgroundColor: AppTheme.errorRed,
+                                    ),
+                                  );
+                                  setState(() {
+                                    _selectedPaymentMethod = 'cash';
+                                    _selectedClient = null;
+                                  });
+                                  return;
+                                }
+                                setState(() => _selectedClient = val);
+                              },
                               validator: (v) => v == null ? 'Veuillez sélectionner un compte' : null,
                             );
                           },
@@ -1763,9 +1813,17 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
             if (vehicle.plate == plateUpper) {
               foundB2B = true;
               if (mounted) {
+                final isAccountBlocked = client.accessStatus == 'blocked';
+                final isVehicleBlocked = vehicle.isBlocked;
+
                 setState(() {
-                  _selectedPaymentMethod = 'compte_client';
                   _selectedClient = client;
+                  if (isAccountBlocked || isVehicleBlocked) {
+                    _selectedPaymentMethod = 'cash';
+                  } else {
+                    _selectedPaymentMethod = 'compte_client';
+                  }
+
                   if (vehicle.brand.isNotEmpty && _vehicleBrand.isEmpty) _vehicleBrand = vehicle.brand;
                   if (vehicle.model.isNotEmpty && _vehicleModel.isEmpty) _vehicleModel = vehicle.model;
                   
@@ -1782,19 +1840,39 @@ class _NewTicketScreenState extends ConsumerState<NewTicketScreen> {
                     _vehicleInfoKey.currentState?.updateFields(_vehicleBrand, _vehicleModel);
                   }
                 });
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Row(
-                      children: [
-                        Icon(Icons.business, color: Colors.white),
-                        SizedBox(width: 8),
-                        Expanded(child: Text('Véhicule B2B : ${client.companyName}'.tr, style: TextStyle(fontWeight: FontWeight.bold))),
-                      ],
+
+                if (isAccountBlocked || isVehicleBlocked) {
+                  final String blockMessage = isAccountBlocked
+                      ? '🔴 Compte B2B "${client.companyName}" suspendu pour impayés. Prise en charge sur compte interdite (Règlement Espèces/TPE).'
+                      : '🚫 Véhicule "${vehicle.plate}" retiré/bloqué de la flotte B2B. Prise en charge sur compte interdite (Règlement Espèces/TPE).';
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Row(
+                        children: [
+                          const Icon(Icons.block, color: Colors.white, size: 22),
+                          const SizedBox(width: 8),
+                          Expanded(child: Text(blockMessage.tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                        ],
+                      ),
+                      backgroundColor: AppTheme.errorRed,
+                      duration: const Duration(seconds: 6),
                     ),
-                    backgroundColor: AppTheme.successGreen,
-                    duration: const Duration(seconds: 4),
-                  ),
-                );
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Row(
+                        children: [
+                          const Icon(Icons.business, color: Colors.white),
+                          const SizedBox(width: 8),
+                          Expanded(child: Text('Véhicule B2B : ${client.companyName}'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                        ],
+                      ),
+                      backgroundColor: AppTheme.successGreen,
+                      duration: const Duration(seconds: 4),
+                    ),
+                  );
+                }
               }
               break;
             }

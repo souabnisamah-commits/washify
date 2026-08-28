@@ -10,6 +10,8 @@ class ClientVehicle with _$ClientVehicle {
     @Default('') String brand,
     @Default('') String model,
     @Default('') String categoryId,
+    @Default(false) bool isBlocked,
+    @Default('') String blockedReason,
   }) = _ClientVehicle;
 
   factory ClientVehicle.fromJson(Map<String, dynamic> json) => _$ClientVehicleFromJson(json);

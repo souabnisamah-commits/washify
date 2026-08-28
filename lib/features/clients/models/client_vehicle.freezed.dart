@@ -25,6 +25,8 @@ mixin _$ClientVehicle {
   String get brand => throw _privateConstructorUsedError;
   String get model => throw _privateConstructorUsedError;
   String get categoryId => throw _privateConstructorUsedError;
+  bool get isBlocked => throw _privateConstructorUsedError;
+  String get blockedReason => throw _privateConstructorUsedError;
 
   /// Serializes this ClientVehicle to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -43,7 +45,14 @@ abstract class $ClientVehicleCopyWith<$Res> {
     $Res Function(ClientVehicle) then,
   ) = _$ClientVehicleCopyWithImpl<$Res, ClientVehicle>;
   @useResult
-  $Res call({String plate, String brand, String model, String categoryId});
+  $Res call({
+    String plate,
+    String brand,
+    String model,
+    String categoryId,
+    bool isBlocked,
+    String blockedReason,
+  });
 }
 
 /// @nodoc
@@ -65,6 +74,8 @@ class _$ClientVehicleCopyWithImpl<$Res, $Val extends ClientVehicle>
     Object? brand = null,
     Object? model = null,
     Object? categoryId = null,
+    Object? isBlocked = null,
+    Object? blockedReason = null,
   }) {
     return _then(
       _value.copyWith(
@@ -84,6 +95,14 @@ class _$ClientVehicleCopyWithImpl<$Res, $Val extends ClientVehicle>
                 ? _value.categoryId
                 : categoryId // ignore: cast_nullable_to_non_nullable
                       as String,
+            isBlocked: null == isBlocked
+                ? _value.isBlocked
+                : isBlocked // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            blockedReason: null == blockedReason
+                ? _value.blockedReason
+                : blockedReason // ignore: cast_nullable_to_non_nullable
+                      as String,
           )
           as $Val,
     );
@@ -99,7 +118,14 @@ abstract class _$$ClientVehicleImplCopyWith<$Res>
   ) = __$$ClientVehicleImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String plate, String brand, String model, String categoryId});
+  $Res call({
+    String plate,
+    String brand,
+    String model,
+    String categoryId,
+    bool isBlocked,
+    String blockedReason,
+  });
 }
 
 /// @nodoc
@@ -120,6 +146,8 @@ class __$$ClientVehicleImplCopyWithImpl<$Res>
     Object? brand = null,
     Object? model = null,
     Object? categoryId = null,
+    Object? isBlocked = null,
+    Object? blockedReason = null,
   }) {
     return _then(
       _$ClientVehicleImpl(
@@ -139,6 +167,14 @@ class __$$ClientVehicleImplCopyWithImpl<$Res>
             ? _value.categoryId
             : categoryId // ignore: cast_nullable_to_non_nullable
                   as String,
+        isBlocked: null == isBlocked
+            ? _value.isBlocked
+            : isBlocked // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        blockedReason: null == blockedReason
+            ? _value.blockedReason
+            : blockedReason // ignore: cast_nullable_to_non_nullable
+                  as String,
       ),
     );
   }
@@ -152,6 +188,8 @@ class _$ClientVehicleImpl implements _ClientVehicle {
     this.brand = '',
     this.model = '',
     this.categoryId = '',
+    this.isBlocked = false,
+    this.blockedReason = '',
   });
 
   factory _$ClientVehicleImpl.fromJson(Map<String, dynamic> json) =>
@@ -168,10 +206,16 @@ class _$ClientVehicleImpl implements _ClientVehicle {
   @override
   @JsonKey()
   final String categoryId;
+  @override
+  @JsonKey()
+  final bool isBlocked;
+  @override
+  @JsonKey()
+  final String blockedReason;
 
   @override
   String toString() {
-    return 'ClientVehicle(plate: $plate, brand: $brand, model: $model, categoryId: $categoryId)';
+    return 'ClientVehicle(plate: $plate, brand: $brand, model: $model, categoryId: $categoryId, isBlocked: $isBlocked, blockedReason: $blockedReason)';
   }
 
   @override
@@ -183,12 +227,24 @@ class _$ClientVehicleImpl implements _ClientVehicle {
             (identical(other.brand, brand) || other.brand == brand) &&
             (identical(other.model, model) || other.model == model) &&
             (identical(other.categoryId, categoryId) ||
-                other.categoryId == categoryId));
+                other.categoryId == categoryId) &&
+            (identical(other.isBlocked, isBlocked) ||
+                other.isBlocked == isBlocked) &&
+            (identical(other.blockedReason, blockedReason) ||
+                other.blockedReason == blockedReason));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, plate, brand, model, categoryId);
+  int get hashCode => Object.hash(
+    runtimeType,
+    plate,
+    brand,
+    model,
+    categoryId,
+    isBlocked,
+    blockedReason,
+  );
 
   /// Create a copy of ClientVehicle
   /// with the given fields replaced by the non-null parameter values.
@@ -210,6 +266,8 @@ abstract class _ClientVehicle implements ClientVehicle {
     final String brand,
     final String model,
     final String categoryId,
+    final bool isBlocked,
+    final String blockedReason,
   }) = _$ClientVehicleImpl;
 
   factory _ClientVehicle.fromJson(Map<String, dynamic> json) =
@@ -223,6 +281,10 @@ abstract class _ClientVehicle implements ClientVehicle {
   String get model;
   @override
   String get categoryId;
+  @override
+  bool get isBlocked;
+  @override
+  String get blockedReason;
 
   /// Create a copy of ClientVehicle
   /// with the given fields replaced by the non-null parameter values.

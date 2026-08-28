@@ -77,10 +77,6 @@ class _B2BClientDashboardScreenState extends ConsumerState<B2BClientDashboardScr
     String newPlate = '';
     String newBrand = '';
     String newModel = '';
-    String newCategoryId = '';
-
-    final user = ref.read(currentUserProvider);
-    if (user == null) return;
 
     showDialog(
       context: context,
@@ -129,7 +125,6 @@ class _B2BClientDashboardScreenState extends ConsumerState<B2BClientDashboardScr
                   plate: newPlate,
                   brand: newBrand,
                   model: newModel,
-                  categoryId: newCategoryId,
                 ));
 
                 final updatedClient = client.copyWith(
@@ -172,10 +167,6 @@ class _B2BClientDashboardScreenState extends ConsumerState<B2BClientDashboardScr
     String newPlate = vehicle.plate;
     String newBrand = vehicle.brand;
     String newModel = vehicle.model;
-    String newCategoryId = vehicle.categoryId;
-
-    final user = ref.read(currentUserProvider);
-    if (user == null) return;
 
     showDialog(
       context: context,
@@ -226,11 +217,10 @@ class _B2BClientDashboardScreenState extends ConsumerState<B2BClientDashboardScr
                   return;
                 }
 
-                updatedVehicles[index] = ClientVehicle(
+                updatedVehicles[index] = vehicle.copyWith(
                   plate: newPlate,
                   brand: newBrand,
                   model: newModel,
-                  categoryId: newCategoryId,
                 );
 
                 final updatedClient = client.copyWith(
@@ -256,6 +246,92 @@ class _B2BClientDashboardScreenState extends ConsumerState<B2BClientDashboardScr
         );
       },
     );
+  }
+
+  void _toggleVehicleBlockStatus(BuildContext context, Client client, ClientVehicle vehicle, int index) async {
+    final currentlyBlocked = vehicle.isBlocked;
+    String motif = vehicle.blockedReason;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        final reasonController = TextEditingController(text: motif);
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Icon(currentlyBlocked ? Icons.check_circle_outline : Icons.block,
+                  color: currentlyBlocked ? AppTheme.successGreen : AppTheme.errorRed),
+              const SizedBox(width: 8),
+              Text(currentlyBlocked ? 'Réactiver le Véhicule'.tr : 'Bloquer / Retirer le Véhicule'.tr,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                currentlyBlocked
+                    ? 'Voulez-vous réactiver le véhicule ${vehicle.plate} dans votre flotte B2B ?'
+                    : 'Voulez-vous bloquer le véhicule ${vehicle.plate} (ex: véhicule vendu ou retiré) ? La prise en charge sur votre compte entreprise sera désactivée au lavoir.',
+                style: const TextStyle(fontSize: 13),
+              ),
+              if (!currentlyBlocked) ...[
+                const SizedBox(height: 12),
+                TextField(
+                  controller: reasonController,
+                  decoration: InputDecoration(
+                    labelText: 'Motif (ex: Vendu, Fin de contrat)'.tr,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Annuler'.tr)),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: currentlyBlocked ? AppTheme.successGreen : AppTheme.errorRed,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () {
+                motif = reasonController.text.trim();
+                Navigator.pop(ctx, true);
+              },
+              child: Text(currentlyBlocked ? 'Réactiver'.tr : 'Bloquer / Retirer'.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm != true) return;
+
+    final updatedVehicles = List<ClientVehicle>.from(client.vehicles);
+    updatedVehicles[index] = vehicle.copyWith(
+      isBlocked: !currentlyBlocked,
+      blockedReason: !currentlyBlocked ? (motif.isNotEmpty ? motif : 'Retiré de la flotte') : '',
+    );
+
+    final updatedClient = client.copyWith(
+      vehicles: updatedVehicles,
+      updatedAt: DateTime.now(),
+    );
+
+    await ref.read(clientRepositoryProvider).updateClient(updatedClient);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(!currentlyBlocked
+              ? 'Véhicule ${vehicle.plate} bloqué (Paiement sur compte B2B désactivé au lavoir).'
+              : 'Véhicule ${vehicle.plate} réactivé dans la flotte.'),
+          backgroundColor: !currentlyBlocked ? AppTheme.warningOrange : AppTheme.successGreen,
+        ),
+      );
+    }
   }
 
   void _showDeleteVehicleDialog(BuildContext context, Client client, ClientVehicle vehicle, int index, int ticketCount) async {
@@ -381,11 +457,49 @@ class _B2BClientDashboardScreenState extends ConsumerState<B2BClientDashboardScr
             if (client == null) {
               return Center(child: Text('Compte B2B introuvable.'.tr));
             }
-            return TabBarView(
+            final isAccountBlocked = client.accessStatus == 'blocked';
+
+            return Column(
               children: [
-                _buildTicketsTab(context, client),
-                _buildPaymentsTab(context, client),
-                _buildVehiclesTab(context, client),
+                // Red Warning Banner for Account Suspension (Impayés)
+                if (isAccountBlocked)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    color: AppTheme.errorRed,
+                    child: Row(
+                      children: [
+                        const Icon(Icons.block, color: Colors.white, size: 24),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '🔴 Compte B2B Suspendu par le Lavoir'.tr,
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Veuillez régulariser votre solde impayé. La prise en charge sur compte entreprise est suspendue au lavoir.'.tr,
+                                style: const TextStyle(color: Colors.white70, fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                Expanded(
+                  child: TabBarView(
+                    children: [
+                      _buildTicketsTab(context, client),
+                      _buildPaymentsTab(context, client),
+                      _buildVehiclesTab(context, client),
+                    ],
+                  ),
+                ),
               ],
             );
           },
@@ -825,6 +939,7 @@ class _B2BClientDashboardScreenState extends ConsumerState<B2BClientDashboardScr
                 final v = client.vehicles[index];
                 final ticketCount = _getTicketCountForVehicle(v.plate, tickets);
                 final isLocked = ticketCount > 0;
+                final isVehicleBlocked = v.isBlocked;
 
                 return Card(
                   margin: const EdgeInsets.only(bottom: 12),
@@ -836,12 +951,16 @@ class _B2BClientDashboardScreenState extends ConsumerState<B2BClientDashboardScr
                       children: [
                         CircleAvatar(
                           radius: 22,
-                          backgroundColor: isLocked
-                              ? AppTheme.warningOrange.withValues(alpha: 0.15)
-                              : AppTheme.accentCyan.withValues(alpha: 0.15),
+                          backgroundColor: isVehicleBlocked
+                              ? AppTheme.errorRed.withValues(alpha: 0.15)
+                              : (isLocked
+                                  ? AppTheme.warningOrange.withValues(alpha: 0.15)
+                                  : AppTheme.accentCyan.withValues(alpha: 0.15)),
                           child: Icon(
-                            Icons.directions_car_filled,
-                            color: isLocked ? AppTheme.warningOrange : AppTheme.accentCyan,
+                            isVehicleBlocked ? Icons.block : Icons.directions_car_filled,
+                            color: isVehicleBlocked
+                                ? AppTheme.errorRed
+                                : (isLocked ? AppTheme.warningOrange : AppTheme.accentCyan),
                             size: 22,
                           ),
                         ),
@@ -854,35 +973,50 @@ class _B2BClientDashboardScreenState extends ConsumerState<B2BClientDashboardScr
                                 children: [
                                   Text(
                                     v.plate,
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                      decoration: isVehicleBlocked ? TextDecoration.lineThrough : null,
+                                      color: isVehicleBlocked ? AppTheme.errorRed : null,
+                                    ),
                                   ),
                                   const SizedBox(width: 8),
                                   // Status Badge
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                     decoration: BoxDecoration(
-                                      color: isLocked
-                                          ? AppTheme.warningOrange.withValues(alpha: 0.15)
-                                          : AppTheme.successGreen.withValues(alpha: 0.15),
+                                      color: isVehicleBlocked
+                                          ? AppTheme.errorRed.withValues(alpha: 0.15)
+                                          : (isLocked
+                                              ? AppTheme.warningOrange.withValues(alpha: 0.15)
+                                              : AppTheme.successGreen.withValues(alpha: 0.15)),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Icon(
-                                          isLocked ? Icons.lock : Icons.check_circle,
+                                          isVehicleBlocked
+                                              ? Icons.block
+                                              : (isLocked ? Icons.lock : Icons.check_circle),
                                           size: 12,
-                                          color: isLocked ? AppTheme.warningOrange : AppTheme.successGreen,
+                                          color: isVehicleBlocked
+                                              ? AppTheme.errorRed
+                                              : (isLocked ? AppTheme.warningOrange : AppTheme.successGreen),
                                         ),
                                         const SizedBox(width: 4),
                                         Text(
-                                          isLocked
-                                              ? 'Attaché à $ticketCount ticket(s)'.tr
-                                              : 'Libre (Modifiable)'.tr,
+                                          isVehicleBlocked
+                                              ? 'Bloqué (Payant comptant)'.tr
+                                              : (isLocked
+                                                  ? 'Attaché à $ticketCount ticket(s)'.tr
+                                                  : 'Actif dans la flotte'.tr),
                                           style: TextStyle(
                                             fontSize: 11,
                                             fontWeight: FontWeight.bold,
-                                            color: isLocked ? AppTheme.warningOrange : AppTheme.successGreen,
+                                            color: isVehicleBlocked
+                                                ? AppTheme.errorRed
+                                                : (isLocked ? AppTheme.warningOrange : AppTheme.successGreen),
                                           ),
                                         ),
                                       ],
@@ -897,6 +1031,13 @@ class _B2BClientDashboardScreenState extends ConsumerState<B2BClientDashboardScr
                                     : 'Marque/Modèle non spécifié'.tr,
                                 style: const TextStyle(fontSize: 13, color: AppTheme.textHint),
                               ),
+                              if (isVehicleBlocked && v.blockedReason.isNotEmpty) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Motif : ${v.blockedReason}'.tr,
+                                  style: const TextStyle(fontSize: 11, color: AppTheme.errorRed, fontWeight: FontWeight.w500),
+                                ),
+                              ],
                               const SizedBox(height: 2),
                               if (v.categoryId.isNotEmpty && user?.tenantId != null)
                                 Consumer(
@@ -921,14 +1062,24 @@ class _B2BClientDashboardScreenState extends ConsumerState<B2BClientDashboardScr
                           ),
                         ),
 
-                        // Action Buttons: Edit ✏️ and Delete 🗑️
+                        // Action Buttons: Block Toggle 🚫, Edit ✏️ and Delete 🗑️
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
                               icon: Icon(
+                                isVehicleBlocked ? Icons.check_circle_outline : Icons.block,
+                                color: isVehicleBlocked ? AppTheme.successGreen : AppTheme.errorRed,
+                              ),
+                              tooltip: isVehicleBlocked
+                                  ? 'Réactiver dans la flotte'
+                                  : 'Bloquer / Retirer (Vendu ou réformé)',
+                              onPressed: () => _toggleVehicleBlockStatus(context, client, v, index),
+                            ),
+                            IconButton(
+                              icon: Icon(
                                 Icons.edit_outlined,
-                                color: isLocked ? Colors.grey.shade400 : AppTheme.primaryBlue,
+                                color: (isLocked || isVehicleBlocked) ? Colors.grey.shade400 : AppTheme.primaryBlue,
                               ),
                               tooltip: isLocked
                                   ? 'Modification verrouillée (véhicule déjà attaché à des tickets)'
@@ -938,7 +1089,7 @@ class _B2BClientDashboardScreenState extends ConsumerState<B2BClientDashboardScr
                             IconButton(
                               icon: Icon(
                                 Icons.delete_outline,
-                                color: isLocked ? Colors.grey.shade400 : AppTheme.errorRed,
+                                color: (isLocked || isVehicleBlocked) ? Colors.grey.shade400 : AppTheme.errorRed,
                               ),
                               tooltip: isLocked
                                   ? 'Suppression verrouillée (véhicule déjà attaché à des tickets)'

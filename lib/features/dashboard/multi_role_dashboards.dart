@@ -537,7 +537,7 @@ class _WorkerCashierDashboardState extends ConsumerState<WorkerCashierDashboard>
                 final balance = wallet?.balance ?? 0;
                 return _buildActionCard(
                   context,
-                  title: 'Mon Solde Actuel',
+                  title: 'Mon Solde Actuel'.tr,
                   value: '${balance.toStringAsFixed(1)} DT',
                   icon: Icons.account_balance_wallet,
                   color: AppTheme.successGreen,
@@ -545,7 +545,7 @@ class _WorkerCashierDashboardState extends ConsumerState<WorkerCashierDashboard>
                 );
               },
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, s) => Text('Erreur Wallet: $e'),
+              error: (e, s) => Text('${'Erreur Wallet'.tr}: $e'),
             ),
             const SizedBox(height: 24),
 

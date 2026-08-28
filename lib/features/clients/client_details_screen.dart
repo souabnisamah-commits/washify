@@ -1196,41 +1196,12 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
           content: Form(
             key: formKey,
             child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  VehicleInfoInput(
-                    onChanged: (plate, brand, model) {
-                      newPlate = plate.trim().toUpperCase();
-                      newBrand = brand.trim();
-                      newModel = model.trim();
-                    },
-                  ),
-                  SizedBox(height: 16),
-                  Consumer(
-                    builder: (context, ref, child) {
-                      final categoriesAsync = ref.watch(vehicleCategoriesStreamProvider(user.tenantId));
-                      return categoriesAsync.when(
-                        data: (categories) {
-                          if (categories.isEmpty) return SizedBox();
-                          return DropdownButtonFormField<String>(
-                            decoration: InputDecoration(
-                              labelText: 'Catégorie de véhicule'.tr,
-                              prefixIcon: Icon(Icons.category, color: AppTheme.primaryBlue),
-                            ),
-                            initialValue: newCategoryId.isEmpty ? null : newCategoryId,
-                            items: categories.map((c) => DropdownMenuItem(value: c.id, child: Text(c.name))).toList(),
-                            onChanged: (val) {
-                              if (val != null) newCategoryId = val;
-                            },
-                          );
-                        },
-                        loading: () => CircularProgressIndicator(),
-                        error: (e, s) => Text('Erreur: $e'.tr),
-                      );
-                    },
-                  ),
-                ],
+              child: VehicleInfoInput(
+                onChanged: (plate, brand, model) {
+                  newPlate = plate.trim().toUpperCase();
+                  newBrand = brand.trim();
+                  newModel = model.trim();
+                },
               ),
             ),
           ),
@@ -1302,48 +1273,15 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
           content: Form(
             key: formKey,
             child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  VehicleInfoInput(
-                    initialPlate: newPlate,
-                    initialBrand: newBrand,
-                    initialModel: newModel,
-                    onChanged: (plate, brand, model) {
-                      newPlate = plate.trim().toUpperCase();
-                      newBrand = brand.trim();
-                      newModel = model.trim();
-                    },
-                  ),
-                  SizedBox(height: 16),
-                  Consumer(
-                    builder: (context, ref, child) {
-                      final categoriesAsync = ref.watch(vehicleCategoriesStreamProvider(user.tenantId));
-                      return categoriesAsync.when(
-                        data: (categories) {
-                          if (categories.isEmpty) return SizedBox();
-                          // Verify newCategoryId exists in categories list
-                          if (newCategoryId.isNotEmpty && !categories.any((c) => c.id == newCategoryId)) {
-                            newCategoryId = ''; // Reset if invalid
-                          }
-                          return DropdownButtonFormField<String>(
-                            decoration: InputDecoration(
-                              labelText: 'Catégorie de véhicule'.tr,
-                              prefixIcon: Icon(Icons.category, color: AppTheme.primaryBlue),
-                            ),
-                            initialValue: newCategoryId.isEmpty ? null : newCategoryId,
-                            items: categories.map((c) => DropdownMenuItem(value: c.id, child: Text(c.name))).toList(),
-                            onChanged: (val) {
-                              if (val != null) newCategoryId = val;
-                            },
-                          );
-                        },
-                        loading: () => CircularProgressIndicator(),
-                        error: (e, s) => Text('Erreur: $e'.tr),
-                      );
-                    },
-                  ),
-                ],
+              child: VehicleInfoInput(
+                initialPlate: newPlate,
+                initialBrand: newBrand,
+                initialModel: newModel,
+                onChanged: (plate, brand, model) {
+                  newPlate = plate.trim().toUpperCase();
+                  newBrand = brand.trim();
+                  newModel = model.trim();
+                },
               ),
             ),
           ),

@@ -95,42 +95,12 @@ class _B2BClientDashboardScreenState extends ConsumerState<B2BClientDashboardScr
             ],
           ),
           content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                VehicleInfoInput(
-                  onChanged: (plate, brand, model) {
-                    newPlate = plate.trim().toUpperCase();
-                    newBrand = brand.trim();
-                    newModel = model.trim();
-                  },
-                ),
-                const SizedBox(height: 16),
-                Consumer(
-                  builder: (context, ref, child) {
-                    final categoriesAsync = ref.watch(vehicleCategoriesStreamProvider(user.tenantId));
-                    return categoriesAsync.when(
-                      data: (categories) {
-                        if (categories.isEmpty) return const SizedBox();
-                        return DropdownButtonFormField<String>(
-                          decoration: InputDecoration(
-                            labelText: 'Catégorie de véhicule'.tr,
-                            prefixIcon: const Icon(Icons.category, color: AppTheme.accentCyan),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
-                          initialValue: newCategoryId.isEmpty ? null : newCategoryId,
-                          items: categories.map((c) => DropdownMenuItem(value: c.id, child: Text(c.name))).toList(),
-                          onChanged: (val) {
-                            if (val != null) newCategoryId = val;
-                          },
-                        );
-                      },
-                      loading: () => const CircularProgressIndicator(),
-                      error: (e, s) => Text('Erreur: $e'.tr),
-                    );
-                  },
-                ),
-              ],
+            child: VehicleInfoInput(
+              onChanged: (plate, brand, model) {
+                newPlate = plate.trim().toUpperCase();
+                newBrand = brand.trim();
+                newModel = model.trim();
+              },
             ),
           ),
           actions: [
@@ -220,48 +190,15 @@ class _B2BClientDashboardScreenState extends ConsumerState<B2BClientDashboardScr
             ],
           ),
           content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                VehicleInfoInput(
-                  initialPlate: newPlate,
-                  initialBrand: newBrand,
-                  initialModel: newModel,
-                  onChanged: (plate, brand, model) {
-                    newPlate = plate.trim().toUpperCase();
-                    newBrand = brand.trim();
-                    newModel = model.trim();
-                  },
-                ),
-                const SizedBox(height: 16),
-                Consumer(
-                  builder: (context, ref, child) {
-                    final categoriesAsync = ref.watch(vehicleCategoriesStreamProvider(user.tenantId));
-                    return categoriesAsync.when(
-                      data: (categories) {
-                        if (categories.isEmpty) return const SizedBox();
-                        if (newCategoryId.isNotEmpty && !categories.any((c) => c.id == newCategoryId)) {
-                          newCategoryId = '';
-                        }
-                        return DropdownButtonFormField<String>(
-                          decoration: InputDecoration(
-                            labelText: 'Catégorie de véhicule'.tr,
-                            prefixIcon: const Icon(Icons.category, color: AppTheme.accentCyan),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
-                          initialValue: newCategoryId.isEmpty ? null : newCategoryId,
-                          items: categories.map((c) => DropdownMenuItem(value: c.id, child: Text(c.name))).toList(),
-                          onChanged: (val) {
-                            if (val != null) newCategoryId = val;
-                          },
-                        );
-                      },
-                      loading: () => const CircularProgressIndicator(),
-                      error: (e, s) => Text('Erreur: $e'.tr),
-                    );
-                  },
-                ),
-              ],
+            child: VehicleInfoInput(
+              initialPlate: newPlate,
+              initialBrand: newBrand,
+              initialModel: newModel,
+              onChanged: (plate, brand, model) {
+                newPlate = plate.trim().toUpperCase();
+                newBrand = brand.trim();
+                newModel = model.trim();
+              },
             ),
           ),
           actions: [
@@ -960,21 +897,6 @@ class _B2BClientDashboardScreenState extends ConsumerState<B2BClientDashboardScr
                                     : 'Marque/Modèle non spécifié'.tr,
                                 style: const TextStyle(fontSize: 13, color: AppTheme.textHint),
                               ),
-                              if (v.categoryId.isNotEmpty && user?.tenantId != null) ...[
-                                Consumer(
-                                  builder: (context, ref, child) {
-                                     final catAsync = ref.watch(vehicleCategoriesStreamProvider(user!.tenantId));
-                                     final catList = catAsync.value ?? [];
-                                     final cat = catList.where((c) => c.id == v.categoryId).firstOrNull;
-                                     final catName = cat?.name ?? '';
-                                     if (catName.isEmpty) return const SizedBox();
-                                    return Text(
-                                      'Catégorie : $catName'.tr,
-                                      style: const TextStyle(fontSize: 11, color: AppTheme.primaryBlue, fontWeight: FontWeight.w500),
-                                    );
-                                  },
-                                ),
-                              ],
                             ],
                           ),
                         ),
